@@ -1,0 +1,535 @@
+{
+  "seed": 20261102,
+  "problems": [
+    {
+      "id": "std-1-1",
+      "set": "standard",
+      "stage": 1,
+      "goal": 40,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 5
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "id": "std-1-2",
+      "set": "standard",
+      "stage": 1,
+      "goal": 35,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 5
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "id": "std-1-3",
+      "set": "standard",
+      "stage": 1,
+      "goal": 50,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 30
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 25
+        }
+      ]
+    },
+    {
+      "id": "std-2-1",
+      "set": "standard",
+      "stage": 2,
+      "goal": 45,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "-",
+          "value": 5
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t3",
+          "op": "*",
+          "value": 2
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 5
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 25
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 25
+        }
+      ]
+    },
+    {
+      "id": "std-2-2",
+      "set": "standard",
+      "stage": 2,
+      "goal": 30,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t2",
+          "op": "-",
+          "value": 10
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t6",
+          "op": "*",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "id": "std-2-3",
+      "set": "standard",
+      "stage": 2,
+      "goal": 40,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t4",
+          "op": "*",
+          "value": 2
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 25
+        },
+        {
+          "id": "t6",
+          "op": "-",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "id": "risk-1-1",
+      "set": "risk",
+      "stage": 1,
+      "goal": 30,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 20,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 15,
+          "size": "M",
+          "moving": false
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        }
+      ]
+    },
+    {
+      "id": "risk-1-2",
+      "set": "risk",
+      "stage": 1,
+      "goal": 25,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 30,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 20,
+          "size": "S",
+          "moving": false
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 15,
+          "size": "M",
+          "moving": false
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        }
+      ]
+    },
+    {
+      "id": "risk-1-3",
+      "set": "risk",
+      "stage": 1,
+      "goal": 20,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 15,
+          "size": "M",
+          "moving": false
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 25,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 25,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        }
+      ]
+    },
+    {
+      "id": "risk-2-1",
+      "set": "risk",
+      "stage": 2,
+      "goal": 25,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 15,
+          "size": "M",
+          "moving": false
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t3",
+          "op": "-",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t5",
+          "op": "*",
+          "value": 2,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        }
+      ]
+    },
+    {
+      "id": "risk-2-2",
+      "set": "risk",
+      "stage": 2,
+      "goal": 30,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 15,
+          "size": "M",
+          "moving": false
+        },
+        {
+          "id": "t2",
+          "op": "-",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t4",
+          "op": "*",
+          "value": 2,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        }
+      ]
+    },
+    {
+      "id": "risk-2-3",
+      "set": "risk",
+      "stage": 2,
+      "goal": 20,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "*",
+          "value": 2,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t2",
+          "op": "-",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 20,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 5,
+          "size": "L",
+          "moving": false
+        }
+      ]
+    }
+  ]
+}
