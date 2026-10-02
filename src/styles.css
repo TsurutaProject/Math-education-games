@@ -392,6 +392,78 @@ button {
   opacity: 0.35;
 }
 
+/* カタパルト */
+.cat-base {
+  fill: var(--stand);
+}
+.cat-wheel {
+  fill: var(--shelf);
+  stroke: var(--stand);
+  stroke-width: 4;
+}
+.cat-arm {
+  stroke: var(--stand);
+  stroke-width: 10;
+  stroke-linecap: round;
+}
+.cat-bucket {
+  fill: none;
+  stroke: var(--stand);
+  stroke-width: 5;
+}
+.cat-ball {
+  fill: #6a6f78;
+  stroke: #3d4148;
+  stroke-width: 2;
+}
+.cat-shadow {
+  fill: rgba(43, 33, 24, 0.22);
+}
+.cat-arc {
+  fill: none;
+  stroke: #d62f2f;
+  stroke-width: 4;
+  stroke-dasharray: 2 12;
+  stroke-linecap: round;
+  opacity: 0.75;
+}
+.cat-landing {
+  fill: rgba(214, 47, 47, 0.12);
+  stroke: #d62f2f;
+  stroke-width: 3;
+}
+.cat-dir {
+  stroke: #d62f2f;
+  stroke-width: 4;
+  stroke-dasharray: 2 10;
+  stroke-linecap: round;
+  opacity: 0.7;
+}
+.cat-power-bg {
+  fill: rgba(43, 33, 24, 0.12);
+}
+.cat-power {
+  fill: var(--accent);
+}
+.cat-dust {
+  fill: none;
+  stroke: rgba(43, 33, 24, 0.35);
+  stroke-width: 3;
+  animation: dust 0.45s ease-out forwards;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@keyframes dust {
+  from {
+    transform: scale(0.3);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
 /* C：手応えを厚く */
 .pop-big {
   font-size: 56px;
@@ -689,6 +761,16 @@ button {
 }
 
 /* 狭い画面（スマホ縦など） */
+/* 射撃タイプのボタンが増えたので、少し狭い画面では「ステージ〇・〇問め」を隠す（設定パネルで見られる） */
+@media (max-width: 1100px) {
+  .where {
+    display: none;
+  }
+  .topbar .seg button {
+    padding: 6px 10px;
+  }
+}
+
 @media (max-width: 760px) {
   .topbar {
     flex-wrap: wrap;

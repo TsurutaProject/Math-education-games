@@ -25,8 +25,11 @@ export type LogPayload =
       pointerType: string;
       /** 撃ったあと、残りの弾で届くか */
       reachableAfter: boolean;
-      /** パチンコのときだけ：飛ばした角度（真上が0、右が+）、引っ張った長さ、飛んでいた時間、壁ではね返った回数 */
-      launch?: { angleDeg: number; pull: number; flightMs: number; bounces: number };
+      /**
+       * パチンコ・カタパルトのときだけ：飛ばした角度（真上が0、右が+）、引っ張った長さ、飛んでいた時間。
+       * パチンコは壁ではね返った回数、カタパルトは着地点（フィールド 0〜1）も入る。
+       */
+      launch?: { angleDeg: number; pull: number; flightMs: number; bounces?: number; landing?: { x: number; y: number } };
     }
   | {
       type: 'value_change';

@@ -9,6 +9,7 @@ import {
   loadSettings,
   saveSettings,
   SHOOTER_LABEL,
+  SHOOTERS,
   VARIANT_LABEL,
   variantFromUrl,
   writeUrlParams,
@@ -83,7 +84,7 @@ export function App() {
           ))}
         </div>
         <div className={`seg shooter-switch ${variant === 'A' ? 'disabled' : ''}`} title={variant === 'A' ? 'A はタップ式なので射撃タイプはありません' : '射撃タイプ'}>
-          {(['gun', 'sling'] as Shooter[]).map((sh) => (
+          {SHOOTERS.map((sh) => (
             <button key={sh} className={sh === settings.shooter ? 'on' : ''} disabled={variant === 'A'} onClick={() => changeShooter(sh)}>
               {SHOOTER_LABEL[sh]}
             </button>

@@ -37,5 +37,9 @@ export interface Step {
 
 export type Variant = 'A' | 'B' | 'C';
 
-/** B・C の射撃タイプ。gun = 照準を合わせて撃つ（コルク銃）、sling = 引っ張って飛ばす（パチンコ）。 */
-export type Shooter = 'gun' | 'sling';
+/**
+ * B・C の射撃タイプ。
+ * gun = 照準を合わせて撃つ（コルク銃）、sling = 引っ張って飛ばす（パチンコ）、
+ * catapult = 引く長さで飛ぶ距離が決まり、山なりに飛ぶ（カタパルト）。
+ */
+export type Shooter = 'gun' | 'sling' | 'catapult';

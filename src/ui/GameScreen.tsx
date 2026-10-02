@@ -50,7 +50,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   const total = useMemo(() => distinctSolutions(problem).size, [problem]);
   // 射撃タイプがちがえば別の図鑑にする（遊び比べで混ざらないように）
   const shooter = shooterOf(variant, settings);
-  const zid = zukanId(shooter === 'sling' ? `${variant}-sling` : variant, problem.id);
+  const zid = zukanId(shooter === 'gun' || shooter === 'tap' ? variant : `${variant}-${shooter}`, problem.id);
   const feel = FEEL[variant];
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
 
@@ -108,7 +108,13 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
       shotsLeftBefore: game.shotsLeft,
       pointerType: info.pointerType,
       reachableAfter: reachable,
-      ...(info.launch ? { launch: info.launch } : {}),
+      ...(info.launch
+        ? {
+            launch: info.launch.landing
+              ? { ...info.launch, landing: { x: round3(info.launch.landing.x / FIELD_W), y: round3(info.launch.landing.y / FIELD_H) } }
+              : info.launch,
+          }
+        : {}),
     });
     if (target) {
       log({

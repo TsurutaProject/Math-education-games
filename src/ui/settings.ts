@@ -9,6 +9,10 @@ export interface Settings {
   slingGuide: number;
   /** パチンコの弾が左右の壁ではね返るか */
   slingBounce: boolean;
+  /** カタパルトの弾がいちばん遠くまで飛ぶのにかかる時間（秒） */
+  catapultTime: number;
+  /** カタパルトの着地点（と山なりの道すじ）を引っ張っている間に見せるか */
+  catapultShowLanding: boolean;
   /** B の当たり判定補正の強さ（0 = なし、1 = 標準、2 = 強い） */
   assistStrength: number;
   /** C でも補正を使うか */
@@ -29,6 +33,8 @@ export const DEFAULT_SETTINGS: Settings = {
   slingSpeed: 800,
   slingGuide: 260,
   slingBounce: true,
+  catapultTime: 0.8,
+  catapultShowLanding: true,
   assistStrength: 1,
   assistInC: false,
   swayAmplitude: 12,
@@ -55,7 +61,7 @@ export function loadSettings(): Settings {
 }
 
 export function isShooter(v: unknown): v is Shooter {
-  return v === 'gun' || v === 'sling';
+  return v === 'gun' || v === 'sling' || v === 'catapult';
 }
 
 export function saveSettings(s: Settings): void {
@@ -85,7 +91,10 @@ export function writeUrlParams(v: Variant, shooter: Shooter): void {
 export const SHOOTER_LABEL: Record<Shooter, string> = {
   gun: 'コルク銃',
   sling: 'パチンコ',
+  catapult: 'カタパルト',
 };
+
+export const SHOOTERS: Shooter[] = ['gun', 'sling', 'catapult'];
 
 /** ログ・図鑑の区別に使う。A はタップなので射撃タイプなし。 */
 export function shooterOf(v: Variant, s: Settings): 'tap' | Shooter {

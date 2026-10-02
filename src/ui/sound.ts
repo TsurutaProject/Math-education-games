@@ -72,6 +72,19 @@ export function sfxSling() {
   noise(0.05, 0.08, 0, 2000);
 }
 
+/** カタパルトのうでが振れる「ギッ・ブン」 */
+export function sfxCatapult() {
+  noise(0.06, 0.12, 0, 600);
+  tone(140, 0.2, { type: 'sawtooth', gain: 0.08, to: 60 });
+  tone(300, 0.18, { type: 'triangle', gain: 0.12, to: 700, delay: 0.05 });
+}
+
+/** カタパルトの弾が外れて地面に落ちた「ポスッ」 */
+export function sfxThud() {
+  noise(0.12, 0.18, 0, 200);
+  tone(110, 0.15, { gain: 0.2, to: 50 });
+}
+
 export function sfxMiss() {
   noise(0.18, 0.08, 0, 3000);
 }

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import { clearLog, downloadLog, getLogCount, subscribeLog } from './logStore';
-import { DEFAULT_SETTINGS, SHOOTER_LABEL, VARIANT_LABEL, type Settings } from './settings';
+import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, VARIANT_LABEL, type Settings } from './settings';
 
 interface Props {
   variant: Variant;
@@ -75,7 +75,7 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
           <div className="row">
             <span className="row-label">射撃タイプ（B・C）</span>
             <div className="seg">
-              {(['gun', 'sling'] as Shooter[]).map((sh) => (
+              {SHOOTERS.map((sh) => (
                 <button key={sh} className={sh === settings.shooter ? 'on' : ''} onClick={() => onShooter(sh)}>
                   {SHOOTER_LABEL[sh]}
                 </button>
@@ -125,6 +125,16 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
           <label className="row">
             <span className="row-label">左右の壁ではね返る</span>
             <input type="checkbox" checked={settings.slingBounce} onChange={(e) => update({ slingBounce: e.target.checked })} />
+          </label>
+        </section>
+
+        <section>
+          <h3>カタパルト（B・C）</h3>
+          <Slider label="飛んでいる時間（秒）" value={settings.catapultTime} min={0.3} max={1.6} step={0.1} onChange={(v) => update({ catapultTime: v })} note="いちばん遠くまでの時間。長いほど、動く的は先を読む必要がある" />
+          <label className="row">
+            <span className="row-label">着地点を見せる</span>
+            <input type="checkbox" checked={settings.catapultShowLanding} onChange={(e) => update({ catapultShowLanding: e.target.checked })} />
+            <span className="row-note">オフにすると向きの線と「ひっぱりの強さ」だけ。距離は自分で感覚をつかむ</span>
           </label>
         </section>
 
