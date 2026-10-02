@@ -2,7 +2,7 @@ import type { Problem, TargetSize } from './types';
 
 /** フィールドの論理サイズ（SVG の viewBox と同じ）。 */
 export const FIELD_W = 1000;
-export const FIELD_H = 560;
+export const FIELD_H = 620;
 
 /** A/B の的の半径（全部同じ大きさ）。 */
 export const UNIFORM_RADIUS = 54;
@@ -24,9 +24,15 @@ export interface LayoutOptions {
   /** true なら size/moving を使う（C）。false なら全部同じ大きさで止まっている（A/B）。 */
   riskMode: boolean;
   sizeScale?: number;
+  /**
+   * 1段に並べる（パチンコ用）。2段だと手前の的が奥の的をふさいでしまい、
+   * 「安全な道」が撃てなくなることがあるため。
+   */
+  singleRow?: boolean;
 }
 
 const ROW_Y_ONE = [300];
+const ROW_Y_SINGLE = [240];
 const ROW_Y_TWO = [205, 405];
 
 /** 的を棚に並べる。的が5個以上なら2段。C では動く的を奥の段に置く。 */
@@ -35,9 +41,9 @@ export function layoutTargets(problem: Problem, opts: LayoutOptions): PlacedTarg
   const list = opts.riskMode
     ? [...problem.targets].sort((a, b) => Number(!!b.moving) - Number(!!a.moving))
     : [...problem.targets];
-  const rows = list.length > 4 ? 2 : 1;
+  const rows = !opts.singleRow && list.length > 4 ? 2 : 1;
   const perRow = Math.ceil(list.length / rows);
-  const rowYs = rows === 1 ? ROW_Y_ONE : ROW_Y_TWO;
+  const rowYs = opts.singleRow ? ROW_Y_SINGLE : rows === 1 ? ROW_Y_ONE : ROW_Y_TWO;
   const placed: PlacedTarget[] = [];
   list.forEach((t, i) => {
     const row = Math.floor(i / perRow);
@@ -45,7 +51,9 @@ export function layoutTargets(problem: Problem, opts: LayoutOptions): PlacedTarg
     const col = i - row * perRow;
     const cell = FIELD_W / inRow;
     const x = cell * (col + 0.5);
-    const r = opts.riskMode ? SIZE_RADIUS[t.size ?? 'M'] * scale : UNIFORM_RADIUS;
+    const base = opts.riskMode ? SIZE_RADIUS[t.size ?? 'M'] * scale : UNIFORM_RADIUS;
+    // 1段に詰めたとき、隣と重ならない大きさまでにする
+    const r = Math.min(base, cell / 2 - 12);
     const amp = opts.riskMode && t.moving ? Math.max(0, cell / 2 - r - 8) : 0;
     placed.push({ id: t.id, x, y: rowYs[row], r, amp, phase: i * 1.7 });
   });

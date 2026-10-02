@@ -1,8 +1,10 @@
-import type { Op, Variant } from './types';
+import type { Op, Shooter, Variant } from './types';
 
 /** すべてのイベントに付く項目。個人情報は入れない。 */
 export interface LogContext {
   variant: Variant;
+  /** A は tap。B・C は射撃タイプ */
+  shooter: 'tap' | Shooter;
   stage: number;
   problemId: string;
   /** 1回の挑戦（問題の開始〜クリア/弾切れ/やり直し）を区別するランダムな id */
@@ -23,6 +25,8 @@ export type LogPayload =
       pointerType: string;
       /** 撃ったあと、残りの弾で届くか */
       reachableAfter: boolean;
+      /** パチンコのときだけ：飛ばした角度（真上が0、右が+）、引っ張った長さ、飛んでいた時間、壁ではね返った回数 */
+      launch?: { angleDeg: number; pull: number; flightMs: number; bounces: number };
     }
   | {
       type: 'value_change';

@@ -23,7 +23,7 @@ describe('zukan', () => {
 describe('log', () => {
   it('イベントにバリエーション・ステージ・問題 id と時刻が入る', () => {
     const e = makeEvent(
-      { variant: 'B', stage: 2, problemId: 'std-2-1', attemptId: 'abc' },
+      { variant: 'B', shooter: 'gun', stage: 2, problemId: 'std-2-1', attemptId: 'abc' },
       { type: 'restart', current: 10, shotsLeft: 1 },
       new Date('2026-11-01T00:00:00Z'),
     );

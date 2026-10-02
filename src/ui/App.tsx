@@ -1,11 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LogPayload } from '../logic/log';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
-import type { Variant } from '../logic/types';
+import type { Shooter, Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GameScreen } from './GameScreen';
 import { SettingsPanel } from './SettingsPanel';
-import { loadSettings, saveSettings, VARIANT_LABEL, variantFromUrl, writeVariantToUrl, type Settings } from './settings';
+import {
+  loadSettings,
+  saveSettings,
+  SHOOTER_LABEL,
+  VARIANT_LABEL,
+  variantFromUrl,
+  writeUrlParams,
+  type Settings,
+} from './settings';
 import { setSoundEnabled } from './sound';
 
 type StartReason = Extract<LogPayload, { type: 'problem_start' }>['reason'];
@@ -21,7 +29,7 @@ export function App() {
   // 問題を作り直すたびに増やして GameScreen を新しくする
   const [session, setSession] = useState({ n: 0, reason: 'first' as StartReason });
 
-  useEffect(() => writeVariantToUrl(variant), [variant]);
+  useEffect(() => writeUrlParams(variant, settings.shooter), [variant, settings.shooter]);
   useEffect(() => {
     saveSettings(settings);
     setSoundEnabled(settings.sound);
@@ -37,6 +45,12 @@ export function App() {
     if (v === variant) return;
     setVariant(v);
     restartWith('switch');
+  };
+
+  const changeShooter = (sh: Shooter) => {
+    if (sh === settings.shooter) return;
+    setSettings({ ...settings, shooter: sh });
+    if (variant !== 'A') restartWith('switch');
   };
 
   const changeProblem = (s: number, i: number) => {
@@ -68,6 +82,13 @@ export function App() {
             </button>
           ))}
         </div>
+        <div className={`seg shooter-switch ${variant === 'A' ? 'disabled' : ''}`} title={variant === 'A' ? 'A はタップ式なので射撃タイプはありません' : '射撃タイプ'}>
+          {(['gun', 'sling'] as Shooter[]).map((sh) => (
+            <button key={sh} className={sh === settings.shooter ? 'on' : ''} disabled={variant === 'A'} onClick={() => changeShooter(sh)}>
+              {SHOOTER_LABEL[sh]}
+            </button>
+          ))}
+        </div>
         <div className="where">
           ステージ{stage}・{Math.min(index, problems.length - 1) + 1}問め
         </div>
@@ -76,7 +97,7 @@ export function App() {
         </button>
       </header>
       <GameScreen
-        key={`${session.n}-${variant}-${problem.id}`}
+        key={`${session.n}-${variant}-${variant === 'A' ? 'tap' : settings.shooter}-${problem.id}`}
         problem={problem}
         variant={variant}
         settings={settings}
@@ -91,6 +112,7 @@ export function App() {
           index={index}
           settings={settings}
           onVariant={changeVariant}
+          onShooter={changeShooter}
           onProblem={changeProblem}
           onSettings={setSettings}
           onClose={() => setShowSettings(false)}

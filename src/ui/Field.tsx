@@ -10,9 +10,11 @@ import {
   type HitCircle,
 } from '../logic/hit';
 import { targetLabel } from '../logic/ops';
+import { clampAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
 import type { Op, Problem, Variant } from '../logic/types';
 import type { Settings } from './settings';
-import { sfxHit, sfxMiss, sfxShot, unlockAudio } from './sound';
+import { SlingLayer } from './SlingLayer';
+import { sfxHit, sfxMiss, sfxShot, sfxSling, unlockAudio } from './sound';
 
 export interface ShotInfo {
   /** 照準の位置（フィールド単位） */
@@ -21,6 +23,8 @@ export interface ShotInfo {
   /** 当たり判定の倍率 */
   assist: number;
   pointerType: string;
+  /** パチンコのときだけ */
+  launch?: { angleDeg: number; pull: number; flightMs: number; bounces: number };
 }
 
 interface Props {
@@ -44,6 +48,8 @@ interface Effect {
   y: number;
   text: string;
   kind: 'hit' | 'miss';
+  /** コルクが飛ぶ線を出すか（パチンコは弾そのものが見えているので出さない） */
+  trail: boolean;
 }
 
 interface Aim {
@@ -51,6 +57,18 @@ interface Aim {
   pointerType: string;
   x: number;
   y: number;
+  /** パチンコ：押しはじめた位置（ここからの引っ張りで向きを決める） */
+  sx: number;
+  sy: number;
+}
+
+interface Flight {
+  ball: Ball;
+  launch: Launch;
+  startedAt: number;
+  pointerType: string;
+  assist: number;
+  trail: Array<{ x: number; y: number }>;
 }
 
 /** A でタップを少し大目に拾う（指の太さ分） */
@@ -59,6 +77,8 @@ const TAP_TOLERANCE = 1.15;
 const COOLDOWN_MS: Record<Variant, number> = { A: 200, B: 250, C: 550 };
 /** タッチのとき、指で隠れないように照準を指より上に出す（フィールド単位） */
 const TOUCH_AIM_OFFSET = 90;
+/** パチンコの揺れ：照準の揺れ幅 1 あたり何度ぶれるか */
+const SLING_SWAY_DEG = 0.2;
 /** コルクが飛び出す位置（画面の下の真ん中） */
 const MUZZLE = { x: FIELD_W / 2, y: FIELD_H + 40 };
 
@@ -73,9 +93,10 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
   const svgRef = useRef<SVGSVGElement>(null);
   const riskMode = variant === 'C';
   const aimMode = variant !== 'A';
+  const slingMode = aimMode && settings.shooter === 'sling';
   const placed = useMemo(
-    () => layoutTargets(problem, { riskMode, sizeScale: settings.cSizeScale }),
-    [problem, riskMode, settings.cSizeScale],
+    () => layoutTargets(problem, { riskMode, sizeScale: settings.cSizeScale, singleRow: slingMode }),
+    [problem, riskMode, settings.cSizeScale, slingMode],
   );
   const speed = riskMode ? settings.cMoveSpeed : 0;
   const [effects, setEffects] = useState<Effect[]>([]);
@@ -85,6 +106,10 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
   const effectSeq = useRef(0);
   /** 倒れた的は当たった場所で止める */
   const downAt = useRef(new Map<string, { x: number; y: number }>());
+  /** パチンコ：飛んでいる弾（1発ずつ） */
+  const flight = useRef<Flight | null>(null);
+  /** 毎フレーム呼ぶ処理（最新の props を使うため、描画のたびに入れ替える） */
+  const onFrame = useRef<(dt: number) => void>(() => {});
 
   // ---- 時計（動く的・照準の揺れ用）。C は当たった瞬間に少し止める（ヒットストップ）。
   const [clock, setClock] = useState(0);
@@ -98,13 +123,25 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      if (now >= freezeUntil.current) clockRef.current += dt;
+      if (now >= freezeUntil.current) {
+        clockRef.current += dt;
+        onFrame.current(dt);
+      }
       setClock(clockRef.current);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [needsClock]);
+
+  // やり直しなどで消えたあとに、飛んでいた弾が1発ぶんとして数えられないようにする
+  useEffect(
+    () => () => {
+      flight.current = null;
+      onFrame.current = () => {};
+    },
+    [],
+  );
 
   // 効果（ポップする数字など）は一定時間で消す
   useEffect(() => {
@@ -141,15 +178,26 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
 
   const addEffect = (to: { x: number; y: number }, x: number, y: number, text: string, kind: Effect['kind']) => {
     effectSeq.current += 1;
-    setEffects((list) => [...list, { id: effectSeq.current, tx: to.x, ty: to.y, x, y, text, kind }]);
+    setEffects((list) => [...list, { id: effectSeq.current, tx: to.x, ty: to.y, x, y, text, kind, trail: !slingMode }]);
   };
 
   const canShoot = () =>
-    active && shotsLeft > 0 && performance.now() - lastShotAt.current >= COOLDOWN_MS[variant];
+    active &&
+    shotsLeft > 0 &&
+    !flight.current &&
+    performance.now() - lastShotAt.current >= (slingMode ? 0 : COOLDOWN_MS[variant]);
 
-  const fire = (point: { x: number; y: number }, targetId: string | null, assist: number, pointerType: string) => {
+  const assistNow = () => (riskMode && !settings.assistInC ? 1 : assistMultiplier(shotsLeft, settings.assistStrength));
+
+  const fire = (
+    point: { x: number; y: number },
+    targetId: string | null,
+    assist: number,
+    pointerType: string,
+    launch?: ShotInfo['launch'],
+  ) => {
     lastShotAt.current = performance.now();
-    sfxShot();
+    if (!launch) sfxShot();
     if (targetId) {
       const t = problem.targets.find((x) => x.id === targetId)!;
       const pos = positionOf(targetId, clockRef.current);
@@ -165,7 +213,37 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
       addEffect(point, point.x, point.y, 'スカッ', 'miss');
       sfxMiss();
     }
-    onShot({ aim: point, targetId, assist, pointerType });
+    onShot({ aim: point, targetId, assist, pointerType, launch });
+  };
+
+  // パチンコ：弾を進めて、的に当たるか外に出たら1発ぶんを確定する
+  onFrame.current = (dt: number) => {
+    const f = flight.current;
+    if (!f) return;
+    const r = stepBall(f.ball, dt, circlesAt(clockRef.current), { bounce: settings.slingBounce, multiplier: f.assist });
+    f.trail = [...f.trail.slice(-5), { x: f.ball.x, y: f.ball.y }];
+    f.ball = r.ball;
+    if (!r.hit && !r.exited) return;
+    flight.current = null;
+    const launch = {
+      angleDeg: Math.round(f.launch.angleDeg * 10) / 10,
+      pull: Math.round(f.launch.pull),
+      flightMs: Math.round(performance.now() - f.startedAt),
+      bounces: r.ball.bounces,
+    };
+    // 外れの「スカッ」は画面の中に出す
+    const point = r.hit
+      ? { x: r.ball.x, y: r.ball.y }
+      : { x: Math.max(40, Math.min(FIELD_W - 40, r.ball.x)), y: Math.max(40, Math.min(FIELD_H - 40, r.ball.y)) };
+    fire(point, r.hit, f.assist, f.pointerType, launch);
+  };
+
+  /** パチンコの飛ぶ角度（引っ張りの向き + 揺れ）。引っ張りが短いときは null */
+  const slingLaunchOf = (a: Aim): Launch | null => {
+    const l = launchFromPull(a.x - a.sx, a.y - a.sy);
+    if (!l) return null;
+    const jitter = swayOffset(clockRef.current, settings.swayAmplitude).dx * SLING_SWAY_DEG;
+    return { ...l, angleDeg: clampAngle(l.angleDeg + jitter) };
   };
 
   /** 照準の最終位置（指の位置 + タッチのずれ + 揺れ） */
@@ -192,7 +270,7 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
     } catch {
       // 合成イベントなどでキャプチャできなくても狙えるようにする
     }
-    setAim({ pointerId: e.pointerId, pointerType: e.pointerType, ...pt });
+    setAim({ pointerId: e.pointerId, pointerType: e.pointerType, ...pt, sx: pt.x, sy: pt.y });
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -203,10 +281,25 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
 
   const onPointerUp = (e: React.PointerEvent) => {
     if (!aim || e.pointerId !== aim.pointerId) return;
-    const point = reticleOf(aim);
     setAim(null);
     if (!canShoot()) return;
-    const assist = riskMode && !settings.assistInC ? 1 : assistMultiplier(shotsLeft, settings.assistStrength);
+    if (slingMode) {
+      // 短く引いただけなら撃たない（弾も減らない）
+      const launch = slingLaunchOf(aim);
+      if (!launch) return;
+      sfxSling();
+      flight.current = {
+        ball: launchBall(launch.angleDeg, settings.slingSpeed),
+        launch,
+        startedAt: performance.now(),
+        pointerType: aim.pointerType,
+        assist: assistNow(),
+        trail: [],
+      };
+      return;
+    }
+    const point = reticleOf(aim);
+    const assist = assistNow();
     const hit = hitTest(point, circlesAt(clockRef.current), assist);
     fire(point, hit, assist, aim.pointerType);
   };
@@ -215,7 +308,9 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
     if (aim && e.pointerId === aim.pointerId) setAim(null);
   };
 
-  const reticle = aim ? reticleOf(aim) : null;
+  const reticle = aim && !slingMode ? reticleOf(aim) : null;
+  const slingLaunch = aim && slingMode ? slingLaunchOf(aim) : null;
+  const f = flight.current;
   const firstShot = shotsLeft === problem.shots;
   const rowYs = [...new Set(placed.map((p) => p.y))];
 
@@ -257,9 +352,11 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
         })}
         {effects.map((ef) => (
           <g key={ef.id}>
-            <circle r={7} className="cork-shot">
-              <animateMotion dur="0.12s" fill="freeze" path={`M${MUZZLE.x},${MUZZLE.y} L${ef.tx},${ef.ty}`} />
-            </circle>
+            {ef.trail && (
+              <circle r={7} className="cork-shot">
+                <animateMotion dur="0.12s" fill="freeze" path={`M${MUZZLE.x},${MUZZLE.y} L${ef.tx},${ef.ty}`} />
+              </circle>
+            )}
             <text x={ef.x} y={ef.y} className={`pop pop-${ef.kind} ${riskMode ? 'pop-big' : ''}`}>
               {ef.text}
             </text>
@@ -275,10 +372,26 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
             <circle r={3} className="dot" />
           </g>
         )}
-        {aim?.pointerType === 'touch' && <circle cx={aim.x} cy={aim.y} r={14} className="finger" />}
-        {aimMode && firstShot && !aim && active && (
-          <text x={FIELD_W / 2} y={FIELD_H - 18} className="hint">
-            ゆびで おして ねらって、はなすと うつ！
+        {slingMode && (
+          <SlingLayer
+            pull={aim ? { dx: aim.x - aim.sx, dy: aim.y - aim.sy } : null}
+            angleDeg={slingLaunch?.angleDeg ?? null}
+            guideLength={settings.slingGuide}
+            bounce={settings.slingBounce}
+            flying={f ? { x: f.ball.x, y: f.ball.y, trail: f.trail } : null}
+            loaded={!f && shotsLeft > 0 && active}
+          />
+        )}
+        {aim && slingMode && (
+          <>
+            <circle cx={aim.sx} cy={aim.sy} r={18} className="pull-anchor" />
+            <line x1={aim.sx} y1={aim.sy} x2={aim.x} y2={aim.y} className="pull-line" />
+          </>
+        )}
+        {aim && (slingMode || aim.pointerType === 'touch') && <circle cx={aim.x} cy={aim.y} r={14} className="finger" />}
+        {aimMode && firstShot && !aim && !f && active && (
+          <text x={FIELD_W / 2} y={slingMode ? 44 : FIELD_H - 18} className="hint">
+            {slingMode ? 'ゆびで おして うしろに ひっぱり、はなすと とぶ！' : 'ゆびで おして ねらって、はなすと うつ！'}
           </text>
         )}
       </svg>

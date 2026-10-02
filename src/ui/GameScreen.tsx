@@ -12,7 +12,7 @@ import { Hud } from './Hud';
 import { PrizeShelf, prizeFor } from './PrizeShelf';
 import { logEvent } from './logStore';
 import { CelebrateOverlay, OutOverlay, ZukanScreen } from './Overlays';
-import type { Settings } from './settings';
+import { shooterOf, type Settings } from './settings';
 import { sfxClear, sfxOut } from './sound';
 import { FIELD_H, FIELD_W } from '../logic/hit';
 
@@ -48,11 +48,19 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
     timers.current = [];
   };
   const total = useMemo(() => distinctSolutions(problem).size, [problem]);
-  const zid = zukanId(variant, problem.id);
+  // 射撃タイプがちがえば別の図鑑にする（遊び比べで混ざらないように）
+  const shooter = shooterOf(variant, settings);
+  const zid = zukanId(shooter === 'sling' ? `${variant}-sling` : variant, problem.id);
   const feel = FEEL[variant];
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
 
-  const ctx = (): LogContext => ({ variant, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current });
+  const ctx = (): LogContext => ({
+    variant,
+    shooter,
+    stage: problem.stage,
+    problemId: problem.id,
+    attemptId: attemptId.current,
+  });
   const log = (payload: LogPayload) => logEvent(ctx(), payload);
 
   // 問題の開始（最初の1回）
@@ -73,11 +81,11 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
       setPhase('playing');
       setRound((r) => r + 1);
       logEvent(
-        { variant, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current },
+        { variant, shooter, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current },
         { type: 'problem_start', reason },
       );
     },
-    [problem, variant],
+    [problem, variant, shooter],
   );
 
   const onRestartButton = () => {
@@ -100,6 +108,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
       shotsLeftBefore: game.shotsLeft,
       pointerType: info.pointerType,
       reachableAfter: reachable,
+      ...(info.launch ? { launch: info.launch } : {}),
     });
     if (target) {
       log({

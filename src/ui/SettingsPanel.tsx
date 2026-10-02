@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
-import type { Variant } from '../logic/types';
+import type { Shooter, Variant } from '../logic/types';
 import { clearLog, downloadLog, getLogCount, subscribeLog } from './logStore';
-import { DEFAULT_SETTINGS, VARIANT_LABEL, type Settings } from './settings';
+import { DEFAULT_SETTINGS, SHOOTER_LABEL, VARIANT_LABEL, type Settings } from './settings';
 
 interface Props {
   variant: Variant;
@@ -10,6 +10,7 @@ interface Props {
   index: number;
   settings: Settings;
   onVariant: (v: Variant) => void;
+  onShooter: (s: Shooter) => void;
   onProblem: (stage: number, index: number) => void;
   onSettings: (s: Settings) => void;
   onClose: () => void;
@@ -42,7 +43,7 @@ function Slider({
   );
 }
 
-export function SettingsPanel({ variant, stage, index, settings, onVariant, onProblem, onSettings, onClose }: Props) {
+export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose }: Props) {
   const logCount = useSyncExternalStore(subscribeLog, getLogCount);
   const set = setForVariant(variant);
   const stages = stagesFor(set);
@@ -67,6 +68,16 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onPr
               {(['A', 'B', 'C'] as Variant[]).map((v) => (
                 <button key={v} className={v === variant ? 'on' : ''} onClick={() => onVariant(v)}>
                   {VARIANT_LABEL[v]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="row">
+            <span className="row-label">射撃タイプ（B・C）</span>
+            <div className="seg">
+              {(['gun', 'sling'] as Shooter[]).map((sh) => (
+                <button key={sh} className={sh === settings.shooter ? 'on' : ''} onClick={() => onShooter(sh)}>
+                  {SHOOTER_LABEL[sh]}
                 </button>
               ))}
             </div>
@@ -108,6 +119,16 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onPr
         </section>
 
         <section>
+          <h3>パチンコ（B・C）</h3>
+          <Slider label="弾の速さ" value={settings.slingSpeed} min={300} max={1600} step={50} onChange={(v) => update({ slingSpeed: v })} note="遅いほど、動く的は先を読んで撃つ必要がある" />
+          <Slider label="ガイドの長さ" value={settings.slingGuide} min={0} max={900} step={20} onChange={(v) => update({ slingGuide: v })} note="0でガイドなし" />
+          <label className="row">
+            <span className="row-label">左右の壁ではね返る</span>
+            <input type="checkbox" checked={settings.slingBounce} onChange={(e) => update({ slingBounce: e.target.checked })} />
+          </label>
+        </section>
+
+        <section>
           <h3>C：リスクとリターン</h3>
           <Slider label="的の大きさ" value={settings.cSizeScale} min={0.6} max={1.5} step={0.05} onChange={(v) => update({ cSizeScale: v })} />
           <Slider label="移動の速さ" value={settings.cMoveSpeed} min={0} max={2.5} step={0.1} onChange={(v) => update({ cMoveSpeed: v })} note="0で止まる" />
@@ -128,7 +149,7 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onPr
             <input type="checkbox" checked={settings.sound} onChange={(e) => update({ sound: e.target.checked })} />
           </label>
           <div className="row">
-            <button className="btn small" onClick={() => onSettings({ ...DEFAULT_SETTINGS })}>
+            <button className="btn small" onClick={() => onSettings({ ...DEFAULT_SETTINGS, shooter: settings.shooter })}>
               設定を元にもどす
             </button>
           </div>

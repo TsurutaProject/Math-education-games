@@ -343,6 +343,55 @@ button {
   opacity: 0.6;
 }
 
+/* パチンコ */
+.sling-frame {
+  fill: none;
+  stroke: var(--stand);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sling-band {
+  stroke: #6b4a2b;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.sling-ball {
+  fill: #e04b3a;
+  stroke: #9c2a1e;
+  stroke-width: 2;
+}
+.sling-trail {
+  fill: #e04b3a;
+  opacity: 0.25;
+}
+.sling-guide {
+  fill: none;
+  stroke: #d62f2f;
+  stroke-width: 4;
+  stroke-dasharray: 2 12;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+.sling-guide-end {
+  fill: none;
+  stroke: #d62f2f;
+  stroke-width: 3;
+}
+.pull-anchor {
+  fill: none;
+  stroke: rgba(43, 33, 24, 0.3);
+  stroke-width: 3;
+  stroke-dasharray: 4 4;
+}
+.pull-line {
+  stroke: rgba(43, 33, 24, 0.2);
+  stroke-width: 3;
+}
+.shooter-switch.disabled {
+  opacity: 0.35;
+}
+
 /* C：手応えを厚く */
 .pop-big {
   font-size: 56px;
@@ -647,6 +696,10 @@ button {
   }
   .where {
     display: none;
+  }
+  .shooter-switch button,
+  .variant-switch button {
+    padding: 5px 9px;
   }
   .hud {
     grid-template-columns: repeat(2, 1fr);

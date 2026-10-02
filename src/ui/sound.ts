@@ -66,6 +66,12 @@ export function sfxHit(heavy = false) {
   }
 }
 
+/** パチンコのゴムが戻る「ビョン」 */
+export function sfxSling() {
+  tone(180, 0.16, { type: 'triangle', gain: 0.22, to: 520 });
+  noise(0.05, 0.08, 0, 2000);
+}
+
 export function sfxMiss() {
   noise(0.18, 0.08, 0, 3000);
 }

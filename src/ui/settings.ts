@@ -1,6 +1,14 @@
-import type { Variant } from '../logic/types';
+import type { Shooter, Variant } from '../logic/types';
 
 export interface Settings {
+  /** B・C の射撃タイプ */
+  shooter: Shooter;
+  /** パチンコの弾の速さ（フィールド単位/秒） */
+  slingSpeed: number;
+  /** パチンコのねらいガイドの長さ（フィールド単位） */
+  slingGuide: number;
+  /** パチンコの弾が左右の壁ではね返るか */
+  slingBounce: boolean;
   /** B の当たり判定補正の強さ（0 = なし、1 = 標準、2 = 強い） */
   assistStrength: number;
   /** C でも補正を使うか */
@@ -17,6 +25,10 @@ export interface Settings {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  shooter: 'gun',
+  slingSpeed: 800,
+  slingGuide: 260,
+  slingBounce: true,
   assistStrength: 1,
   assistInC: false,
   swayAmplitude: 12,
@@ -29,13 +41,21 @@ export const DEFAULT_SETTINGS: Settings = {
 const KEY = 'shateki-settings-v1';
 
 export function loadSettings(): Settings {
+  let s = { ...DEFAULT_SETTINGS };
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    if (raw) s = { ...s, ...JSON.parse(raw) };
   } catch {
     // 保存できない環境でも既定値で動く
   }
-  return { ...DEFAULT_SETTINGS };
+  // URL の ?shooter= が保存した設定より優先
+  const fromUrl = new URLSearchParams(location.search).get('shooter');
+  if (isShooter(fromUrl)) s.shooter = fromUrl;
+  return s;
+}
+
+export function isShooter(v: unknown): v is Shooter {
+  return v === 'gun' || v === 'sling';
 }
 
 export function saveSettings(s: Settings): void {
@@ -55,10 +75,21 @@ export function variantFromUrl(): Variant | null {
   return isVariant(v) ? v : null;
 }
 
-export function writeVariantToUrl(v: Variant): void {
+export function writeUrlParams(v: Variant, shooter: Shooter): void {
   const url = new URL(location.href);
   url.searchParams.set('variant', v);
+  url.searchParams.set('shooter', shooter);
   history.replaceState(null, '', url);
+}
+
+export const SHOOTER_LABEL: Record<Shooter, string> = {
+  gun: 'コルク銃',
+  sling: 'パチンコ',
+};
+
+/** ログ・図鑑の区別に使う。A はタップなので射撃タイプなし。 */
+export function shooterOf(v: Variant, s: Settings): 'tap' | Shooter {
+  return v === 'A' ? 'tap' : s.shooter;
 }
 
 export const VARIANT_LABEL: Record<Variant, string> = {
