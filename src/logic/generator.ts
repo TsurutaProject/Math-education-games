@@ -1,4 +1,4 @@
-import { distinctSolutions } from './solver';
+import { distinctSolutions, enumerateSolutions } from './solver';
 import type { Op, Problem, ProblemSet, Target, TargetSize } from './types';
 
 /** 図鑑が埋めきれる量にするため、解き方の種類の上限。 */
@@ -57,12 +57,13 @@ export interface ProblemAnalysis {
 }
 
 export function analyzeProblem(problem: Problem): ProblemAnalysis {
-  const sols = [...distinctSolutions(problem).values()];
+  const all = enumerateSolutions(problem);
+  const sols = [...distinctSolutions(problem, all).values()];
   const usesOps = new Set<Op>();
   for (const s of sols) for (const t of s.targets) usesOps.add(t.op);
   return {
     keys: sols.map((s) => s.key),
-    hasOneShot: sols.some((s) => s.targets.length === 1),
+    hasOneShot: all.some((s) => s.targets.length === 1),
     allNonNegative: sols.every((s) => s.nonNegative),
     usesOps,
     hasSafePath: sols.some((s) => s.targets.every(isEasyTarget)),

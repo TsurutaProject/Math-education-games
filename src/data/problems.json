@@ -484,47 +484,47 @@
       "id": "risk-2-3",
       "set": "risk",
       "stage": 2,
-      "goal": 20,
+      "goal": 15,
       "shots": 3,
       "targets": [
         {
           "id": "t1",
-          "op": "*",
-          "value": 2,
-          "size": "S",
-          "moving": true
-        },
-        {
-          "id": "t2",
-          "op": "-",
-          "value": 5,
-          "size": "L",
-          "moving": false
-        },
-        {
-          "id": "t3",
-          "op": "+",
-          "value": 20,
-          "size": "S",
-          "moving": true
-        },
-        {
-          "id": "t4",
           "op": "+",
           "value": 10,
           "size": "L",
           "moving": false
         },
         {
+          "id": "t2",
+          "op": "+",
+          "value": 20,
+          "size": "S",
+          "moving": true
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 10,
+          "size": "L",
+          "moving": false
+        },
+        {
+          "id": "t4",
+          "op": "*",
+          "value": 2,
+          "size": "S",
+          "moving": true
+        },
+        {
           "id": "t5",
           "op": "+",
-          "value": 5,
+          "value": 10,
           "size": "L",
           "moving": false
         },
         {
           "id": "t6",
-          "op": "+",
+          "op": "-",
           "value": 5,
           "size": "L",
           "moving": false

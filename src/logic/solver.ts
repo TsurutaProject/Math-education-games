@@ -47,14 +47,19 @@ export function enumerateSolutions(
   return results;
 }
 
-/** 正規化キーごとにまとめた解き方。代表は「マイナスを通らない」撃ち方を優先。 */
-export function distinctSolutions(problem: Problem): Map<string, Solution> {
+/** 正規化キーごとにまとめた解き方。代表は「マイナスを通らない」撃ち方、次に弾の少ない撃ち方を優先。 */
+export function distinctSolutions(problem: Problem, all = enumerateSolutions(problem)): Map<string, Solution> {
   const map = new Map<string, Solution>();
-  for (const s of enumerateSolutions(problem)) {
+  for (const s of all) {
     const prev = map.get(s.key);
-    if (!prev || (!prev.nonNegative && s.nonNegative)) map.set(s.key, s);
+    if (!prev || better(s, prev)) map.set(s.key, s);
   }
   return map;
+}
+
+function better(a: Solution, b: Solution): boolean {
+  if (a.nonNegative !== b.nonNegative) return a.nonNegative;
+  return a.targets.length < b.targets.length;
 }
 
 /** 途中の状態から、残りの弾で目標に届くか（ログ用。画面には出さない）。 */

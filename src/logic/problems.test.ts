@@ -35,6 +35,25 @@ describe('問題データ（problems.json）', () => {
   );
 });
 
+describe('validateProblem', () => {
+  it('1発で目標になる的があれば、×2 を先に撃つ道で隠れていても見つける', () => {
+    const errors = validateProblem({
+      id: 'x',
+      set: 'standard',
+      stage: 2,
+      goal: 20,
+      shots: 3,
+      targets: [
+        { id: 't1', op: '*', value: 2 },
+        { id: 't2', op: '+', value: 20 },
+        { id: 't3', op: '+', value: 10 },
+        { id: 't4', op: '-', value: 5 },
+      ],
+    });
+    expect(errors).toContain('1発で終わる解き方がある');
+  });
+});
+
 describe('generateProblem', () => {
   it('同じシードなら同じ問題', () => {
     const a = generateProblem(createRng(1), { set: 'standard', stage: 2, id: 'x' });

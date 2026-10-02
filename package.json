@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "gen:problems": "tsx scripts/generate-problems.ts"
+    "gen:problems": "tsx scripts/generate-problems.ts",
+    "list:problems": "tsx scripts/list-problems.ts"
   },
   "dependencies": {
     "react": "^19.3.0",
