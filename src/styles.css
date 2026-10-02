@@ -294,6 +294,104 @@ button {
   }
 }
 
+/* 照準（B・C） */
+.reticle circle,
+.reticle line {
+  fill: none;
+  stroke: #d62f2f;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.reticle .dot {
+  fill: #d62f2f;
+}
+.finger {
+  fill: rgba(43, 33, 24, 0.12);
+}
+.hint {
+  font-size: 26px;
+  font-weight: 800;
+  fill: var(--muted);
+  text-anchor: middle;
+  pointer-events: none;
+  animation: blink 1.6s ease-in-out infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+.cork-shot {
+  fill: var(--cork);
+  pointer-events: none;
+  animation: cork-fade 0.35s linear forwards;
+}
+@keyframes cork-fade {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.rail {
+  stroke: var(--shelf);
+  stroke-width: 4;
+  stroke-dasharray: 2 8;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+
+/* C：手応えを厚く */
+.pop-big {
+  font-size: 56px;
+}
+.target.down.heavy {
+  animation: fall-heavy 0.6s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+@keyframes fall-heavy {
+  0% {
+    transform: rotate(0) scaleY(1);
+    opacity: 1;
+  }
+  15% {
+    transform: rotate(-9deg) scaleY(1);
+  }
+  30% {
+    transform: rotate(6deg) scaleY(1);
+  }
+  45% {
+    transform: rotate(0) scaleY(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(0) scaleY(0.05);
+    opacity: 0;
+  }
+}
+.field.shake {
+  animation: shake 0.28s linear;
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-7px, 3px);
+  }
+  40% {
+    transform: translate(6px, -3px);
+  }
+  60% {
+    transform: translate(-4px, 2px);
+  }
+  80% {
+    transform: translate(3px, -1px);
+  }
+}
+
 /* ---------- 重ねる画面 ---------- */
 .overlay {
   position: absolute;
