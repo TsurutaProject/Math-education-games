@@ -9,6 +9,7 @@ import type { Problem, Variant } from '../logic/types';
 import { foundEntries, recordSolution, zukanId, type Zukan } from '../logic/zukan';
 import { Field, type ShotInfo } from './Field';
 import { Hud } from './Hud';
+import { PrizeShelf, prizeFor } from './PrizeShelf';
 import { logEvent } from './logStore';
 import { CelebrateOverlay, OutOverlay, ZukanScreen } from './Overlays';
 import type { Settings } from './settings';
@@ -49,6 +50,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   const total = useMemo(() => distinctSolutions(problem).size, [problem]);
   const zid = zukanId(variant, problem.id);
   const feel = FEEL[variant];
+  const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
 
   const ctx = (): LogContext => ({ variant, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current });
   const log = (payload: LogPayload) => logEvent(ctx(), payload);
@@ -141,6 +143,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   return (
     <div className="game">
       <Hud
+        key={`hud-${round}`}
         goal={problem.goal}
         current={game.current}
         shots={problem.shots}
@@ -150,9 +153,20 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
         countMs={feel.countMs}
         countDelayMs={feel.countDelayMs}
         onRestart={onRestartButton}
+        prize={
+          prize && (
+            <PrizeShelf
+              prize={prize}
+              goal={problem.goal}
+              current={game.current}
+              hits={game.steps.length}
+              fallen={game.status === 'cleared'}
+            />
+          )
+        }
       />
       <Field
-        key={round}
+        key={`field-${round}`}
         problem={problem}
         variant={variant}
         settings={settings}
@@ -161,7 +175,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
         active={phase === 'playing'}
         onShot={onShot}
       />
-      {phase === 'celebrate' && <CelebrateOverlay />}
+      {phase === 'celebrate' && <CelebrateOverlay prize={prize} />}
       {phase === 'out' && (
         <OutOverlay
           goal={problem.goal}
@@ -178,6 +192,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
           total={total}
           latestKey={latest.key}
           latestIsNew={latest.isNew}
+          prize={prize}
           onAnother={() => startAgain('another_way')}
           onNext={onNext}
         />

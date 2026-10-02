@@ -38,7 +38,15 @@ function useCountUp(value: number, ms: number, delay: number): number {
       if (k < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    // 画面が隠れていて requestAnimationFrame が止まっていても、最後は必ず正しい数にする
+    const done = setTimeout(() => {
+      setShown(value);
+      from.current = value;
+    }, delay + ms + 50);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(done);
+    };
   }, [value, ms, delay]);
   return shown;
 }
