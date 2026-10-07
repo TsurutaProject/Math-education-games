@@ -8,7 +8,7 @@
 | フォルダ | 中身 | 状態 |
 | --- | --- | --- |
 | [prototypes/shateki-compare](prototypes/shateki-compare) | 算数×射的ゲームの比較用プロトタイプ（A/B/C × コルク銃/パチンコ/カタパルト） | 遊び比べ中 |
-| games/cake | ケーキゲーム | 担当者が追加予定 |
+| [games/cake](games/cake) | ケーキの切り分け・組み合わせで分数の量と足し算を学ぶゲーム | MVP（自動テスト未実装・CI はビルドのみ） |
 
 ## フォルダの考え方
 
