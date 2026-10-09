@@ -1,0 +1,36 @@
+/*
+ * 共通デザインの部品（色・角丸・影・フォント）。
+ * 色は Figma「PJ_仮」の画面から採取した。ゲーム側にも同じ見た目を広げるときは、このファイルが元になる。
+ */
+:root {
+  /* 背景 */
+  --color-bg-home: #f9dddd;
+  --color-bg-cream: #faefd8;
+  --color-bg-paper: #fbfbef;
+  --color-header: #f1c46c;
+
+  /* 文字 */
+  --color-text: #3a2e2a;
+  --color-text-sub: #7a6a63;
+
+  /* 状態 */
+  --color-clear: #b8e1b8;
+  --color-unclear: #e3c4c2;
+  --color-accent: #ff4f6d;
+
+  /* ゲームごとのイメージカラー */
+  --color-game-shateki: #7392f8;
+  --color-game-cake: #ed7470;
+  --color-game-next: #f7cd7a;
+
+  /* 形 */
+  --radius-card: 28px;
+  --radius-pill: 999px;
+  --shadow-card: 0 8px 0 rgb(0 0 0 / 0.12), 0 18px 30px rgb(0 0 0 / 0.12);
+  --shadow-card-pressed: 0 2px 0 rgb(0 0 0 / 0.12), 0 6px 12px rgb(0 0 0 / 0.1);
+
+  /* 小学生が読みやすい丸ゴシック系（端末に入っているものだけを使う） */
+  --font-main:
+    'Hiragino Maru Gothic ProN', 'BIZ UDPGothic', 'Yu Gothic UI', 'Meiryo', system-ui, -apple-system,
+    sans-serif;
+}

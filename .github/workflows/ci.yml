@@ -13,6 +13,7 @@ jobs:
       matrix:
         # テストとビルドを実行するフォルダ。ゲームを追加したらここに足す
         project:
+          - apps/platform
           - prototypes/shateki-compare
     defaults:
       run:
