@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeProblem, createRng, generateProblem, isEasyTarget, validateProblem } from './generator';
+import { analyzeProblem, createRng, generateProblem, hasDuplicateCard, isEasyTarget, validateProblem } from './generator';
 import { ALL_PROBLEMS, problemsFor } from './problems';
 
 describe('問題データ（problems.json）', () => {
-  it('standard と risk、それぞれステージ1・2に3問ずつ', () => {
-    for (const set of ['standard', 'risk'] as const) {
+  it('standard・risk・lane、それぞれステージ1・2に3問ずつ', () => {
+    for (const set of ['standard', 'risk', 'lane'] as const) {
       for (const stage of [1, 2]) expect(problemsFor(set, stage)).toHaveLength(3);
     }
   });
@@ -33,6 +33,13 @@ describe('問題データ（problems.json）', () => {
       expect(p.targets.filter(isEasyTarget).length).toBeGreaterThanOrEqual(p.shots);
     },
   );
+
+  it.each(problemsFor('lane', 1).concat(problemsFor('lane', 2)).map((p) => [p.id, p] as const))(
+    '%s：同じ札が2枚ない（D 用）',
+    (_id, p) => {
+      expect(hasDuplicateCard(p.targets)).toBe(false);
+    },
+  );
 });
 
 describe('validateProblem', () => {
@@ -52,6 +59,20 @@ describe('validateProblem', () => {
     });
     expect(errors).toContain('1発で終わる解き方がある');
   });
+
+  it('lane は同じ札が2枚あると条件を満たさない（+10 と −10 は別の札）', () => {
+    const base = { id: 'x', set: 'lane' as const, stage: 2, goal: 40, shots: 3 };
+    const dup = validateProblem({
+      ...base,
+      targets: [
+        { id: 't1', op: '+', value: 10 },
+        { id: 't2', op: '+', value: 10 },
+        { id: 't3', op: '-', value: 10 },
+      ],
+    });
+    expect(dup).toContain('同じ札が2枚以上ある');
+    expect(hasDuplicateCard([{ id: 'a', op: '+', value: 10 }, { id: 'b', op: '-', value: 10 }])).toBe(false);
+  });
 });
 
 describe('generateProblem', () => {
@@ -66,6 +87,8 @@ describe('generateProblem', () => {
     ['standard', 2],
     ['risk', 1],
     ['risk', 2],
+    ['lane', 1],
+    ['lane', 2],
   ] as const)('%s ステージ%i：いろいろなシードで条件を満たす問題ができる', (set, stage) => {
     for (let seed = 1; seed <= 5; seed++) {
       const p = generateProblem(createRng(seed), { set, stage, id: 'x' });

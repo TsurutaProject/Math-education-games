@@ -74,6 +74,7 @@ export function analyzeProblem(problem: Problem): ProblemAnalysis {
 /** 問題が条件を満たしているか。満たさない理由を返す（空なら OK）。 */
 export function validateProblem(problem: Problem): string[] {
   const errors: string[] = [];
+  if (problem.set === 'lane' && hasDuplicateCard(problem.targets)) errors.push('同じ札が2枚以上ある');
   const a = analyzeProblem(problem);
   if (problem.targets.length <= problem.shots) errors.push('的の数が弾数以下');
   if (new Set(problem.targets.map((t) => t.id)).size !== problem.targets.length) errors.push('的の id が重複');
@@ -96,6 +97,16 @@ export function validateProblem(problem: Problem): string[] {
     if (!a.hasShortcut) errors.push('当てにくい的を使う近道がない');
   }
   return errors;
+}
+
+/** 同じ札（演算子＋数）が2枚以上あるか。D では山札に同じ札を入れない。 */
+export function hasDuplicateCard(targets: ReadonlyArray<Target>): boolean {
+  return new Set(targets.map((t) => `${t.op}${t.value}`)).size !== targets.length;
+}
+
+/** list から重ならないように n 個選ぶ */
+function pickDistinct<T>(rng: () => number, list: readonly T[], n: number): T[] {
+  return shuffle(rng, [...list]).slice(0, n);
 }
 
 function makeTargets(specs: Array<[Op, number]>): Target[] {
@@ -141,7 +152,19 @@ export function generateProblem(rng: () => number, spec: GenerateSpec, tries = 5
   for (let i = 0; i < tries; i++) {
     let targets: Target[];
     let goal: number | null;
-    if (spec.set === 'standard' && spec.stage === 1) {
+    if (spec.set === 'lane' && spec.stage === 1) {
+      const values = pickDistinct(rng, [5, 10, 15, 20, 25, 30, 35, 40], 6);
+      targets = makeTargets(values.map((v) => ['+', v] as [Op, number]));
+      goal = randomPathValue(rng, targets, shots);
+    } else if (spec.set === 'lane') {
+      const specs: Array<[Op, number]> = [
+        ...pickDistinct(rng, [5, 10, 15, 20, 25, 30], 5).map((v) => ['+', v] as [Op, number]),
+        ['-', pick(rng, [5, 10])],
+        ['*', 2],
+      ];
+      targets = makeTargets(shuffle(rng, specs));
+      goal = randomPathValue(rng, targets, shots);
+    } else if (spec.set === 'standard' && spec.stage === 1) {
       const n = pick(rng, [5, 6]);
       targets = makeTargets(Array.from({ length: n }, () => ['+', pick(rng, [5, 10, 15, 20, 25, 30])] as [Op, number]));
       goal = randomPathValue(rng, targets, shots);
