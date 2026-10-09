@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import { clearLog, downloadLog, getLogCount, subscribeLog } from './logStore';
-import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, VARIANT_LABEL, type Settings } from './settings';
+import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, VARIANT_LABEL, VARIANTS, type Settings } from './settings';
 
 interface Props {
   variant: Variant;
@@ -65,7 +65,7 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
           <div className="row">
             <span className="row-label">バリエーション</span>
             <div className="seg">
-              {(['A', 'B', 'C'] as Variant[]).map((v) => (
+              {VARIANTS.map((v) => (
                 <button key={v} className={v === variant ? 'on' : ''} onClick={() => onVariant(v)}>
                   {VARIANT_LABEL[v]}
                 </button>
@@ -73,7 +73,7 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             </div>
           </div>
           <div className="row">
-            <span className="row-label">射撃タイプ（B・C）</span>
+            <span className="row-label">射撃タイプ（B・C・D）</span>
             <div className="seg">
               {SHOOTERS.map((sh) => (
                 <button key={sh} className={sh === settings.shooter ? 'on' : ''} onClick={() => onShooter(sh)}>

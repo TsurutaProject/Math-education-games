@@ -113,14 +113,14 @@ export interface LaneContext {
   rng: () => number;
 }
 
-/** ゲーム開始時のレーン。全部のスロットに札を置く */
-export function createLane(ctx: LaneContext): LaneState {
-  let state: LaneState = { slots: [], lastShown: {}, lastUsefulAt: 0 };
+/** 時刻 t（ゲーム開始時は 0）のレーンを作る。全部のスロットに札を置く */
+export function createLane(ctx: LaneContext, t = 0): LaneState {
+  let state: LaneState = { slots: [], lastShown: {}, lastUsefulAt: t };
   for (let i = 0; i < ctx.geo.slots; i++) {
-    state = { ...state, slots: [...state.slots, { cardId: null, down: null, lap: slotLap(i, 0, ctx.geo, ctx.speed) }] };
-    state = placeCard(state, i, 0, ctx);
+    state = { ...state, slots: [...state.slots, { cardId: null, down: null, lap: slotLap(i, t, ctx.geo, ctx.speed) }] };
+    state = placeCard(state, i, t, ctx);
   }
-  return refreshUseful(state, 0, ctx);
+  return refreshUseful(state, t, ctx);
 }
 
 /**

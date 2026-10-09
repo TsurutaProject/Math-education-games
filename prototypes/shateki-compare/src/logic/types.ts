@@ -35,7 +35,7 @@ export interface Step {
   after: number;
 }
 
-export type Variant = 'A' | 'B' | 'C';
+export type Variant = 'A' | 'B' | 'C' | 'D';
 
 /**
  * B・C の射撃タイプ。
