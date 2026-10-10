@@ -335,6 +335,44 @@ button {
     opacity: 0;
   }
 }
+/* D：流れる的。倒れた的は消さずに、つぶれたまま棚に乗って流れていく */
+/* 当てた：奥へパタンと倒れる */
+.target.lane-hit {
+  animation: lane-fall 0.3s ease-in forwards;
+}
+@keyframes lane-fall {
+  0% {
+    transform: scaleY(1);
+  }
+  75% {
+    transform: scaleY(0.08);
+  }
+  100% {
+    transform: scaleY(0.15);
+    opacity: 0.85;
+  }
+}
+/* 引けなくなった：灰色になって、ゆっくり奥へ倒れる（当てたときと区別する） */
+.target.lane-invalid {
+  animation: lane-sink 0.7s ease-in-out forwards;
+}
+@keyframes lane-sink {
+  0% {
+    transform: scaleY(1);
+    filter: grayscale(0);
+    opacity: 1;
+  }
+  40% {
+    transform: scaleY(1);
+    filter: grayscale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scaleY(0.15);
+    filter: grayscale(1);
+    opacity: 0.45;
+  }
+}
 .rail {
   stroke: var(--shelf);
   stroke-width: 4;

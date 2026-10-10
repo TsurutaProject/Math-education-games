@@ -7,15 +7,31 @@ import {
   layoutTargets,
   swayOffset,
   targetPosition,
+  UNIFORM_RADIUS,
   type HitCircle,
 } from '../logic/hit';
+import {
+  canShow,
+  createLane,
+  LANE_Y,
+  laneGeometry,
+  markHit,
+  slotX,
+  standingCards,
+  stepLane,
+  usefulCards,
+  type LaneContext,
+  type LaneState,
+} from '../logic/lane';
 import { targetLabel } from '../logic/ops';
 import { aimCatapult, CATAPULT, flightDuration, type CatapultShot } from '../logic/catapult';
 import { clampAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
-import type { Op, Problem, Variant } from '../logic/types';
-import type { Settings } from './settings';
+import type { Problem, Variant } from '../logic/types';
+import { shooterOf, type Settings } from './settings';
 import { CatapultLayer } from './CatapultLayer';
+import { LaneLayer } from './LaneLayer';
 import { SlingLayer } from './SlingLayer';
+import { TargetMark } from './TargetMark';
 import { sfxCatapult, sfxHit, sfxMiss, sfxShot, sfxSling, sfxThud, unlockAudio } from './sound';
 
 export interface ShotInfo {
@@ -34,6 +50,8 @@ interface Props {
   variant: Variant;
   settings: Settings;
   usedIds: string[];
+  /** いまの数（D でマイナスになる札を出さないために使う） */
+  current: number;
   shotsLeft: number;
   /** false のあいだは撃てない（クリア演出中など） */
   active: boolean;
@@ -93,7 +111,7 @@ type Flight = SlingFlight | CatapultFlight;
 /** A でタップを少し大目に拾う（指の太さ分） */
 const TAP_TOLERANCE = 1.15;
 /** 連打で2発同時に出ないようにする間（ミリ秒）。C は倒れるのを見せるため長め。 */
-const COOLDOWN_MS: Record<Variant, number> = { A: 200, B: 250, C: 550 };
+const COOLDOWN_MS: Record<Variant, number> = { A: 200, B: 250, C: 550, D: 250 };
 /** タッチのとき、指で隠れないように照準を指より上に出す（フィールド単位） */
 const TOUCH_AIM_OFFSET = 90;
 /** パチンコ・カタパルトの揺れ：照準の揺れ幅 1 あたり何度ぶれるか */
@@ -103,19 +121,14 @@ const CATAPULT_SWAY_DEPTH = 0.8;
 /** コルクが飛び出す位置（画面の下の真ん中） */
 const MUZZLE = { x: FIELD_W / 2, y: FIELD_H + 40 };
 
-const OP_COLOR: Record<Op, string> = {
-  '+': 'var(--op-plus)',
-  '-': 'var(--op-minus)',
-  '*': 'var(--op-times)',
-  '/': 'var(--op-times)',
-};
-
-export function Field({ problem, variant, settings, usedIds, shotsLeft, active, onShot }: Props) {
+export function Field({ problem, variant, settings, usedIds, current, shotsLeft, active, onShot }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const riskMode = variant === 'C';
+  const laneMode = variant === 'D';
   const aimMode = variant !== 'A';
-  const slingMode = aimMode && settings.shooter === 'sling';
-  const catapultMode = aimMode && settings.shooter === 'catapult';
+  const shooter = shooterOf(variant, settings);
+  const slingMode = shooter === 'sling';
+  const catapultMode = shooter === 'catapult';
   /** 引っ張って撃つ（パチンコ・カタパルト） */
   const pullMode = slingMode || catapultMode;
   const placed = useMemo(
@@ -158,6 +171,31 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
     return () => cancelAnimationFrame(raf);
   }, [needsClock]);
 
+  // ---- D：レーン。札の入れ替えは lane.ts、ここでは毎フレーム進めるだけ
+  const geo = useMemo(() => laneGeometry(settings.laneVisible), [settings.laneVisible]);
+  const useful = useMemo(
+    () => (laneMode ? usefulCards(problem, current, usedIds, shotsLeft) : new Set<string>()),
+    [laneMode, problem, current, usedIds, shotsLeft],
+  );
+  const laneCtx: LaneContext = {
+    problem,
+    geo,
+    speed: settings.laneSpeed,
+    current,
+    usedIds,
+    useful,
+    assistSec: settings.laneAssist ? settings.laneAssistSec : 0,
+    rng: Math.random,
+  };
+  const lane = useRef<LaneState | null>(null);
+  // 設定パネルで速さや的の数を変えたら、周回の数え方が変わるのでレーンを作り直す
+  const laneKey = `${settings.laneVisible}:${settings.laneSpeed}`;
+  const laneMadeFor = useRef('');
+  if (laneMode && laneMadeFor.current !== laneKey) {
+    lane.current = createLane(laneCtx, clockRef.current);
+    laneMadeFor.current = laneKey;
+  }
+
   // やり直しなどで消えたあとに、飛んでいた弾が1発ぶんとして数えられないようにする
   useEffect(
     () => () => {
@@ -186,9 +224,15 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
   }, [active]);
 
   const positionOf = (id: string, t: number) => {
+    if (lane.current) {
+      const slot = lane.current.slots.findIndex((s) => s.cardId === id);
+      return { x: slotX(slot, t, geo, settings.laneSpeed), y: LANE_Y };
+    }
     const p = placed.find((x) => x.id === id)!;
     return downAt.current.get(id) ?? targetPosition(p, t, speed);
   };
+
+  const radiusOf = (id: string) => (lane.current ? UNIFORM_RADIUS : placed.find((p) => p.id === id)!.r);
 
   const toField = (e: React.PointerEvent): { x: number; y: number } | null => {
     const ctm = svgRef.current?.getScreenCTM();
@@ -197,8 +241,15 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
     return { x: p.x, y: p.y };
   };
 
-  const circlesAt = (t: number): HitCircle[] =>
-    placed.filter((p) => !usedIds.includes(p.id)).map((p) => ({ id: p.id, ...targetPosition(p, t, speed), r: p.r }));
+  const circlesAt = (t: number): HitCircle[] => {
+    if (lane.current) {
+      // 引けなくなった札は次のフレームで倒れるが、それまでにも当たらないようにする
+      return standingCards(lane.current)
+        .filter(({ cardId }) => !usedIds.includes(cardId) && canShow(problem.targets.find((x) => x.id === cardId)!, current))
+        .map(({ slot, cardId }) => ({ id: cardId, x: slotX(slot, t, geo, settings.laneSpeed), y: LANE_Y, r: UNIFORM_RADIUS }));
+    }
+    return placed.filter((p) => !usedIds.includes(p.id)).map((p) => ({ id: p.id, ...targetPosition(p, t, speed), r: p.r }));
+  };
 
   const addEffect = (to: { x: number; y: number }, x: number, y: number, text: string, kind: Effect['kind']) => {
     effectSeq.current += 1;
@@ -214,7 +265,9 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
     !flight.current &&
     performance.now() - lastShotAt.current >= (pullMode ? 0 : COOLDOWN_MS[variant]);
 
-  const assistNow = () => (riskMode && !settings.assistInC ? 1 : assistMultiplier(shotsLeft, settings.assistStrength));
+  // D は当たり判定を広げない（救済は「役立つ札を流す」ほうで行う）
+  const assistNow = () =>
+    laneMode || (riskMode && !settings.assistInC) ? 1 : assistMultiplier(shotsLeft, settings.assistStrength);
 
   const fire = (
     point: { x: number; y: number },
@@ -228,8 +281,10 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
     if (targetId) {
       const t = problem.targets.find((x) => x.id === targetId)!;
       const pos = positionOf(targetId, clockRef.current);
-      const r = placed.find((p) => p.id === targetId)!.r;
-      downAt.current.set(targetId, pos);
+      const r = radiusOf(targetId);
+      // D の的は倒れたまま流れていく。それ以外は当たった場所で止める
+      if (lane.current) lane.current = markHit(lane.current, targetId);
+      else downAt.current.set(targetId, pos);
       addEffect(pos, pos.x, pos.y - r - 10, targetLabel(t.op, t.value), 'hit');
       sfxHit(riskMode);
       if (riskMode) {
@@ -247,6 +302,7 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
   // パチンコ：弾を進めて、的に当たるか外に出たら1発ぶんを確定する
   // カタパルト：飛んでいる時間がたったら、着地点で当たりを決める（手前の的は飛び越える）
   onFrame.current = (dt: number) => {
+    if (lane.current) lane.current = stepLane(lane.current, clockRef.current, laneCtx);
     const f = flight.current;
     if (!f) return;
     if (f.kind === 'catapult') {
@@ -379,7 +435,7 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
   const sf = f?.kind === 'sling' ? f : null;
   const cf = f?.kind === 'catapult' ? f : null;
   const firstShot = shotsLeft === problem.shots;
-  const rowYs = [...new Set(placed.map((p) => p.y))];
+  const rowYs = laneMode ? [LANE_Y] : [...new Set(placed.map((p) => p.y))];
 
   return (
     <div className={`field field-${variant} ${shaking ? 'shake' : ''}`}>
@@ -396,27 +452,23 @@ export function Field({ problem, variant, settings, usedIds, shotsLeft, active, 
         {rowYs.map((y) => (
           <rect key={y} x={0} y={y + 74} width={FIELD_W} height={16} rx={4} className="shelf" />
         ))}
-        {placed.map((p) => {
-          const t = problem.targets.find((x) => x.id === p.id)!;
-          const down = usedIds.includes(p.id);
-          const { x, y } = positionOf(p.id, clock);
-          const standH = Math.max(10, 78 - p.r);
-          return (
-            <g key={p.id} transform={`translate(${x} ${y})`}>
-              {riskMode && p.amp > 0 && !down && (
-                <line x1={-p.amp - x + p.x} x2={p.amp - x + p.x} y1={78} y2={78} className="rail" />
-              )}
-              <g className={`target ${down ? (riskMode ? 'down heavy' : 'down') : ''}`}>
-                <rect x={-6} y={p.r - 4} width={12} height={standH + 4} className="stand" />
-                <circle r={p.r} fill="var(--target-face)" stroke={OP_COLOR[t.op]} strokeWidth={p.r * 0.16} />
-                <circle r={p.r * 0.7} fill="none" stroke={OP_COLOR[t.op]} strokeWidth={2} opacity={0.35} />
-                <text className="target-label" fontSize={p.r * 0.62} dy="0.35em" fill={OP_COLOR[t.op]}>
-                  {targetLabel(t.op, t.value)}
-                </text>
+        {lane.current ? (
+          <LaneLayer problem={problem} lane={lane.current} geo={geo} speed={settings.laneSpeed} clock={clock} />
+        ) : (
+          placed.map((p) => {
+            const t = problem.targets.find((x) => x.id === p.id)!;
+            const down = usedIds.includes(p.id);
+            const { x, y } = positionOf(p.id, clock);
+            return (
+              <g key={p.id} transform={`translate(${x} ${y})`}>
+                {riskMode && p.amp > 0 && !down && (
+                  <line x1={-p.amp - x + p.x} x2={p.amp - x + p.x} y1={78} y2={78} className="rail" />
+                )}
+                <TargetMark op={t.op} value={t.value} r={p.r} className={down ? (riskMode ? 'down heavy' : 'down') : ''} />
               </g>
-            </g>
-          );
-        })}
+            );
+          })
+        )}
         {effects.map((ef) => (
           <g key={ef.id}>
             {ef.trail && (

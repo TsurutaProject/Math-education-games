@@ -33,6 +33,7 @@ const FEEL: Record<Variant, { countMs: number; countDelayMs: number; celebrateMs
   A: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 500 },
   B: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 600 },
   C: { countMs: 380, countDelayMs: 260, celebrateMs: 2000, outDelayMs: 900 },
+  D: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 600 },
 };
 
 export function GameScreen({ problem, variant, settings, zukan, startReason, onNext }: Props) {
@@ -186,6 +187,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
         variant={variant}
         settings={settings}
         usedIds={game.usedIds}
+        current={game.current}
         shotsLeft={game.shotsLeft}
         active={phase === 'playing'}
         onShot={onShot}

@@ -1,8 +1,9 @@
 import { useSyncExternalStore } from 'react';
+import { MAX_VISIBLE, MIN_VISIBLE } from '../logic/lane';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import { clearLog, downloadLog, getLogCount, subscribeLog } from './logStore';
-import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, VARIANT_LABEL, type Settings } from './settings';
+import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, VARIANT_LABEL, VARIANTS, type Settings } from './settings';
 
 interface Props {
   variant: Variant;
@@ -65,7 +66,7 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
           <div className="row">
             <span className="row-label">バリエーション</span>
             <div className="seg">
-              {(['A', 'B', 'C'] as Variant[]).map((v) => (
+              {VARIANTS.map((v) => (
                 <button key={v} className={v === variant ? 'on' : ''} onClick={() => onVariant(v)}>
                   {VARIANT_LABEL[v]}
                 </button>
@@ -73,10 +74,15 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             </div>
           </div>
           <div className="row">
-            <span className="row-label">射撃タイプ（B・C）</span>
+            <span className="row-label">射撃タイプ（B・C・D）</span>
             <div className="seg">
               {SHOOTERS.map((sh) => (
-                <button key={sh} className={sh === settings.shooter ? 'on' : ''} onClick={() => onShooter(sh)}>
+                <button
+                  key={sh}
+                  className={sh === settings.shooter ? 'on' : ''}
+                  disabled={variant === 'D' && sh === 'catapult'}
+                  onClick={() => onShooter(sh)}
+                >
                   {SHOOTER_LABEL[sh]}
                 </button>
               ))}
@@ -115,11 +121,11 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             onChange={(v) => update({ assistStrength: v })}
             note="0=なし 1=標準（残り2発で×1.35、1発で×1.8）"
           />
-          <Slider label="照準の揺れ（B・C）" value={settings.swayAmplitude} min={0} max={40} step={2} onChange={(v) => update({ swayAmplitude: v })} />
+          <Slider label="照準の揺れ（B・C・D）" value={settings.swayAmplitude} min={0} max={40} step={2} onChange={(v) => update({ swayAmplitude: v })} />
         </section>
 
         <section>
-          <h3>パチンコ（B・C）</h3>
+          <h3>パチンコ（B・C・D）</h3>
           <Slider label="弾の速さ" value={settings.slingSpeed} min={300} max={1600} step={50} onChange={(v) => update({ slingSpeed: v })} note="遅いほど、動く的は先を読んで撃つ必要がある" />
           <Slider label="ガイドの長さ" value={settings.slingGuide} min={0} max={900} step={20} onChange={(v) => update({ slingGuide: v })} note="0でガイドなし" />
           <label className="row">
@@ -146,6 +152,41 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             <span className="row-label">C にも補正を使う</span>
             <input type="checkbox" checked={settings.assistInC} onChange={(e) => update({ assistInC: e.target.checked })} />
           </label>
+        </section>
+
+        <section>
+          <h3>D：ながれる</h3>
+          <Slider
+            label="レーンの速さ"
+            value={settings.laneSpeed}
+            min={40}
+            max={300}
+            step={10}
+            onChange={(v) => update({ laneSpeed: v })}
+            note={`画面の端から端まで約 ${Math.round(1000 / settings.laneSpeed)} 秒`}
+          />
+          <Slider
+            label="画面に出る的の数"
+            value={settings.laneVisible}
+            min={MIN_VISIBLE}
+            max={MAX_VISIBLE}
+            step={1}
+            onChange={(v) => update({ laneVisible: v })}
+            note="画面の外にもう1つ置き場所がある"
+          />
+          <label className="row">
+            <span className="row-label">救済を使う</span>
+            <input type="checkbox" checked={settings.laneAssist} onChange={(e) => update({ laneAssist: e.target.checked })} />
+            <span className="row-note">届くために役立つ札がしばらく出ていなければ、次にそれを流す</span>
+          </label>
+          <Slider
+            label="救済までの秒数"
+            value={settings.laneAssistSec}
+            min={2}
+            max={20}
+            step={1}
+            onChange={(v) => update({ laneAssistSec: v })}
+          />
         </section>
 
         <section>
