@@ -1,5 +1,5 @@
 import type { CakeDefinition, Fraction, Order } from '../types/game'
-import { formatFraction } from '../utils/fraction'
+import { formatFraction, gcd } from '../utils/fraction'
 import { FuriganaText } from './FuriganaText'
 
 interface OrderBubbleProps {
@@ -25,6 +25,14 @@ const getPiecePlan = (order: Order): Fraction[] => {
 export function OrderBubble({ order, cake }: OrderBubbleProps) {
   const piecePlan = getPiecePlan(order)
   const isPieceCountChallenge = order.perfectPieceCount !== undefined
+  const denominator = piecePlan.reduce((common, piece) =>
+    common * piece.denominator / gcd(common, piece.denominator), 1)
+  const numerators = piecePlan.map((piece) => piece.numerator * (denominator / piece.denominator))
+  const hint = isPieceCountChallenge
+    ? `合計を${formatFraction(order.target)}にそろえよう。大きいピースをさらに切ると、量を変えずにピースの数を増やせるよ。最高評価は${order.perfectPieceCount}ピースです。`
+    : piecePlan.length > 1
+      ? `ケーキを${denominator}等分した大きさで考えよう。${piecePlan.map((piece, index) => `${formatFraction(piece)}は${numerators[index]}個分`).join('、')}。合わせると${numerators.join('＋')}＝${numerators.reduce((sum, n) => sum + n, 0)}個分で、${formatFraction(order.target)}になるよ。`
+      : `ホールケーキを同じ大きさに${order.target.denominator}等分して、そのうち${order.target.numerator}個分をトレーに移そう。`
 
   return (
     <section className="order-bubble" aria-label="注文">
@@ -46,7 +54,8 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
             <FuriganaText text={order.message} />
           </strong>
         </p>
-        <details className="order-bubble__plan"><summary>ヒント・最高評価の条件</summary>
+        <details key={order.id} className="order-bubble__plan"><summary>ヒント・最高評価の条件</summary>
+          <p className="order-hint-explanation"><FuriganaText text={hint} /></p>
           <span className="order-bubble__label">
             <FuriganaText text={isPieceCountChallenge ? '最高評価' : '作るピース'} />
           </span>
