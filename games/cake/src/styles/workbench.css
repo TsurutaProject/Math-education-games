@@ -199,3 +199,8 @@ body, #root {
   font-size: .85em;
   line-height: 1.7;
 }
+
+/* Ruby annotations must contrast with the cake selection buttons. */
+.cake-option button rt {
+  color: #fff;
+}

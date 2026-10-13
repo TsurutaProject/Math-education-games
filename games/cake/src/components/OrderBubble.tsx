@@ -46,17 +46,6 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
   return (
     <section className="order-bubble" aria-label="注文">
       <div className="order-bubble__body">
-        <div className="order-bubble__header">
-          <p className={`order-bubble__cake order-bubble__cake--${order.cakeKind}`}>
-            <span className="order-bubble__cake-thumb" aria-hidden="true">
-              <img src={cake.imageUrl} alt="" />
-            </span>
-            <span>
-              <small><FuriganaText text="注文ケーキ" /></small>
-              <b><FuriganaText text={cake.name} /></b>
-            </span>
-          </p>
-        </div>
         <p className="order-bubble__message">
           <span className="asset-label order-label">注文</span>
           <strong className="order-bubble__message-text">
