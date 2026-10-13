@@ -65,8 +65,8 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
                     <img src={feedbackImages.happy} alt="" />
                     <div><span>1/2</span><b><FuriganaText text="販売" /></b></div>
                   </div>
-                  <strong>3. <FuriganaText text="販売する" /></strong>
-                  <p><FuriganaText text="合計をたしかめて、お客さんに販売する。" /></p>
+                  <strong>3. <FuriganaText text="提供する" /></strong>
+                  <p><FuriganaText text="合計をたしかめて、お客さんに提供する。" /></p>
                 </article>
               </div>
             ) : (

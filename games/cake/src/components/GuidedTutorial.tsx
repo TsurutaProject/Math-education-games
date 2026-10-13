@@ -48,8 +48,8 @@ const stepContent: Record<Exclude<GuidedTutorialStep, 'intro'>, { title: string;
     text: 'トレイへ運ぼう',
   },
   serve: {
-    title: 'お客さんに販売しよう',
-    text: '1/2なら販売しよう',
+    title: 'お客さんに提供しよう',
+    text: '1/2なら「提供する」を押そう',
   },
   combo: {
     title: 'コンボを見てみよう',

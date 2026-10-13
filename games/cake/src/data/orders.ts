@@ -10,7 +10,7 @@ export const orders: Order[] = [
     gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 2 },
-    message: '二人で分けたいので、半分ください',
+    message: 'ホールケーキの半分をください',
     difficulty: 1,
   },
   {

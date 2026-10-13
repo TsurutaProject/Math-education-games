@@ -37,7 +37,7 @@ export function Tray({ selectedPieces, total, maxPieces, cakeImageUrl, toppings,
       onDrop={handleDrop}
     >
       <div className="tray__header">
-        <h2>トレイ</h2>
+        <h2 className="asset-label tray-label">トレー</h2>
         <p>{selectedPieces.length}/{maxPieces} ピース</p>
       </div>
       <div className="tray__meter" aria-hidden="true">
@@ -50,13 +50,14 @@ export function Tray({ selectedPieces, total, maxPieces, cakeImageUrl, toppings,
       </div>
       <div className="tray__pieces">
         {selectedPieces.length === 0 ? (
-          <p className="tray__empty">ケーキのピースを<FuriganaText text="選んで" />ね</p>
+          <p className="tray__empty">ここにケーキを<FuriganaText text="置こう" /></p>
         ) : (
           selectedPieces.map((piece) => (
             <button
               key={piece.id}
               type="button"
               className="tray-piece"
+              aria-label="このピースをまな板に戻す"
               onClick={() => onRemovePiece(piece)}
               style={{ borderColor: piece.color }}
             >
