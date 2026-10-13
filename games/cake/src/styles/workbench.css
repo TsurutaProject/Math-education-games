@@ -111,7 +111,7 @@
 .status-dock { z-index: auto; }
 
 /* Warm controls and a continuous wall, including overscroll and short screens. */
-html {
+html:root {
   min-height: 100%;
   background: #fff1d8 url('../data/ui/background-tile.jpg') center / cover no-repeat fixed;
 }
