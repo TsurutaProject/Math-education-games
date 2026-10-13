@@ -1,5 +1,5 @@
 /* Play screen: supplied artwork, with controls kept outside the cake surface. */
-.game-shell { padding: 0 24px 28px; color: #593600; background: #fff1d8 url('../data/ui/background-tile.jpg') center / cover; }
+.game-shell { padding: 0 24px 28px; color: #593600; }
 .game-header { position: relative; max-width: none; min-height: 130px; margin: 0 -24px 12px; padding: 18px 150px; background: #f58e6b; color: white; justify-content: center; align-items: center; }
 .stage-heading { text-align: center; font-weight: 900; }
 .stage-heading > span { font-size: 1.25rem; }
@@ -111,9 +111,13 @@
 .status-dock { z-index: auto; }
 
 /* Warm controls and a continuous wall, including overscroll and short screens. */
-html, body, #root {
+html {
   min-height: 100%;
-  background: #fff1d8 url('../data/ui/background-tile.jpg') center top / 1600px auto repeat;
+  background: #fff1d8 url('../data/ui/background-tile.jpg') center / cover no-repeat fixed;
+}
+body, #root {
+  min-height: 100vh;
+  background: transparent;
 }
 .game-shell {
   min-height: 100vh;
