@@ -23,6 +23,15 @@ const getPiecePlan = (order: Order): Fraction[] => {
 }
 
 export function OrderBubble({ order, cake }: OrderBubbleProps) {
+  const amount = order.target.denominator === 1
+    ? `${order.target.numerator}`
+    : `${order.target.denominator}分の${order.target.numerator}`
+  const request = `${cake.name}を${amount}個分ください。`
+  const bonusRequest = order.perfectPieceCount !== undefined
+    ? `${order.perfectPieceCount}ピースで作ると最高評価です。`
+    : order.recipePieces !== undefined
+      ? `${order.recipePieces.map(formatFraction).join('と')}の組み合わせだと、もっと嬉しいです。`
+      : ''
   const piecePlan = getPiecePlan(order)
   const isPieceCountChallenge = order.perfectPieceCount !== undefined
   const denominator = piecePlan.reduce((common, piece) =>
@@ -51,7 +60,8 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
         <p className="order-bubble__message">
           <span className="asset-label order-label">注文</span>
           <strong className="order-bubble__message-text">
-            <FuriganaText text={order.message} />
+            <FuriganaText text={request} />
+            {bonusRequest !== '' && <span className="order-bonus-request"><FuriganaText text={bonusRequest} /></span>}
           </strong>
         </p>
         <details key={order.id} className="order-bubble__plan"><summary>ヒント・最高評価の条件</summary>

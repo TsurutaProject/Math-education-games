@@ -188,3 +188,14 @@ body, #root {
 @media (max-width: 1000px) {
   .game-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'goal' 'order' 'board' 'tray'; }
 }
+
+.order-bubble__message-text .order-bonus-request {
+  display: block;
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: #79502b;
+  font-size: .85em;
+  line-height: 1.7;
+}
