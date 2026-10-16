@@ -200,13 +200,8 @@ body, #root {
   line-height: 1.7;
 }
 
-/* Ruby annotations must contrast with the cake selection buttons. */
-.cake-option button rt {
-  color: #fff;
-}
 
 /* Stage furniture and score row. */
-.stage-heading rt { color: #fff; }
 .side-panel { align-self: stretch; }
 .workbench-score { margin-top: auto; padding-top: 44px; align-items: center; gap: 14px; }
 .workbench-score .score-board { align-items: stretch; }

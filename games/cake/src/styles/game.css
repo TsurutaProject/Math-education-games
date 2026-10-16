@@ -1105,7 +1105,7 @@ ruby {
 }
 
 rt {
-  color: #795548;
+  color: inherit;
   font-size: 0.5em;
   font-weight: 700;
 }
