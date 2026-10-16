@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import trophyIcon from '../data/ui/trophy.png'
 import type { TrophyDefinition, TrophyProgress } from '../types/game'
 import { FuriganaText } from './FuriganaText'
 
@@ -20,6 +21,7 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
           onClick={() => setIsTrophyListOpen(true)}
           aria-haspopup="dialog"
         >
+          <img className="trophy-shelf__asset" src={trophyIcon} alt="" />
           <span className="trophy-shelf__header">
             <span>トロフィー</span>
             <strong>{unlockedTrophyIds.length}/{trophies.length}</strong>

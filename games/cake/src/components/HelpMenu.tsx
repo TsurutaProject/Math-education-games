@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { cakeImages, feedbackImages, toolImages } from '../data/assets'
 import { FuriganaText } from './FuriganaText'
 
-type HelpView = 'guide' | 'hint'
+type HelpView = 'guide' | 'tutorial'
 
 interface HelpMenuProps {
   onOpenTutorial: () => void
@@ -17,10 +17,7 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
         <button type="button" onClick={() => setOpenView('guide')}>
           <FuriganaText text="操作ガイド" />
         </button>
-        <button type="button" onClick={() => setOpenView('hint')}>
-          ヒント
-        </button>
-        <button type="button" onClick={onOpenTutorial}>
+        <button type="button" onClick={() => setOpenView('tutorial')}>
           チュートリアル
         </button>
       </section>
@@ -37,7 +34,7 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
               ×
             </button>
             <h2 id="help-title">
-              <FuriganaText text={openView === 'guide' ? '操作ガイド' : 'ヒント'} />
+              <FuriganaText text={openView === 'guide' ? '操作ガイド' : 'チュートリアル'} />
             </h2>
             {openView === 'guide' ? (
               <div className="help-guide">
@@ -71,6 +68,9 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
               </div>
             ) : (
               <div className="help-dialog__hints">
+                <button type="button" className="button button--primary" onClick={() => { setOpenView(null); onOpenTutorial() }}>
+                  <FuriganaText text="実際に操作して練習する" />
+                </button>
                 <article className="hint-card hint-card--cut">
                   <div className="hint-card__visual" aria-hidden="true">
                     <span className="hint-cake-mini">

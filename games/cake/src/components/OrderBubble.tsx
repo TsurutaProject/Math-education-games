@@ -53,7 +53,7 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
             {bonusRequest !== '' && <span className="order-bonus-request"><FuriganaText text={bonusRequest} /></span>}
           </strong>
         </p>
-        <details key={order.id} className="order-bubble__plan"><summary>ヒント・最高評価の条件</summary>
+        <details key={order.id} className="order-bubble__plan"><summary><FuriganaText text="ヒント・最高評価の条件" /></summary>
           <p className="order-hint-explanation"><FuriganaText text={hint} /></p>
           <span className="order-bubble__label">
             <FuriganaText text={isPieceCountChallenge ? '最高評価' : '作るピース'} />
@@ -77,11 +77,6 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
             )}
           </div>
         </details>
-      </div>
-      <div className="fraction-card" aria-label={`目標は ${formatFraction(order.target)}`}>
-        <small><FuriganaText text="目標" /></small>
-        <span>{order.target.numerator}</span>
-        <span>{order.target.denominator}</span>
       </div>
     </section>
   )

@@ -33,11 +33,11 @@ const stepContent: Record<Exclude<GuidedTutorialStep, 'intro'>, { title: string;
   },
   topping: {
     title: 'トッピングも見よう',
-    text: '切らないとボーナス',
+    text: 'トッピングを切らずに提供できるとボーナスです。',
   },
   cut: {
     title: 'ケーキを半分に切ろう',
-    text: '半分に切ってみよう',
+    text: '点線に沿って半分に切ってみよう。1/4や1/6などの小さいピースは、外側から中心まで切れば作れます。',
   },
   'move-mode': {
     title: 'トングに持ちかえよう',
@@ -49,7 +49,7 @@ const stepContent: Record<Exclude<GuidedTutorialStep, 'intro'>, { title: string;
   },
   serve: {
     title: 'お客さんに提供しよう',
-    text: '1/2なら「提供する」を押そう',
+    text: '合計が1/2なら「提供する」を押そう。1/2は1/4＋1/4、3/4は1/2＋1/4のように組み合わせても作れます。',
   },
   combo: {
     title: 'コンボを見てみよう',

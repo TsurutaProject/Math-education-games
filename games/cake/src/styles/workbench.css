@@ -204,3 +204,26 @@ body, #root {
 .cake-option button rt {
   color: #fff;
 }
+
+/* Stage furniture and score row. */
+.stage-heading rt { color: #fff; }
+.side-panel { align-self: stretch; }
+.workbench-score { margin-top: auto; padding-top: 44px; align-items: center; gap: 14px; }
+.workbench-score .score-board { align-items: stretch; }
+.workbench-score .score-card { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 92px; border-radius: 999px; padding: 12px 18px; text-align: center; }
+.workbench-score .score-board dd { text-align: center; }
+.workbench-score .trophy-shelf { width: 90px; flex: 0 0 90px; border: 0; background: transparent; box-shadow: none; }
+.workbench-score .trophy-shelf__button { display: grid; justify-items: center; gap: 4px; padding: 0; background: transparent; border: 0; border-radius: 999px; box-shadow: none; }
+.trophy-shelf__asset { width: 72px; height: 72px; object-fit: contain; border-radius: 50%; }
+.workbench-score .trophy-shelf__header { flex-direction: column; gap: 0; font-size: .8rem; white-space: nowrap; }
+.play-area { background-color: transparent; }
+.order-bubble__plan summary { line-height: 2; }
+@media (max-width: 1000px) {
+  .workbench-score { margin-top: 12px; padding-top: 16px; }
+}
+@media (max-width: 420px) {
+  .workbench-score { gap: 6px; }
+  .workbench-score .trophy-shelf { flex-basis: 64px; width: 64px; }
+  .trophy-shelf__asset { width: 54px; height: 54px; }
+  .workbench-score .score-card { padding: 12px 8px; }
+}

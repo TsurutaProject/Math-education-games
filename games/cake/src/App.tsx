@@ -1257,14 +1257,14 @@ function App() {
           <div className="workbench-heading"><h2 className="asset-label board-label">まな板</h2>
             <button type="button" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ 切り直す</button>
           </div>
-          <CakeSelector
+          {new Set(stageOrders.map((order) => order.cakeKind)).size > 1 && tutorialExampleOrder === undefined ? <CakeSelector
             cakes={visibleCakes}
             activeCakeId={activeCake.id}
             unlockedCakeIds={stageAvailableCakeIds}
             money={money}
             onSelectCake={handleSelectCake}
             onBuyCake={handleBuyCake}
-          />
+          /> : null}
           <CakeBoard
             key={`${activeOrder.id}-${activeCake.id}-${toppingLayoutIndex}`}
             pieces={boardPieces}
