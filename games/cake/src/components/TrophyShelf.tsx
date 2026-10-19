@@ -58,8 +58,7 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
                 const progressRatio = Math.min(currentValue / trophy.target, 1)
 
                 return (
-                  <button
-                    type="button"
+                  <div
                     key={trophy.id}
                     className={isUnlocked ? 'trophy-detail-card is-unlocked' : 'trophy-detail-card'}
                   >
@@ -85,7 +84,7 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
                         </>
                       )}
                     </small>
-                  </button>
+                  </div>
                 )
               })}
             </div>

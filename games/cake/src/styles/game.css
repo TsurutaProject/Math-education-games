@@ -864,7 +864,7 @@
   border-radius: 8px;
   background: #f7f0e5;
   color: #6f625b;
-  cursor: pointer;
+  cursor: default;
   font: inherit;
   overflow: hidden;
   text-align: left;

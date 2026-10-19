@@ -250,3 +250,26 @@ body, #root {
 /* A narrow viewport must still allow dragging beneath the tutorial notice. */
 .guided-step-move-piece .guided-coach { pointer-events: none; }
 .guided-step-move-piece .guided-coach button { pointer-events: auto; }
+
+/* Keep trophy labels still; only press the round trophy image. */
+#root button.trophy-shelf__button:hover,
+#root button.trophy-shelf__button:active {
+  transform: none;
+  box-shadow: none;
+}
+.trophy-shelf__asset { transition: transform 140ms ease, box-shadow 140ms ease; }
+@media (hover: hover) {
+  .trophy-shelf__button:hover .trophy-shelf__asset {
+    transform: translateY(2px) scale(.98);
+    box-shadow: inset 0 3px 6px rgba(77, 43, 12, .24);
+  }
+}
+.trophy-shelf__button:active .trophy-shelf__asset {
+  transform: translateY(3px) scale(.96);
+  box-shadow: inset 0 4px 8px rgba(77, 43, 12, .3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .trophy-shelf__asset { transition: none; }
+  .trophy-shelf__button:hover .trophy-shelf__asset,
+  .trophy-shelf__button:active .trophy-shelf__asset { transform: none; }
+}
