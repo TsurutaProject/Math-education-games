@@ -1124,10 +1124,6 @@ rt {
   box-shadow: inset 0 0 0 2px rgba(84, 188, 164, 0.18);
 }
 
-.help-menu button:hover {
-  background: #c9eefc;
-}
-
 .help-overlay {
   position: fixed;
   inset: 0;
