@@ -246,3 +246,7 @@ body, #root {
   #root button:not(:disabled):not([aria-disabled="true"]):active,
   #root summary:hover, #root summary:active { transform: none; }
 }
+
+/* A narrow viewport must still allow dragging beneath the tutorial notice. */
+.guided-step-move-piece .guided-coach { pointer-events: none; }
+.guided-step-move-piece .guided-coach button { pointer-events: auto; }

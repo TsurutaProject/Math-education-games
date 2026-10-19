@@ -77,7 +77,7 @@ const placementPriority: Partial<Record<GuidedTutorialStep, CoachPlacement[]>> =
   topping: ['right', 'below', 'left', 'above'],
   cut: ['right', 'below', 'left', 'above'],
   'move-mode': ['left', 'above', 'right', 'below'],
-  'move-piece': ['left', 'above', 'right', 'below'],
+  'move-piece': ['above', 'below', 'right', 'left'],
   serve: ['left', 'above', 'right', 'below'],
   combo: ['left', 'below', 'above', 'right'],
   trophy: ['right', 'below', 'above', 'left'],
@@ -121,7 +121,19 @@ export function GuidedTutorial({ step, onAdvance, onSkip }: GuidedTutorialProps)
       }
 
       const margin = 16
-      const targetRect = focusTarget.getBoundingClientRect()
+      const focusRect = focusTarget.getBoundingClientRect()
+      // Keep the whole board-to-tray route clear, not just the drop target.
+      const boardRect = step === 'move-piece'
+        ? document.querySelector('.cake-board')?.getBoundingClientRect()
+        : undefined
+      const targetRect = boardRect === undefined ? focusRect : {
+        left: Math.min(focusRect.left, boardRect.left),
+        right: Math.max(focusRect.right, boardRect.right),
+        top: Math.min(focusRect.top, boardRect.top),
+        bottom: Math.max(focusRect.bottom, boardRect.bottom),
+        width: Math.max(focusRect.right, boardRect.right) - Math.min(focusRect.left, boardRect.left),
+        height: Math.max(focusRect.bottom, boardRect.bottom) - Math.min(focusRect.top, boardRect.top),
+      }
       const coachRect = coach.getBoundingClientRect()
       const coachWidth = Math.min(420, window.innerWidth - margin * 2)
       const coachHeight = Math.max(coachRect.height, 180)
@@ -170,7 +182,7 @@ export function GuidedTutorial({ step, onAdvance, onSkip }: GuidedTutorialProps)
       const candidate =
         (placementPriority[step] ?? ['right', 'left', 'below', 'above'])
           .map(getCandidate)
-          .find(fits) ?? getCandidate('below')
+          .find(fits) ?? getCandidate(step === 'move-piece' ? 'above' : 'below')
 
       setCoachPosition({
         left: clamp(candidate.left, margin, window.innerWidth - coachWidth - margin),
