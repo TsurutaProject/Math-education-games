@@ -2756,6 +2756,7 @@ rt {
 }
 
 .stage-card.is-complete {
+  overflow: hidden;
   border-color: rgba(242, 112, 89, 0.82);
   background: linear-gradient(135deg, #fff2b8 0%, #fffdf7 46%, #d8fff3 100%);
   box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.3), 0 16px 32px rgba(242, 112, 89, 0.2);
@@ -2768,7 +2769,8 @@ rt {
   left: -30%;
   width: 46%;
   height: 190%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  pointer-events: none;
   content: "";
   transform: rotate(20deg);
   animation: stage-card-shine 1.8s ease-in-out infinite;

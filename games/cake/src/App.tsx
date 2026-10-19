@@ -72,6 +72,7 @@ const compactPieceBonusReward = 80
 const recipeBonusReward = 180
 const defaultCuts = 12
 const tutorialStorageKey = 'fraction-cake-guided-tutorial-seen-v3'
+const stageServesStorageKey = 'cake-game:stage-serves'
 const completedStagesStorageKey = 'cake-game:completed-stages'
 const maxUnlockedStageStorageKey = 'cake-game:max-unlocked-stage'
 const unlockedCakeIdsStorageKey = 'cake-game:unlocked-cakes'
@@ -94,6 +95,20 @@ const readCompletedStageIds = (): string[] => {
       : []
   } catch {
     return []
+  }
+}
+
+const readStageServes = (): Record<string, number> => {
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(stageServesStorageKey) ?? '{}')
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    return Object.fromEntries(stages.map((stage) => {
+      const count = (parsed as Record<string, unknown>)[stage.id]
+      return [stage.id, typeof count === 'number' && Number.isInteger(count) && count >= 0
+        ? Math.min(count, stage.targetServes) : 0]
+    }))
+  } catch {
+    return {}
   }
 }
 
@@ -309,6 +324,7 @@ function App() {
   const [guidedTutorialStep, setGuidedTutorialStep] = useState<GuidedTutorialStep | null>(null)
   const [activeStageIndex, setActiveStageIndex] = useState(0)
   const [stageServedCount, setStageServedCount] = useState(0)
+  const [stageServes, setStageServes] = useState<Record<string, number>>(readStageServes)
   const [servedCount, setServedCount] = useState(0)
   const [activeOrderId, setActiveOrderId] = useState(initialStageOrders[0].id)
   const [activeCakeId, setActiveCakeId] = useState<CakeKind>('shortcake')
@@ -391,6 +407,14 @@ function App() {
     distinctCutDenominators: usedCutDenominators.length,
   }
   const unlockedTrophyIds = getUnlockedTrophyIds(trophyProgress)
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(stageServesStorageKey, JSON.stringify(stageServes))
+    } catch {
+      // Keep session progress even when browser storage is unavailable.
+    }
+  }, [stageServes])
 
   useEffect(() => {
     try {
@@ -557,7 +581,8 @@ function App() {
     selectedPieces.length > 0 &&
     areFractionsEqual(total, activeOrder.target)
   const isFinalStage = activeStageIndex === stages.length - 1
-  const stageProgressValue = stageServedCount
+  const stageProgressValue = completedStageIds.includes(activeStage.id)
+    ? activeStage.targetServes : stageServedCount
   const stageProgressTarget = activeStage.targetServes
   const stageProgressRatio = Math.min(stageProgressValue / stageProgressTarget, 1)
   const isStageGoalComplete = stageProgressValue >= stageProgressTarget
@@ -583,9 +608,10 @@ function App() {
       ? 'half'
       : selectNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, 0)
 
-    stageCompletionRef.current = false
+    stageCompletionRef.current = completedStageIds.includes(stage.id)
     setActiveStageIndex(stageIndex)
-    setStageServedCount(0)
+    setStageServedCount(completedStageIds.includes(stage.id)
+      ? stage.targetServes : (stageServes[stage.id] ?? 0))
     setActiveOrderId(firstOrderId)
     setActiveCakeId('shortcake')
     if (
@@ -1086,6 +1112,10 @@ function App() {
       setServedFractionKeys(nextServedFractionKeys)
       setUsedCutDenominators(nextUsedCutDenominators)
       setStageServedCount(Math.min(nextStageServedCount, activeStage.targetServes))
+      setStageServes((current) => ({
+        ...current,
+        [activeStage.id]: Math.min(nextStageServedCount, activeStage.targetServes),
+      }))
       setActiveOrderId(nextOrderId)
       setToppingLayoutIndex((currentIndex) =>
         getNextToppingLayoutIndex(activeCake.id, currentIndex),
@@ -1333,7 +1363,7 @@ function App() {
         >
           <div className="stage-card__header">
             <small><FuriganaText text="クリア条件" /></small>
-            <span>{isStageGoalComplete ? '達成！' : `販売した人数：${stageProgressValue} / ${stageProgressTarget}人`}</span>
+            <span>{isStageGoalComplete ? '達成済み' : `販売した人数：${stageProgressValue} / ${stageProgressTarget}人`}</span>
           </div>
           <strong><FuriganaText text={activeStage.goal} /></strong>
           <div className="stage-card__meter" aria-hidden="true">
