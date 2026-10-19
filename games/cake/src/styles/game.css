@@ -464,11 +464,6 @@
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
-.sound-toggle:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(75, 55, 45, 0.18);
-}
-
 .sound-toggle.is-on {
   border-color: #f27059;
   background: linear-gradient(135deg, #ffed9c 0%, #ff6a58 100%);

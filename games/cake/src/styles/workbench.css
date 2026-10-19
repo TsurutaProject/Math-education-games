@@ -222,3 +222,27 @@ body, #root {
   .trophy-shelf__asset { width: 54px; height: 54px; }
   .workbench-score .score-card { padding: 12px 8px; }
 }
+
+/* Shared press feedback across play, menus, dialogs and title screens. */
+#root button,
+#root summary {
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+@media (hover: hover) {
+  #root button:not(:disabled):not([aria-disabled="true"]):hover,
+  #root summary:hover {
+    transform: translateY(2px) scale(.98);
+    box-shadow: inset 0 3px 6px rgba(77, 43, 12, .24);
+  }
+}
+#root button:not(:disabled):not([aria-disabled="true"]):active,
+#root summary:active {
+  transform: translateY(3px) scale(.96);
+  box-shadow: inset 0 4px 8px rgba(77, 43, 12, .3);
+}
+@media (prefers-reduced-motion: reduce) {
+  #root button, #root summary { transition: none; }
+  #root button:not(:disabled):not([aria-disabled="true"]):hover,
+  #root button:not(:disabled):not([aria-disabled="true"]):active,
+  #root summary:hover, #root summary:active { transform: none; }
+}
