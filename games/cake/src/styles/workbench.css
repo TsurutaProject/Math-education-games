@@ -252,8 +252,8 @@ body, #root {
 .guided-step-move-piece .guided-coach button { pointer-events: auto; }
 
 /* Keep trophy labels still; only press the round trophy image. */
-#root button.trophy-shelf__button:hover,
-#root button.trophy-shelf__button:active {
+#root button.trophy-shelf__button:not(:disabled):not([aria-disabled="true"]):hover,
+#root button.trophy-shelf__button:not(:disabled):not([aria-disabled="true"]):active {
   transform: none;
   box-shadow: none;
 }
