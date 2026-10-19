@@ -12,7 +12,6 @@ export const stages: Stage[] = [
       'half',
       'one-quarter',
       'three-quarters',
-      'quarter-pair-half',
     ],
   },
   {
@@ -27,8 +26,6 @@ export const stages: Stage[] = [
       'one-sixth',
       'two-thirds',
       'one-twelfth',
-      'third-pair-two-thirds',
-      'third-sixth-half',
     ],
   },
   {
@@ -39,6 +36,9 @@ export const stages: Stage[] = [
     targetServes: 5,
     allowedCuts: [2, 3, 4, 6, 12],
     orderIds: [
+      'quarter-pair-half',
+      'third-pair-two-thirds',
+      'third-sixth-half',
       'half-quarter-three-quarters',
       'half-third-five-sixths',
       'mixed-eleven-twelfths',

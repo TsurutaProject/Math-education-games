@@ -12,13 +12,6 @@ const getPiecePlan = (order: Order): Fraction[] => {
     return order.recipePieces
   }
 
-  if (order.target.numerator <= 3) {
-    return Array.from({ length: order.target.numerator }, () => ({
-      numerator: 1,
-      denominator: order.target.denominator,
-    }))
-  }
-
   return [order.target]
 }
 
@@ -41,7 +34,7 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
     ? `合計を${formatFraction(order.target)}にそろえよう。大きいピースをさらに切ると、量を変えずにピースの数を増やせるよ。最高評価は${order.perfectPieceCount}ピースです。`
     : piecePlan.length > 1
       ? `ケーキを${denominator}等分した大きさで考えよう。${piecePlan.map((piece, index) => `${formatFraction(piece)}は${numerators[index]}個分`).join('、')}。合わせると${numerators.join('＋')}＝${numerators.reduce((sum, n) => sum + n, 0)}個分で、${formatFraction(order.target)}になるよ。`
-      : `ホールケーキを同じ大きさに${order.target.denominator}等分して、そのうち${order.target.numerator}個分をトレーに移そう。`
+      : `トレーのケーキの合計を${formatFraction(order.target)}個分にしよう。1つのピースでも、いくつかのピースを合わせてもいいよ。`
 
   return (
     <section className="order-bubble" aria-label="注文">
@@ -56,14 +49,16 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
         <details key={order.id} className="order-bubble__plan"><summary><FuriganaText text="ヒント・最高評価の条件" /></summary>
           <p className="order-hint-explanation"><FuriganaText text={hint} /></p>
           <span className="order-bubble__label">
-            <FuriganaText text={isPieceCountChallenge ? '最高評価' : '作るピース'} />
+            <FuriganaText text={isPieceCountChallenge ? '最高評価' : order.recipePieces !== undefined ? '作るピース' : '必要な量'} />
           </span>
           <div
             className="order-bubble__pieces"
             aria-label={
               isPieceCountChallenge
                 ? `最高評価は${order.perfectPieceCount}ピース`
-                : `作るピースは ${piecePlan.map(formatFraction).join(' と ')}`
+                : order.recipePieces !== undefined
+                  ? `作るピースは ${piecePlan.map(formatFraction).join(' と ')}`
+                  : `必要な量は${formatFraction(order.target)}個分`
             }
           >
             {isPieceCountChallenge ? (

@@ -606,7 +606,7 @@ function App() {
     const showTutorial = stageIndex === 0 && shouldShowTutorial()
     const firstOrderId = showTutorial
       ? 'half'
-      : selectNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, 0)
+      : selectNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, combo)
 
     stageCompletionRef.current = completedStageIds.includes(stage.id)
     setActiveStageIndex(stageIndex)
@@ -631,7 +631,6 @@ function App() {
     setCutMarkAngles([])
     setCarriedPiece(null)
     setResult(idleResult)
-    setCombo(0)
     setStageEarned(0)
     setStageBestCombo(0)
     setCurrentCutDenominators([])
