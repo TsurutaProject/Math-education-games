@@ -134,7 +134,7 @@ describe('stepLane', () => {
     let lane = createLane(ctxOf());
     lane = markHit(lane, 'p15');
     const slot = lane.slots.findIndex((s) => s.cardId === 'p15');
-    expect(lane.slots[slot].down).toBe('hit');
+    expect(lane.slots[slot].down).toBe(true);
     expect(standingCards(lane).map((c) => c.cardId)).not.toContain('p15');
     const lapTime = ctx.geo.loop / SPEED;
     for (let t = 0; t < lapTime * 5; t += 1 / 30) {
@@ -173,32 +173,30 @@ describe('stepLane', () => {
     }
   });
 
-  it('いまの数が変わって引けなくなった札は、その場で倒す（札は変えない）', () => {
+  it('いまの数が変わっても、見えている札は倒さない（当てていない的はいきなり倒れない）', () => {
     const lane: LaneState = {
       slots: [
-        { cardId: 'm5', down: null, lap: 0 },
-        { cardId: 'p10', down: null, lap: 0 },
+        { cardId: 'x2', down: false, lap: 0 },
+        { cardId: 'p10', down: false, lap: 0 },
       ],
       lastShown: {},
       lastUsefulAt: 0,
     };
-    // いまの数が 10 → 3 になった
-    const next = stepLane(lane, 0.01, ctxOf({ geo: { ...laneGeometry(4), slots: 2 }, current: 3 }));
-    expect(next.slots[0]).toMatchObject({ cardId: 'm5', down: 'invalid' });
-    expect(next.slots[1]).toMatchObject({ cardId: 'p10', down: null });
+    // いまの数が 0 に戻って、×2 はもう出さない札になった
+    const next = stepLane(lane, 0.01, ctxOf({ geo: { ...laneGeometry(4), slots: 2 }, current: 0 }));
+    expect(next.slots[0]).toMatchObject({ cardId: 'x2', down: false });
+    expect(standingCards(next).map((c) => c.cardId)).toEqual(['x2', 'p10']);
   });
 
-  it('引けなくなって倒した札は山札に戻り、また出せるようになれば出てくる', () => {
+  it('画面外で入れ替えるときは、いまの数で出してよい札だけを選ぶ', () => {
     const geo = laneGeometry(3);
     let lane = createLane(ctxOf({ geo, current: 10 }));
-    const hadM5 = cardsOf(lane).includes('m5');
-    lane = stepLane(lane, 0.01, ctxOf({ geo, current: 3 }));
-    if (hadM5) expect(lane.slots.find((s) => s.cardId === 'm5')?.down).toBe('invalid');
-    // いまの数が 20 に戻れば、−5 もまた流れてくる
-    const ctx = ctxOf({ geo, current: 20, usedIds: [] });
-    lane = run(lane, 0.01, (geo.loop / SPEED) * 4, ctx);
-    const everSeen = Object.keys(lane.lastShown);
-    expect(everSeen).toContain('m5');
+    // いまの数が 0 に戻ったあと、2周ぶん進めても −5 と ×2 は新しく置かれない
+    const ctx = ctxOf({ geo, current: 0 });
+    const before = { ...lane.lastShown };
+    lane = run(lane, 0.01, (geo.loop / SPEED) * 2, ctx);
+    expect(lane.lastShown.m5).toBe(before.m5);
+    expect(lane.lastShown.x2).toBe(before.x2);
   });
 });
 
@@ -209,10 +207,10 @@ describe('救済', () => {
     const ctx = ctxOf({ geo, current: 10, useful: new Set(['p30']), assistSec });
     const lane: LaneState = {
       slots: [
-        { cardId: 'p5', down: null, lap: 0 },
-        { cardId: 'p10', down: null, lap: 0 },
-        { cardId: 'p15', down: null, lap: 0 },
-        { cardId: 'p25', down: null, lap: 0 },
+        { cardId: 'p5', down: false, lap: 0 },
+        { cardId: 'p10', down: false, lap: 0 },
+        { cardId: 'p15', down: false, lap: 0 },
+        { cardId: 'p25', down: false, lap: 0 },
       ],
       // p30 は最近出たばかり。救済がなければ後回しになる
       lastShown: { p5: -10, p10: -10, p15: -10, p25: -10, x2: -20, m5: -20, p30: 0 },

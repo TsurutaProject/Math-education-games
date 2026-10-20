@@ -75,6 +75,8 @@ export function analyzeProblem(problem: Problem): ProblemAnalysis {
 export function validateProblem(problem: Problem): string[] {
   const errors: string[] = [];
   if (problem.set === 'lane' && hasDuplicateCard(problem.targets)) errors.push('同じ札が2枚以上ある');
+  // D は見えている札を倒さないので、引き算が2枚あると、片方を当てたあとにもう片方でマイナスになりうる
+  if (problem.set === 'lane' && problem.targets.filter((t) => t.op === '-').length > 1) errors.push('引き算の札が2枚以上ある');
   const a = analyzeProblem(problem);
   if (problem.targets.length <= problem.shots) errors.push('的の数が弾数以下');
   if (new Set(problem.targets.map((t) => t.id)).size !== problem.targets.length) errors.push('的の id が重複');

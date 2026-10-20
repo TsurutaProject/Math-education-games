@@ -80,13 +80,11 @@ export function usefulCards(
   return ids;
 }
 
-/** スロットの的が倒れている理由。hit = 当てた、invalid = 引けなくなったので倒した */
-export type DownReason = 'hit' | 'invalid';
-
 export interface LaneSlot {
   /** 乗っている札の id（出せる札がなければ null = 空のスロット） */
   cardId: string | null;
-  down: DownReason | null;
+  /** 当てて倒れているか（倒れたまま画面外まで流れる） */
+  down: boolean;
   /** 札を置いたときの周回数 */
   lap: number;
 }
@@ -117,7 +115,7 @@ export interface LaneContext {
 export function createLane(ctx: LaneContext, t = 0): LaneState {
   let state: LaneState = { slots: [], lastShown: {}, lastUsefulAt: t };
   for (let i = 0; i < ctx.geo.slots; i++) {
-    state = { ...state, slots: [...state.slots, { cardId: null, down: null, lap: slotLap(i, t, ctx.geo, ctx.speed) }] };
+    state = { ...state, slots: [...state.slots, { cardId: null, down: false, lap: slotLap(i, t, ctx.geo, ctx.speed) }] };
     state = placeCard(state, i, t, ctx);
   }
   return refreshUseful(state, t, ctx);
@@ -125,11 +123,12 @@ export function createLane(ctx: LaneContext, t = 0): LaneState {
 
 /**
  * 時刻 t までレーンを進める。毎フレーム呼ぶ。
- * - いまの数で引けなくなった札は倒す（札は画面外で入れ替える）
- * - 1周して左の画面外に戻ったスロットには、新しい札を置く
+ * 1周して左の画面外に戻ったスロットには、新しい札を置く。
+ * いまの数が変わっても、見えている札は倒さない（当てていない的がいきなり倒れると、わけがわからないため）。
+ * 引き算の札は1問に1枚までなので、札を出すときに canShow で選んでいれば、あとから当ててもマイナスにならない。
  */
 export function stepLane(state: LaneState, t: number, ctx: LaneContext): LaneState {
-  let next = invalidate(state, ctx);
+  let next = state;
   for (let i = 0; i < next.slots.length; i++) {
     if (slotLap(i, t, ctx.geo, ctx.speed) > next.slots[i].lap) next = placeCard(next, i, t, ctx);
   }
@@ -140,7 +139,7 @@ export function stepLane(state: LaneState, t: number, ctx: LaneContext): LaneSta
 export function markHit(state: LaneState, cardId: string): LaneState {
   const i = state.slots.findIndex((s) => s.cardId === cardId && !s.down);
   if (i < 0) return state;
-  return { ...state, slots: replaceAt(state.slots, i, { ...state.slots[i], down: 'hit' }) };
+  return { ...state, slots: replaceAt(state.slots, i, { ...state.slots[i], down: true }) };
 }
 
 /** 立っている（当てられる）札の id とスロット番号 */
@@ -152,19 +151,6 @@ export function standingCards(state: LaneState): Array<{ slot: number; cardId: s
   return list;
 }
 
-/** いまの数で引けなくなった、立っている札を倒す */
-function invalidate(state: LaneState, ctx: LaneContext): LaneState {
-  let changed = false;
-  const slots = state.slots.map((s) => {
-    if (!s.cardId || s.down) return s;
-    const target = findTarget(ctx.problem, s.cardId);
-    if (target && canShow(target, ctx.current)) return s;
-    changed = true;
-    return { ...s, down: 'invalid' as const };
-  });
-  return changed ? { ...state, slots } : state;
-}
-
 /** 役立つ札が立っていれば、その時刻を覚える */
 function refreshUseful(state: LaneState, t: number, ctx: LaneContext): LaneState {
   const shown = standingCards(state).some((c) => ctx.useful.has(c.cardId));
@@ -174,7 +160,7 @@ function refreshUseful(state: LaneState, t: number, ctx: LaneContext): LaneState
 /** スロット i の札を入れ替える（いま乗っている札は山札に戻る） */
 function placeCard(state: LaneState, i: number, t: number, ctx: LaneContext): LaneState {
   const cardId = pickCard(state, i, t, ctx);
-  const slots = replaceAt(state.slots, i, { cardId, down: null, lap: slotLap(i, t, ctx.geo, ctx.speed) });
+  const slots = replaceAt(state.slots, i, { cardId, down: false, lap: slotLap(i, t, ctx.geo, ctx.speed) });
   const lastShown = cardId ? { ...state.lastShown, [cardId]: t } : state.lastShown;
   return { ...state, slots, lastShown };
 }
@@ -198,10 +184,6 @@ export function pickCard(state: LaneState, i: number, t: number, ctx: LaneContex
   const oldest = Math.min(...pool.map((c) => shownAt(c.id)));
   const ties = pool.filter((c) => shownAt(c.id) === oldest);
   return ties[Math.floor(ctx.rng() * ties.length)].id;
-}
-
-function findTarget(problem: Problem, id: string): Target | undefined {
-  return problem.targets.find((t) => t.id === id);
 }
 
 function replaceAt<T>(list: ReadonlyArray<T>, i: number, value: T): T[] {

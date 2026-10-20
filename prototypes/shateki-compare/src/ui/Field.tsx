@@ -11,7 +11,6 @@ import {
   type HitCircle,
 } from '../logic/hit';
 import {
-  canShow,
   createLane,
   LANE_Y,
   laneGeometry,
@@ -243,9 +242,8 @@ export function Field({ problem, variant, settings, usedIds, current, shotsLeft,
 
   const circlesAt = (t: number): HitCircle[] => {
     if (lane.current) {
-      // 引けなくなった札は次のフレームで倒れるが、それまでにも当たらないようにする
       return standingCards(lane.current)
-        .filter(({ cardId }) => !usedIds.includes(cardId) && canShow(problem.targets.find((x) => x.id === cardId)!, current))
+        .filter(({ cardId }) => !usedIds.includes(cardId))
         .map(({ slot, cardId }) => ({ id: cardId, x: slotX(slot, t, geo, settings.laneSpeed), y: LANE_Y, r: UNIFORM_RADIUS }));
     }
     return placed.filter((p) => !usedIds.includes(p.id)).map((p) => ({ id: p.id, ...targetPosition(p, t, speed), r: p.r }));

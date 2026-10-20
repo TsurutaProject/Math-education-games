@@ -73,6 +73,24 @@ describe('validateProblem', () => {
     expect(dup).toContain('同じ札が2枚以上ある');
     expect(hasDuplicateCard([{ id: 'a', op: '+', value: 10 }, { id: 'b', op: '-', value: 10 }])).toBe(false);
   });
+
+  it('lane は引き算の札が2枚あると条件を満たさない（見えている札を倒さないので、マイナスになりうる）', () => {
+    const errors = validateProblem({
+      id: 'x',
+      set: 'lane',
+      stage: 2,
+      goal: 40,
+      shots: 3,
+      targets: [
+        { id: 't1', op: '+', value: 20 },
+        { id: 't2', op: '+', value: 30 },
+        { id: 't3', op: '-', value: 5 },
+        { id: 't4', op: '-', value: 10 },
+        { id: 't5', op: '*', value: 2 },
+      ],
+    });
+    expect(errors).toContain('引き算の札が2枚以上ある');
+  });
 });
 
 describe('generateProblem', () => {

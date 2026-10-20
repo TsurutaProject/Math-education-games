@@ -352,27 +352,6 @@ button {
     opacity: 0.85;
   }
 }
-/* 引けなくなった：灰色になって、ゆっくり奥へ倒れる（当てたときと区別する） */
-.target.lane-invalid {
-  animation: lane-sink 0.7s ease-in-out forwards;
-}
-@keyframes lane-sink {
-  0% {
-    transform: scaleY(1);
-    filter: grayscale(0);
-    opacity: 1;
-  }
-  40% {
-    transform: scaleY(1);
-    filter: grayscale(1);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scaleY(0.15);
-    filter: grayscale(1);
-    opacity: 0.45;
-  }
-}
 .rail {
   stroke: var(--shelf);
   stroke-width: 4;
