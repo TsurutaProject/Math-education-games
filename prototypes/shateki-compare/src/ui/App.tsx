@@ -18,7 +18,7 @@ import {
   writeUrlParams,
   type Settings,
 } from './settings';
-import { setSoundEnabled } from './sound';
+import { setBgmSettings, setSoundEnabled, unlockAudio } from './sound';
 
 type StartReason = Extract<LogPayload, { type: 'problem_start' }>['reason'];
 
@@ -37,6 +37,7 @@ export function App() {
   useEffect(() => {
     saveSettings(settings);
     setSoundEnabled(settings.sound);
+    setBgmSettings(settings.bgm, settings.bgmVolume);
   }, [settings]);
 
   const set = setForVariant(variant);
@@ -76,7 +77,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
       <header className="topbar">
         <div className="title">さんすう射的 <span className="tag">試作</span></div>
         <div className="seg variant-switch">
