@@ -54,9 +54,12 @@ const plan: Array<{ set: ProblemSet; stage: number }> = [
   { set: 'standard', stage: 2 },
   { set: 'risk', stage: 1 },
   { set: 'risk', stage: 2 },
+  // D 用。乱数の順番が変わらないように、いちばん後ろに足す
+  { set: 'lane', stage: 1 },
+  { set: 'lane', stage: 2 },
 ];
 for (const { set, stage } of plan) {
-  const prefix = set === 'standard' ? 'std' : 'risk';
+  const prefix = set === 'standard' ? 'std' : set;
   const goals = new Set<number>();
   for (let n = 1; n <= 3; n++) {
     const id = `${prefix}-${stage}-${n}`;

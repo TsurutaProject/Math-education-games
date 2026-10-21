@@ -335,6 +335,23 @@ button {
     opacity: 0;
   }
 }
+/* D：流れる的。倒れた的は消さずに、つぶれたまま棚に乗って流れていく */
+/* 当てた：奥へパタンと倒れる */
+.target.lane-hit {
+  animation: lane-fall 0.3s ease-in forwards;
+}
+@keyframes lane-fall {
+  0% {
+    transform: scaleY(1);
+  }
+  75% {
+    transform: scaleY(0.08);
+  }
+  100% {
+    transform: scaleY(0.15);
+    opacity: 0.85;
+  }
+}
 .rail {
   stroke: var(--shelf);
   stroke-width: 4;

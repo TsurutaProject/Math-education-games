@@ -9,8 +9,11 @@ import {
   loadSettings,
   saveSettings,
   SHOOTER_LABEL,
+  shooterAllowed,
+  shooterOf,
   SHOOTERS,
   VARIANT_LABEL,
+  VARIANTS,
   variantFromUrl,
   writeUrlParams,
   type Settings,
@@ -51,7 +54,7 @@ export function App() {
   const changeShooter = (sh: Shooter) => {
     if (sh === settings.shooter) return;
     setSettings({ ...settings, shooter: sh });
-    if (variant !== 'A') restartWith('switch');
+    if (shooterAllowed(variant, sh)) restartWith('switch');
   };
 
   const changeProblem = (s: number, i: number) => {
@@ -77,7 +80,7 @@ export function App() {
       <header className="topbar">
         <div className="title">さんすう射的 <span className="tag">試作</span></div>
         <div className="seg variant-switch">
-          {(['A', 'B', 'C'] as Variant[]).map((v) => (
+          {VARIANTS.map((v) => (
             <button key={v} className={v === variant ? 'on' : ''} onClick={() => changeVariant(v)}>
               {VARIANT_LABEL[v]}
             </button>
@@ -85,7 +88,13 @@ export function App() {
         </div>
         <div className={`seg shooter-switch ${variant === 'A' ? 'disabled' : ''}`} title={variant === 'A' ? 'A はタップ式なので射撃タイプはありません' : '射撃タイプ'}>
           {SHOOTERS.map((sh) => (
-            <button key={sh} className={sh === settings.shooter ? 'on' : ''} disabled={variant === 'A'} onClick={() => changeShooter(sh)}>
+            <button
+              key={sh}
+              className={sh === shooterOf(variant, settings) ? 'on' : ''}
+              disabled={!shooterAllowed(variant, sh)}
+              title={variant === 'D' && sh === 'catapult' ? 'D はレーンが1本なのでカタパルトは使いません' : undefined}
+              onClick={() => changeShooter(sh)}
+            >
               {SHOOTER_LABEL[sh]}
             </button>
           ))}
@@ -98,7 +107,7 @@ export function App() {
         </button>
       </header>
       <GameScreen
-        key={`${session.n}-${variant}-${variant === 'A' ? 'tap' : settings.shooter}-${problem.id}`}
+        key={`${session.n}-${variant}-${shooterOf(variant, settings)}-${problem.id}`}
         problem={problem}
         variant={variant}
         settings={settings}

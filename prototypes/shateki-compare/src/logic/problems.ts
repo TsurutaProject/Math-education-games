@@ -4,7 +4,9 @@ import type { Problem, ProblemSet, Variant } from './types';
 export const ALL_PROBLEMS: Problem[] = (data as { problems: Problem[] }).problems;
 
 export function setForVariant(variant: Variant): ProblemSet {
-  return variant === 'C' ? 'risk' : 'standard';
+  if (variant === 'C') return 'risk';
+  if (variant === 'D') return 'lane';
+  return 'standard';
 }
 
 export function problemsFor(set: ProblemSet, stage: number): Problem[] {
