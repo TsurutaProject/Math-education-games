@@ -29,15 +29,24 @@ export function SlingLayer({ pull, angleDeg, guideLength, bounce, flying, loaded
   }
   const left = { x: LAUNCHER.x - PRONG_DX, y: PRONG_Y };
   const right = { x: LAUNCHER.x + PRONG_DX, y: PRONG_Y };
-  const guide = angleDeg !== null ? guidePath(angleDeg, guideLength, bounce) : null;
+  const guide = angleDeg !== null && guideLength > 0 ? guidePath(angleDeg, guideLength, bounce) : null;
   const end = guide?.[guide.length - 1];
+  const previous = guide?.[guide.length - 2];
+  const shortGuide = guideLength > 0 && guideLength <= 120;
+  const endAngle = end && previous ? Math.atan2(end.y - previous.y, end.x - previous.x) * 180 / Math.PI : 0;
 
   return (
     <g className="sling">
       {guide && (
         <>
           <polyline points={guide.map((p) => `${p.x},${p.y}`).join(' ')} className="sling-guide" />
-          {end && <circle cx={end.x} cy={end.y} r={7} className="sling-guide-end" />}
+          {end && (shortGuide ? (
+            <path
+              d="M-14 -8 L0 0 L-14 8"
+              transform={`translate(${end.x} ${end.y}) rotate(${endAngle})`}
+              className="sling-guide-end"
+            />
+          ) : <circle cx={end.x} cy={end.y} r={7} className="sling-guide-end" />)}
         </>
       )}
       {/* うしろのゴム */}
