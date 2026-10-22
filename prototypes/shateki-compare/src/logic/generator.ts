@@ -1,3 +1,4 @@
+import { START, step, valueOf } from './ops';
 import { distinctSolutions, enumerateSolutions } from './solver';
 import type { Op, Problem, ProblemSet, Target, TargetSize } from './types';
 
@@ -131,14 +132,12 @@ function withRisk(rng: () => number, targets: Target[]): Target[] {
 function randomPathValue(rng: () => number, targets: Target[], shots: number, filter?: (t: Target) => boolean): number | null {
   const pool = shuffle(rng, filter ? targets.filter(filter) : targets);
   if (pool.length < shots) return null;
-  let v = 0;
+  let calc = START;
   for (const t of pool.slice(0, shots)) {
-    if (t.op === '+') v += t.value;
-    else if (t.op === '-') v -= t.value;
-    else if (t.op === '*') v *= t.value;
-    if (v < 0) return null;
+    calc = step(calc, t.op, t.value);
+    if (valueOf(calc) < 0) return null;
   }
-  return v;
+  return valueOf(calc);
 }
 
 export interface GenerateSpec {

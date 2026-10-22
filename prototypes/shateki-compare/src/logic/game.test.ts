@@ -55,6 +55,44 @@ describe('shoot', () => {
     expect(remaining(p, s)).toBe(25);
   });
 
+  it('×2 は直前の項にだけかかる（+5 → +10 → ×2 は 5 + 10 × 2 = 25）', () => {
+    const q: Problem = {
+      ...p,
+      targets: [
+        { id: 'a', op: '+', value: 5 },
+        { id: 'b', op: '+', value: 10 },
+        { id: 'x', op: '*', value: 2 },
+        { id: 'y', op: '*', value: 2 },
+        { id: 'm', op: '-', value: 5 },
+      ],
+      shots: 5,
+    };
+    let s = newGame(q);
+    for (const id of ['a', 'b', 'x']) s = shoot(q, s, id);
+    expect(s.current).toBe(25);
+    expect(s.steps.map((st) => st.after)).toEqual([5, 15, 25]);
+    // 続けて ×2 を当てると、同じ項にもう一度かかる（5 + 10 × 2 × 2 = 45）
+    s = shoot(q, s, 'y');
+    expect(s.current).toBe(45);
+    // 引き算は新しい項を始める
+    s = shoot(q, s, 'm');
+    expect(s.current).toBe(40);
+  });
+
+  it('引き算の項にも ×2 がかかる（20 − 5 × 2 = 10）', () => {
+    const q: Problem = {
+      ...p,
+      targets: [
+        { id: 'a', op: '+', value: 20 },
+        { id: 'm', op: '-', value: 5 },
+        { id: 'x', op: '*', value: 2 },
+      ],
+    };
+    let s = newGame(q);
+    for (const id of ['a', 'm', 'x']) s = shoot(q, s, id);
+    expect(s.current).toBe(10);
+  });
+
   it('超えた場合は差が負になる', () => {
     let s = newGame(p);
     s = shoot(p, s, 't3');

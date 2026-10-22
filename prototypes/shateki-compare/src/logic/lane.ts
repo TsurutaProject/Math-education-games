@@ -1,4 +1,5 @@
 import { FIELD_W } from './hit';
+import type { Calc } from './ops';
 import { enumerateSolutions } from './solver';
 import type { Problem, Target } from './types';
 
@@ -69,12 +70,12 @@ export function canShow(target: Target, current: number): boolean {
  */
 export function usefulCards(
   problem: Problem,
-  current: number,
+  calc: Calc,
   usedIds: ReadonlyArray<string>,
   shotsLeft: number,
 ): Set<string> {
   const ids = new Set<string>();
-  for (const s of enumerateSolutions(problem, current, usedIds, shotsLeft)) {
+  for (const s of enumerateSolutions(problem, calc, usedIds, shotsLeft)) {
     if (s.nonNegative) ids.add(s.targets[0].id);
   }
   return ids;

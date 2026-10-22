@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from './generator';
 import { FIELD_W, UNIFORM_RADIUS } from './hit';
+import { START, step } from './ops';
 import {
   canShow,
   createLane,
@@ -259,11 +260,12 @@ describe('usefulCards', () => {
         { id: 'p35', op: '+', value: 35 },
       ],
     };
+    const at15 = step(START, '+', 15);
     // 0 から：10+20, 20+10, 35−5。−5 から始める道（0−5+35）はマイナスを通るので入れない
-    expect([...usefulCards(p, 0, [], 2)].sort()).toEqual(['p10', 'p20', 'p35']);
+    expect([...usefulCards(p, START, [], 2)].sort()).toEqual(['p10', 'p20', 'p35']);
     // 15 から1発（×2 は使用済み）：届く札はない
-    expect(usefulCards(p, 15, ['x2'], 1).size).toBe(0);
+    expect(usefulCards(p, at15, ['x2'], 1).size).toBe(0);
     // 15 から2発：15×2 で届く
-    expect([...usefulCards(p, 15, [], 2)]).toContain('x2');
+    expect([...usefulCards(p, at15, [], 2)]).toContain('x2');
   });
 });
