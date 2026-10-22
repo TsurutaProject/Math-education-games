@@ -91,6 +91,25 @@ describe('validateProblem', () => {
     });
     expect(errors).toContain('引き算の札が2枚以上ある');
   });
+
+  it('lane は D の流し方で撃てない解き方があると条件を満たさない', () => {
+    // 15 − 10 = 5 は、×2 が残っているあいだは −10 が流れてこない（15 − 10 × 2 になりうる）ので撃てない
+    const errors = validateProblem({
+      id: 'x',
+      set: 'lane',
+      stage: 2,
+      goal: 5,
+      shots: 3,
+      targets: [
+        { id: 't1', op: '+', value: 15 },
+        { id: 't2', op: '-', value: 10 },
+        { id: 't3', op: '*', value: 2 },
+        { id: 't4', op: '+', value: 20 },
+        { id: 't5', op: '+', value: 30 },
+      ],
+    });
+    expect(errors).toContain('D の流し方では撃てない解き方がある');
+  });
 });
 
 describe('generateProblem', () => {

@@ -1,5 +1,5 @@
 import { FIELD_W } from './hit';
-import type { Calc } from './ops';
+import { START, step, valueOf, type Calc } from './ops';
 import { enumerateSolutions } from './solver';
 import type { Problem, Target } from './types';
 
@@ -54,18 +54,52 @@ export function slotLap(i: number, t: number, geo: LaneGeometry, speed: number):
 }
 
 /**
- * いまの数で、この札をレーンに出してよいか。
- * 計算の途中でマイナスにしないため、「−〇」は 〇 がいまの数以下のときだけ。
- * 0 のときの ×2 は当てても何も変わらないので出さない。
+ * まだ当てていない掛け算の札を全部かけたときの倍率（×2 が1枚残っていれば 2）。exceptId の札は数えない。
+ * ÷ は数を小さくするだけなので数えない。
  */
-export function canShow(target: Target, current: number): boolean {
-  if (target.op === '-') return target.value <= current;
-  if (target.op === '*' || target.op === '/') return current !== 0;
+export function laterFactor(problem: Problem, usedIds: ReadonlyArray<string>, exceptId?: string): number {
+  return problem.targets
+    .filter((t) => t.op === '*' && t.value > 1 && t.id !== exceptId && !usedIds.includes(t.id))
+    .reduce((f, t) => f * t.value, 1);
+}
+
+/**
+ * いまの計算の状態で、この札をレーンに出してよいか（計算の途中でマイナスにしないため）。
+ * - 「−〇」は、まだ当てていない掛け算の札を全部その項にかけても（factor 倍）マイナスにならないときだけ。
+ *   × は最後の項にかかるので、10 − 10 のあとに見えていた ×2 を当てると 10 − 20 になる。
+ *   D は見えている札を倒さないので、出す時点でこれを防ぐ
+ * - × ÷ は、当ててもマイナスにならず、数が変わるときだけ（まだ項がないときの ×2 は何も変えない）
+ */
+export function canShow(target: Target, calc: Calc, factor = 1): boolean {
+  if (target.op === '+') return true;
+  if (target.op === '-') return valueOf(calc) - target.value * factor >= 0;
+  const next = valueOf(step(calc, target.op, target.value));
+  return next >= 0 && next !== valueOf(calc);
+}
+
+/**
+ * D の流し方で、start から moves の順に撃てるか。
+ * それぞれの札が、当てる直前の状態で「出してよい札」になっていれば撃てる
+ * （出してよい札なら、その状態で待っていればいつか流れてくる）。
+ */
+export function playableInLane(
+  problem: Problem,
+  moves: ReadonlyArray<Target>,
+  start: Calc = START,
+  usedIds: ReadonlyArray<string> = [],
+): boolean {
+  let calc = start;
+  const used = [...usedIds];
+  for (const t of moves) {
+    if (!canShow(t, calc, laterFactor(problem, used, t.id))) return false;
+    calc = step(calc, t.op, t.value);
+    used.push(t.id);
+  }
   return true;
 }
 
 /**
- * 届くために役立つ札：いまの状態から、マイナスを通らずに目標まで届く撃ち方の、1発目になる札。
+ * 届くために役立つ札：いまの状態から、D の流し方で目標まで届く撃ち方の、1発目になる札。
  * 救済（役立つ札がしばらく出ていなければ流す）に使う。
  */
 export function usefulCards(
@@ -76,7 +110,7 @@ export function usefulCards(
 ): Set<string> {
   const ids = new Set<string>();
   for (const s of enumerateSolutions(problem, calc, usedIds, shotsLeft)) {
-    if (s.nonNegative) ids.add(s.targets[0].id);
+    if (playableInLane(problem, s.targets, calc, usedIds)) ids.add(s.targets[0].id);
   }
   return ids;
 }
@@ -103,7 +137,8 @@ export interface LaneContext {
   geo: LaneGeometry;
   /** 流れる速さ（フィールド単位/秒） */
   speed: number;
-  current: number;
+  /** 計算の途中の状態（出してよい札を決めるのに使う） */
+  calc: Calc;
   usedIds: ReadonlyArray<string>;
   /** usefulCards の結果（毎フレーム計算しないよう、呼ぶ側で用意する） */
   useful: ReadonlySet<string>;
@@ -126,7 +161,8 @@ export function createLane(ctx: LaneContext, t = 0): LaneState {
  * 時刻 t までレーンを進める。毎フレーム呼ぶ。
  * 1周して左の画面外に戻ったスロットには、新しい札を置く。
  * いまの数が変わっても、見えている札は倒さない（当てていない的がいきなり倒れると、わけがわからないため）。
- * 引き算の札は1問に1枚までなので、札を出すときに canShow で選んでいれば、あとから当ててもマイナスにならない。
+ * 引き算の札は1問に1枚までで、「−〇」は残りの掛け算を全部かけてもマイナスにならないときだけ出すので、
+ * 見えている札をあとから当ててもマイナスにならない。
  */
 export function stepLane(state: LaneState, t: number, ctx: LaneContext): LaneState {
   let next = state;
@@ -168,14 +204,17 @@ function placeCard(state: LaneState, i: number, t: number, ctx: LaneContext): La
 
 /**
  * スロット i に置く札を選ぶ。
- * 候補：当てていない・ほかのスロットに乗っていない・いまの数で出してよい札。
+ * 候補：当てていない・ほかのスロットに乗っていない・いまの計算の状態で出してよい札（canShow）。
  * 救済の時間を過ぎていれば役立つ札を優先し、そうでなければいちばん長く出ていない札。
  * 同じくらい出ていない札が複数あれば乱数で選ぶ。
  */
 export function pickCard(state: LaneState, i: number, t: number, ctx: LaneContext): string | null {
   const onLane = new Set(state.slots.filter((s, j) => j !== i && s.cardId).map((s) => s.cardId));
   const candidates = ctx.problem.targets.filter(
-    (c) => !ctx.usedIds.includes(c.id) && !onLane.has(c.id) && canShow(c, ctx.current),
+    (c) =>
+      !ctx.usedIds.includes(c.id) &&
+      !onLane.has(c.id) &&
+      canShow(c, ctx.calc, laterFactor(ctx.problem, ctx.usedIds, c.id)),
   );
   if (candidates.length === 0) return null;
   const assistDue = ctx.assistSec > 0 && t - state.lastUsefulAt >= ctx.assistSec;

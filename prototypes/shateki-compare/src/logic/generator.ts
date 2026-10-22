@@ -1,5 +1,6 @@
+import { playableInLane } from './lane';
 import { START, step, valueOf } from './ops';
-import { distinctSolutions, enumerateSolutions } from './solver';
+import { distinctSolutions, enumerateSolutions, type Solution } from './solver';
 import type { Op, Problem, ProblemSet, Target, TargetSize } from './types';
 
 /** 図鑑が埋めきれる量にするため、解き方の種類の上限。 */
@@ -55,6 +56,8 @@ export interface ProblemAnalysis {
   hasSafePath: boolean;
   /** 当てにくい的を使って、弾が余る解き方がある（C） */
   hasShortcut: boolean;
+  /** すべての解き方が、D の流し方（マイナスにならない札だけ流す）で撃てる順番を持つ */
+  allPlayableInLane: boolean;
 }
 
 export function analyzeProblem(problem: Problem): ProblemAnalysis {
@@ -69,7 +72,14 @@ export function analyzeProblem(problem: Problem): ProblemAnalysis {
     usesOps,
     hasSafePath: sols.some((s) => s.targets.every(isEasyTarget)),
     hasShortcut: sols.some((s) => s.targets.length < problem.shots && s.targets.some((t) => !isEasyTarget(t))),
+    allPlayableInLane: keysPlayableInLane(problem, all),
   };
+}
+
+/** 解き方（正規化キー）ごとに、D の流し方で撃てる順番が1つ以上あるか */
+function keysPlayableInLane(problem: Problem, all: ReadonlyArray<Solution>): boolean {
+  const playable = new Set(all.filter((s) => playableInLane(problem, s.targets)).map((s) => s.key));
+  return all.every((s) => playable.has(s.key));
 }
 
 /** 問題が条件を満たしているか。満たさない理由を返す（空なら OK）。 */
@@ -79,6 +89,8 @@ export function validateProblem(problem: Problem): string[] {
   // D は見えている札を倒さないので、引き算が2枚あると、片方を当てたあとにもう片方でマイナスになりうる
   if (problem.set === 'lane' && problem.targets.filter((t) => t.op === '-').length > 1) errors.push('引き算の札が2枚以上ある');
   const a = analyzeProblem(problem);
+  // 図鑑の「？」に、D では撃てない解き方が混ざらないようにする
+  if (problem.set === 'lane' && !a.allPlayableInLane) errors.push('D の流し方では撃てない解き方がある');
   if (problem.targets.length <= problem.shots) errors.push('的の数が弾数以下');
   if (new Set(problem.targets.map((t) => t.id)).size !== problem.targets.length) errors.push('的の id が重複');
   if (a.keys.length < 2) errors.push(`解き方が ${a.keys.length} 種類しかない`);

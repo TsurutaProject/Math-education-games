@@ -22,7 +22,7 @@ import {
   type LaneContext,
   type LaneState,
 } from '../logic/lane';
-import { targetLabel, valueOf, type Calc } from '../logic/ops';
+import { targetLabel, type Calc } from '../logic/ops';
 import { aimCatapult, CATAPULT, flightDuration, type CatapultShot } from '../logic/catapult';
 import { clampAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
 import type { Problem, Variant } from '../logic/types';
@@ -180,7 +180,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     problem,
     geo,
     speed: settings.laneSpeed,
-    current: valueOf(calc),
+    calc,
     usedIds,
     useful,
     assistSec: settings.laneAssist ? settings.laneAssistSec : 0,
