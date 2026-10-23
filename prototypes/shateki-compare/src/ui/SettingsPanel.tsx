@@ -127,7 +127,17 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
         <section>
           <h3>パチンコ（B・C・D）</h3>
           <Slider label="弾の速さ" value={settings.slingSpeed} min={300} max={1600} step={50} onChange={(v) => update({ slingSpeed: v })} note="遅いほど、動く的は先を読んで撃つ必要がある" />
-          <Slider label="ガイドの長さ" value={settings.slingGuide} min={0} max={900} step={20} onChange={(v) => update({ slingGuide: v })} note="0でガイドなし" />
+          <div className="row">
+            <span className="row-label">ガイドの比較</span>
+            <div className="seg">
+              {[{ value: 120, label: '短い（120）' }, { value: 600, label: '従来（600）' }, { value: 1000, label: '長い（1000）' }].map(({ value, label }) => (
+                <button key={value} className={settings.slingGuide === value ? 'on' : ''} onClick={() => update({ slingGuide: value })}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <Slider label="ガイドの長さ" value={settings.slingGuide} min={0} max={2000} step={20} onChange={(v) => update({ slingGuide: v })} note="0でガイドなし。長いほど先の道すじが見える。壁ではね返る道すじも表示（動く的への命中は予測しない）" />
           <label className="row">
             <span className="row-label">左右の壁ではね返る</span>
             <input type="checkbox" checked={settings.slingBounce} onChange={(e) => update({ slingBounce: e.target.checked })} />
