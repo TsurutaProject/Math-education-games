@@ -1,5 +1,5 @@
 import type { CakeDefinition, Fraction, Order } from '../types/game'
-import { formatFraction } from '../utils/fraction'
+import { formatFraction, gcd } from '../utils/fraction'
 import { FuriganaText } from './FuriganaText'
 
 interface OrderBubbleProps {
@@ -12,50 +12,53 @@ const getPiecePlan = (order: Order): Fraction[] => {
     return order.recipePieces
   }
 
-  if (order.target.numerator <= 3) {
-    return Array.from({ length: order.target.numerator }, () => ({
-      numerator: 1,
-      denominator: order.target.denominator,
-    }))
-  }
-
   return [order.target]
 }
 
 export function OrderBubble({ order, cake }: OrderBubbleProps) {
+  const amount = order.target.denominator === 1
+    ? `${order.target.numerator}`
+    : `${order.target.denominator}分の${order.target.numerator}`
+  const request = `${cake.name}を${amount}個分ください。`
+  const bonusRequest = order.perfectPieceCount !== undefined
+    ? `${order.perfectPieceCount}ピースで作ると最高評価です。`
+    : order.recipePieces !== undefined
+      ? `${order.recipePieces.map(formatFraction).join('と')}の組み合わせだと、もっと嬉しいです。`
+      : ''
   const piecePlan = getPiecePlan(order)
   const isPieceCountChallenge = order.perfectPieceCount !== undefined
+  const denominator = piecePlan.reduce((common, piece) =>
+    common * piece.denominator / gcd(common, piece.denominator), 1)
+  const numerators = piecePlan.map((piece) => piece.numerator * (denominator / piece.denominator))
+  const hint = isPieceCountChallenge
+    ? `合計を${formatFraction(order.target)}にそろえよう。大きいピースをさらに切ると、量を変えずにピースの数を増やせるよ。最高評価は${order.perfectPieceCount}ピースです。`
+    : piecePlan.length > 1
+      ? `ケーキを${denominator}等分した大きさで考えよう。${piecePlan.map((piece, index) => `${formatFraction(piece)}は${numerators[index]}個分`).join('、')}。合わせると${numerators.join('＋')}＝${numerators.reduce((sum, n) => sum + n, 0)}個分で、${formatFraction(order.target)}になるよ。`
+      : `トレーのケーキの合計を${formatFraction(order.target)}個分にしよう。1つのピースでも、いくつかのピースを合わせてもいいよ。`
 
   return (
     <section className="order-bubble" aria-label="注文">
       <div className="order-bubble__body">
-        <div className="order-bubble__header">
-          <p className={`order-bubble__cake order-bubble__cake--${order.cakeKind}`}>
-            <span className="order-bubble__cake-thumb" aria-hidden="true">
-              <img src={cake.imageUrl} alt="" />
-            </span>
-            <span>
-              <small><FuriganaText text="注文ケーキ" /></small>
-              <b><FuriganaText text={cake.name} /></b>
-            </span>
-          </p>
-        </div>
         <p className="order-bubble__message">
-          <span><FuriganaText text="注文" /></span>
+          <span className="asset-label order-label">注文</span>
           <strong className="order-bubble__message-text">
-            <FuriganaText text={order.message} />
+            <FuriganaText text={request} />
+            {bonusRequest !== '' && <span className="order-bonus-request"><FuriganaText text={bonusRequest} /></span>}
           </strong>
         </p>
-        <div className="order-bubble__plan">
+        <details key={order.id} className="order-bubble__plan"><summary><FuriganaText text="ヒント・最高評価の条件" /></summary>
+          <p className="order-hint-explanation"><FuriganaText text={hint} /></p>
           <span className="order-bubble__label">
-            <FuriganaText text={isPieceCountChallenge ? '最高評価' : '作るピース'} />
+            <FuriganaText text={isPieceCountChallenge ? '最高評価' : order.recipePieces !== undefined ? '作るピース' : '必要な量'} />
           </span>
           <div
             className="order-bubble__pieces"
             aria-label={
               isPieceCountChallenge
                 ? `最高評価は${order.perfectPieceCount}ピース`
-                : `作るピースは ${piecePlan.map(formatFraction).join(' と ')}`
+                : order.recipePieces !== undefined
+                  ? `作るピースは ${piecePlan.map(formatFraction).join(' と ')}`
+                  : `必要な量は${formatFraction(order.target)}個分`
             }
           >
             {isPieceCountChallenge ? (
@@ -68,12 +71,7 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
               ))
             )}
           </div>
-        </div>
-      </div>
-      <div className="fraction-card" aria-label={`目標は ${formatFraction(order.target)}`}>
-        <small><FuriganaText text="目標" /></small>
-        <span>{order.target.numerator}</span>
-        <span>{order.target.denominator}</span>
+        </details>
       </div>
     </section>
   )

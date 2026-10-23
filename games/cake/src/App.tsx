@@ -47,6 +47,7 @@ import {
 } from './utils/fraction'
 import './styles/global.css'
 import './styles/game.css'
+import './styles/workbench.css'
 
 const maxTrayPieces = 3
 const visibleCustomerCount = 5
@@ -71,6 +72,7 @@ const compactPieceBonusReward = 80
 const recipeBonusReward = 180
 const defaultCuts = 12
 const tutorialStorageKey = 'fraction-cake-guided-tutorial-seen-v3'
+const stageServesStorageKey = 'cake-game:stage-serves'
 const completedStagesStorageKey = 'cake-game:completed-stages'
 const maxUnlockedStageStorageKey = 'cake-game:max-unlocked-stage'
 const unlockedCakeIdsStorageKey = 'cake-game:unlocked-cakes'
@@ -93,6 +95,20 @@ const readCompletedStageIds = (): string[] => {
       : []
   } catch {
     return []
+  }
+}
+
+const readStageServes = (): Record<string, number> => {
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(stageServesStorageKey) ?? '{}')
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    return Object.fromEntries(stages.map((stage) => {
+      const count = (parsed as Record<string, unknown>)[stage.id]
+      return [stage.id, typeof count === 'number' && Number.isInteger(count) && count >= 0
+        ? Math.min(count, stage.targetServes) : 0]
+    }))
+  } catch {
+    return {}
   }
 }
 
@@ -308,6 +324,7 @@ function App() {
   const [guidedTutorialStep, setGuidedTutorialStep] = useState<GuidedTutorialStep | null>(null)
   const [activeStageIndex, setActiveStageIndex] = useState(0)
   const [stageServedCount, setStageServedCount] = useState(0)
+  const [stageServes, setStageServes] = useState<Record<string, number>>(readStageServes)
   const [servedCount, setServedCount] = useState(0)
   const [activeOrderId, setActiveOrderId] = useState(initialStageOrders[0].id)
   const [activeCakeId, setActiveCakeId] = useState<CakeKind>('shortcake')
@@ -390,6 +407,14 @@ function App() {
     distinctCutDenominators: usedCutDenominators.length,
   }
   const unlockedTrophyIds = getUnlockedTrophyIds(trophyProgress)
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(stageServesStorageKey, JSON.stringify(stageServes))
+    } catch {
+      // Keep session progress even when browser storage is unavailable.
+    }
+  }, [stageServes])
 
   useEffect(() => {
     try {
@@ -556,10 +581,17 @@ function App() {
     selectedPieces.length > 0 &&
     areFractionsEqual(total, activeOrder.target)
   const isFinalStage = activeStageIndex === stages.length - 1
-  const stageProgressValue = stageServedCount
+  const stageProgressValue = completedStageIds.includes(activeStage.id)
+    ? activeStage.targetServes : stageServedCount
   const stageProgressTarget = activeStage.targetServes
   const stageProgressRatio = Math.min(stageProgressValue / stageProgressTarget, 1)
-  const isStageGoalComplete = stageProgressValue >= stageProgressTarget
+  const goalCakeId = stages[activeStageIndex + 1]?.requiredUnlockedCakeId
+  const needsCakeUnlock = goalCakeId !== undefined && !stageAvailableCakeIds.includes(goalCakeId)
+  const isStageGoalComplete = stageProgressValue >= stageProgressTarget && !needsCakeUnlock
+  const showCakeSelector = tutorialExampleOrder === undefined && (
+    new Set(stageOrders.map((order) => order.cakeKind)).size > 1 ||
+    (goalCakeId !== undefined && activeStage.requiredUnlockedCakeId === undefined)
+  )
 
   const resetBoardState = (cakeId: CakeKind): void => {
     const cake = getCakeById(cakeId)
@@ -580,11 +612,12 @@ function App() {
     const showTutorial = stageIndex === 0 && shouldShowTutorial()
     const firstOrderId = showTutorial
       ? 'half'
-      : selectNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, 0)
+      : selectNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, combo)
 
-    stageCompletionRef.current = false
+    stageCompletionRef.current = completedStageIds.includes(stage.id)
     setActiveStageIndex(stageIndex)
-    setStageServedCount(0)
+    setStageServedCount(completedStageIds.includes(stage.id)
+      ? stage.targetServes : (stageServes[stage.id] ?? 0))
     setActiveOrderId(firstOrderId)
     setActiveCakeId('shortcake')
     if (
@@ -604,7 +637,6 @@ function App() {
     setCutMarkAngles([])
     setCarriedPiece(null)
     setResult(idleResult)
-    setCombo(0)
     setStageEarned(0)
     setStageBestCombo(0)
     setCurrentCutDenominators([])
@@ -1085,6 +1117,10 @@ function App() {
       setServedFractionKeys(nextServedFractionKeys)
       setUsedCutDenominators(nextUsedCutDenominators)
       setStageServedCount(Math.min(nextStageServedCount, activeStage.targetServes))
+      setStageServes((current) => ({
+        ...current,
+        [activeStage.id]: Math.min(nextStageServedCount, activeStage.targetServes),
+      }))
       setActiveOrderId(nextOrderId)
       setToppingLayoutIndex((currentIndex) =>
         getNextToppingLayoutIndex(activeCake.id, currentIndex),
@@ -1238,46 +1274,32 @@ function App() {
       {soundControl}
       <main className={mainClassName}>
       <header className="game-header">
-        <div>
-          <div className="game-title-row">
-            <h1><FuriganaText text="分ケーキ" /></h1>
-            <span className="stage-eyebrow">
-              <FuriganaText text={`ステージ${activeStageIndex + 1}「${activeStage.title}」`} />
-            </span>
-            <button
-              type="button"
-              className="button button--secondary stage-select-return"
-              onClick={showStageSelect}
-            >
-              ステージ一覧
-            </button>
-          </div>
+        <span className="game-logo">分ケーキ</span>
+        <div className="stage-heading"><span>ステージ {activeStageIndex + 1}</span>
+          <h1><FuriganaText text={activeStage.title} /></h1>
         </div>
       </header>
-
+      <nav className="workbench-navigation" aria-label="ゲームメニュー">
+        <button type="button" className="button stage-select-return" onClick={showStageSelect}>← ステージ一覧</button>
+        <HelpMenu onOpenTutorial={openGuidedTutorial} />
+      </nav>
       <div className="game-layout">
-        <div className="left-panel">
-          <CustomerQueue
-            orders={visibleQueueOrders}
-            activeOrderId={activeOrder.id}
-          />
-          <TrophyShelf
-            trophies={trophies}
-            unlockedTrophyIds={unlockedTrophyIds}
-            progress={trophyProgress}
-          />
-        </div>
-
-        <section className="play-area">
+        <section className="order-area" aria-label="お客さんの注文">
+          <CustomerQueue orders={visibleQueueOrders.slice(0, 1)} activeOrderId={activeOrder.id} />
           <OrderBubble order={activeOrder} cake={getCakeById(activeOrder.cakeKind)} />
-          <CakeSelector
+        </section>
+        <section className="play-area" aria-label="まな板">
+          <div className="workbench-heading"><h2 className="asset-label board-label">まな板</h2>
+            <button type="button" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ 切り直す</button>
+          </div>
+          {showCakeSelector ? <CakeSelector
             cakes={visibleCakes}
             activeCakeId={activeCake.id}
             unlockedCakeIds={stageAvailableCakeIds}
             money={money}
             onSelectCake={handleSelectCake}
             onBuyCake={handleBuyCake}
-          />
+          /> : null}
           <CakeBoard
             key={`${activeOrder.id}-${activeCake.id}-${toppingLayoutIndex}`}
             pieces={boardPieces}
@@ -1294,10 +1316,30 @@ function App() {
             onMovePieceToTray={handleMovePieceToTray}
             onCarryPieceChange={handleCarryPieceChange}
           />
+          <GameControls interactionMode={interactionMode} onChangeInteractionMode={handleChangeInteractionMode} />
         </section>
-
         <aside className="side-panel">
-          <HelpMenu onOpenTutorial={openGuidedTutorial} />
+          {screen === 'playing' ? (
+            <ResultMessage
+              result={result}
+              onDismiss={() => setResult(idleResult)}
+              onConfirm={() => handleServe(true)}
+            />
+          ) : null}
+          <Tray
+            selectedPieces={selectedPieces}
+            maxPieces={maxTrayPieces}
+            cakeImageUrl={activeCake.imageUrl}
+            toppings={activeToppings}
+            onRemovePiece={handleReturnPieceToBoard}
+            onDropPiece={handleMovePieceToTrayById}
+          />
+          <button type="button" className={canServeCurrentTray ? 'button serve-button is-ready' : 'button serve-button'} disabled={selectedPieces.length === 0} onClick={() => handleServe()}>
+            <FuriganaText text="提供する" />
+          </button>
+          <p className="tray-return-help">ピースを押すと、まな板に戻せます。</p>
+          <div className="workbench-score">
+            <TrophyShelf trophies={trophies} unlockedTrophyIds={unlockedTrophyIds} progress={trophyProgress} />
           <dl className="score-board" aria-label="スコア">
             <div className="score-card score-card--sales">
               <dt><FuriganaText text="売上" /></dt>
@@ -1316,39 +1358,16 @@ function App() {
               </span>
             </div>
           </dl>
-          {screen === 'playing' ? (
-            <ResultMessage
-              result={result}
-              onDismiss={() => setResult(idleResult)}
-              onConfirm={() => handleServe(true)}
-            />
-          ) : null}
-          <Tray
-            selectedPieces={selectedPieces}
-            total={total}
-            maxPieces={maxTrayPieces}
-            cakeImageUrl={activeCake.imageUrl}
-            toppings={activeToppings}
-            onRemovePiece={handleReturnPieceToBoard}
-            onDropPiece={handleMovePieceToTrayById}
-          />
-          <GameControls
-            interactionMode={interactionMode}
-            canServe={canServeCurrentTray}
-            onChangeInteractionMode={handleChangeInteractionMode}
-            onServe={handleServe}
-            onClear={clearTray}
-          />
+          </div>
         </aside>
-      </div>
       <aside className="status-dock" aria-label="現在の表">
         <section
           className={isStageGoalComplete ? 'stage-card is-complete' : 'stage-card'}
           aria-label="ステージ目標"
         >
           <div className="stage-card__header">
-            <small><FuriganaText text="今の目標" /></small>
-            <span>{isStageGoalComplete ? '達成！' : `${stageProgressValue}/${stageProgressTarget}`}</span>
+            <small><FuriganaText text="クリア条件" /></small>
+            <span>{isStageGoalComplete ? '達成済み' : `販売した人数：${stageProgressValue} / ${stageProgressTarget}人`}</span>
           </div>
           <strong><FuriganaText text={activeStage.goal} /></strong>
           <div className="stage-card__meter" aria-hidden="true">
@@ -1356,6 +1375,7 @@ function App() {
           </div>
         </section>
       </aside>
+      </div>
       {carriedPiece !== null ? (
         <>
           <img

@@ -1,0 +1,358 @@
+/* Play screen: supplied artwork, with controls kept outside the cake surface. */
+.game-shell { padding: 0 24px 28px; color: #593600; }
+.game-header { position: relative; max-width: none; min-height: 130px; margin: 0 -24px 12px; padding: 18px 150px; background: #f58e6b; color: white; justify-content: center; align-items: center; }
+.stage-heading { text-align: center; font-weight: 900; }
+.stage-heading > span { font-size: 1.25rem; }
+.game-header h1 { margin: 8px 0 0; font-size: clamp(1.65rem, 3.4vw, 3rem); line-height: 1.3; }
+.game-logo { position: absolute; left: 24px; top: 22px; display: grid; place-items: center; width: 86px; height: 86px; border-radius: 50%; background: #fffaf5; color: #b94d2d; font-weight: 900; }
+.sound-toggle { top: 24px; right: 32px; border-color: #864b19; color: #593600; box-shadow: none; }
+.workbench-navigation { max-width: 1480px; margin: auto auto 20px; display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+.workbench-navigation .help-menu { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; border: 0; background: none; box-shadow: none; }
+.workbench-navigation button { min-height: 44px; background: #925400; color: white; border-radius: 8px; }
+.game-layout { display: grid; max-width: 1480px; margin: auto; grid-template-columns: minmax(0, 2fr) minmax(310px, 1fr); grid-template-areas: 'order goal' 'board tray'; gap: 28px 32px; align-items: start; }
+.order-area { grid-area: order; display: flex; gap: 14px; align-items: center; min-width: 0; }
+.order-area .customer-queue { flex: 0 0 85px; padding: 0; background: none; border: 0; box-shadow: none; }
+.customer-queue__list { display: block; margin: 0; padding: 0; }
+.order-area .customer-queue__item { margin: 0; padding: 0; background: none; border: 0; box-shadow: none; transform: none; }
+.order-area .customer-queue__avatar { width: 80px; height: 80px; }
+.customer-queue__details { display: none; }
+.order-bubble { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; padding: 16px 18px; border: 1px solid #dfceb0; border-radius: 16px; background: white; box-shadow: none; }
+.order-bubble__body { min-width: 0; flex: 1; }
+.order-bubble__message { display: block; margin: 6px 0; }
+.order-bubble__message-text { font-size: clamp(1.05rem, 1.6vw, 1.5rem); color: #593600; line-height: 1.8; }
+.order-bubble__cake { margin: 0; padding: 0; background: none; box-shadow: none; }
+.order-bubble__cake-thumb { width: 34px; height: 34px; }
+.order-bubble__cake small { display: none; }
+.order-bubble__plan { display: block; margin-top: 8px; padding: 0; background: none; border: 0; }
+.order-bubble__plan summary { cursor: pointer; padding: 10px 12px; border-radius: 8px; background: #ffdfa0; color: #593600; font-weight: 800; }
+.order-bubble__pieces { margin-top: 8px; }
+.order-bubble .fraction-card { flex: 0 0 60px; margin-left: 12px; }
+.asset-label { display: grid; place-items: center; width: 160px; height: 46px; margin: 0; background: center / 100% 100% no-repeat; font-size: 0 !important; color: transparent; }
+.board-label { background-image: url('../data/ui/board-label.png'); }
+.tray-label { background-image: url('../data/ui/tray-label.png'); width: 135px; }
+.order-bubble__message .order-label { position: absolute; left: -12px; top: -18px; width: 110px; height: 32px; background-image: url('../data/ui/order-label.png'); padding: 0; }
+.play-area { grid-area: board; min-width: 0; display: grid; gap: 8px; padding: 12px 24px 16px 8%; background: url('../data/ui/board.png') center / 100% 100% no-repeat; border: 0; border-radius: 16px; box-shadow: none; }
+.workbench-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-left: -6%; }
+.reset-cake { color: #593600; background: #fff1d4; border: 1px solid #9a641b; }
+.cake-selector { padding: 0; border: 0; background: none; box-shadow: none; }
+.cake-selector__header { display: none; }
+.cake-selector__list { display: flex; flex-wrap: wrap; gap: 8px; }
+.cake-option { display: grid; grid-template-columns: 42px 1fr; gap: 4px 8px; width: auto; max-width: 240px; padding: 6px 10px; background: #f8d69f; border: 2px solid transparent; box-shadow: none; }
+.cake-option.is-active { border-color: #754509; background: #fff5d9; }
+.cake-option__image { width: 42px; height: 42px; grid-row: span 2; }
+.cake-option h3 { font-size: .85rem; margin: 0; }
+.cake-option p { display: none; }
+.cake-option button { grid-column: 2; min-height: 32px; padding: 2px 10px; background: #734507; color: white; }
+.cake-board { min-height: 0; width: 100%; }
+.cake-board__surface { width: min(100%, 410px); border: 0; background: none; box-shadow: none; }
+.cake-svg { width: 100%; max-width: none; }
+.cake-board__notice { max-width: 560px; min-height: 0; margin: 2px 0; font-size: .85rem; color: #593600; }
+.play-area .game-controls { display: flex; justify-content: end; }
+.mode-selector button { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 78px; min-height: 86px; padding: 7px; color: #593600; border: 2px solid transparent; border-radius: 8px; background: #ffe4b8 url('../data/ui/tool-idle.png') center / 100% 100%; box-shadow: none; filter: none; }
+.mode-selector button.is-active { border-color: #633b00; outline: 2px solid white; background-image: url('../data/ui/tool-active.png'); color: #432800; }
+.mode-selector button img { width: 44px; height: 44px; object-fit: contain; filter: none; }
+.side-panel { grid-area: tray; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.tray { position: relative; min-height: 285px; margin-top: 20px; padding: 22px 16px 14px; border: 7px double #8a6548; background: #c39b76; box-shadow: none; border-radius: 4px; }
+.tray__header { align-items: center; }
+.tray h2 { position: absolute; top: -29px; left: -17px; }
+.tray__header p { margin-left: auto; color: #442900; font-weight: 900; }
+.tray__pieces { min-height: 160px; border: 0; background: none; align-items: center; }
+.tray .tray__empty { color: #442900; font-weight: 800; }
+.tray .cake-piece-preview svg { width: 100%; height: auto; max-width: 110px; }
+.tray-piece { border-width: 2px; min-height: 100px; }
+.side-panel > .serve-button { width: 100%; min-height: 56px; font-size: 1.3rem; color: white; background: #9a5100; box-shadow: 0 4px 0 #633b00; }
+.side-panel > .serve-button.is-ready { background: #a44622; }
+.side-panel > .serve-button:disabled { color: #645844; background: #ded1bb; box-shadow: none; cursor: default; }
+.tray-return-help { margin: 0; text-align: center; font-size: .85rem; }
+.workbench-score { display: flex; align-items: stretch; gap: 10px; margin-top: 12px; }
+.workbench-score .trophy-shelf { width: 85px; flex-shrink: 0; margin: 0; padding: 0; }
+.workbench-score .trophy-shelf__button { height: 100%; padding: 8px; background: #f2c17c; border: 0; color: #593600; }
+.workbench-score .trophy-shelf__header { display: flex; flex-direction: column; font-size: .8rem; }
+.workbench-score .trophy-open-button__body { display: none; }
+.workbench-score .score-board { flex: 1; gap: 8px; }
+.workbench-score .score-card { min-width: 0; padding: 8px; border: 0; border-radius: 20px; background: #f2c17c; box-shadow: none; }
+.workbench-score .score-board dd { font-size: clamp(1.1rem, 2vw, 1.8rem); color: #593600; }
+.workbench-score .score-board dt { color: #593600; }
+.workbench-score .combo-candles { display: none; }
+.status-dock { grid-area: goal; position: static; display: block; width: auto; max-width: none; margin: 0; padding: 0; transform: none; }
+.status-dock .stage-card { width: 100%; padding: 16px; color: #593600; background: #fff5df; border: 1px solid #d5b67a; box-shadow: none; }
+.stage-card__header { flex-wrap: wrap; gap: 8px; }
+.game-shell button:focus-visible, .game-shell summary:focus-visible { outline: 3px solid #8c420c; outline-offset: 3px; }
+@media (max-width: 900px) {
+  .game-layout { grid-template-columns: minmax(0, 1.3fr) minmax(260px, 1fr); gap: 24px 18px; }
+  .order-area { gap: 6px; }
+  .order-area .customer-queue { flex-basis: 50px; }
+  .order-area .customer-queue__avatar { width: 50px; height: 50px; }
+  .order-bubble { padding: 16px 10px; }
+  .order-bubble .fraction-card { flex-basis: 42px; }
+  .play-area { padding-right: 12px; }
+  .workbench-score { flex-wrap: wrap; }
+  .workbench-score .trophy-shelf { width: 100%; }
+  .workbench-score .trophy-shelf__header { flex-direction: row; justify-content: center; gap: 10px; }
+}
+@media (max-width: 650px) {
+  .game-shell { padding: 0 12px 20px; }
+  .game-header { margin: 0 -12px 12px; padding: 20px 80px 18px 12px; min-height: 106px; }
+  .game-logo { display: none; }
+  .sound-toggle { right: 10px; top: 12px; min-width: 68px; padding: 8px; font-size: .8rem; }
+  .game-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'goal' 'order' 'board' 'tray'; gap: 24px; }
+  .workbench-navigation { flex-wrap: wrap; }
+  .workbench-navigation .help-menu { gap: 6px; }
+  .workbench-navigation button { font-size: .8rem; padding: 8px; }
+  .play-area { padding-left: 9%; }
+  .cake-board__surface { max-width: 340px; }
+  .workbench-heading .asset-label { width: 130px; height: 38px; }
+  .workbench-score { flex-wrap: nowrap; }
+  .workbench-score .trophy-shelf { width: 80px; }
+  .workbench-score .trophy-shelf__header { flex-direction: column; }
+}
+
+.game-header { flex-direction: row; }
+.status-dock { z-index: auto; }
+
+/* Warm controls and a continuous wall, including overscroll and short screens. */
+html:root {
+  min-height: 100%;
+  background: #fff1d8 url('../data/ui/background-tile.jpg') center / cover no-repeat fixed;
+}
+body, #root {
+  min-height: 100vh;
+  background: transparent;
+}
+.game-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: transparent;
+}
+.flow-panel__start.button--primary {
+  background: #f27059;
+  color: #fff;
+  box-shadow: inset 0 -4px 0 rgba(179, 77, 49, .28);
+}
+.flow-panel__start.button--primary:hover { background: #e85f47; }
+.flow-panel__start:focus-visible { outline: 3px solid #8c420c; outline-offset: 4px; }
+.cake-option.is-active button { background: #b46118; color: #fff; }
+.play-area .mode-selector button {
+  background: #f7d6a0;
+  border: 2px solid #9f783d;
+  outline: none;
+  box-shadow: none;
+}
+.play-area .mode-selector button.is-active {
+  background: #ffcc7f;
+  border: 3px solid #8c420c;
+  box-shadow: inset 0 0 0 2px #fff6e7;
+}
+.play-area .mode-selector button:focus-visible { outline: 3px dashed #8c420c; outline-offset: 4px; }
+.play-area .mode-selector button:not(.is-active) img { filter: none; }
+.order-bubble__cake.order-bubble__cake--shortcake,
+.order-bubble__cake.order-bubble__cake--chocolate {
+  border-color: #d49b58;
+  color: #633b00;
+  background: #fff6e6;
+}
+.status-dock .stage-card small, .status-dock .stage-card__header span { color: #754509; }
+.stage-card__meter span, .tray__meter span { background: #d88732; }
+.order-area { gap: 24px; }
+.order-area .customer-queue { flex: 0 0 120px; overflow: visible; }
+.order-area .customer-queue__item.is-active { display: block; }
+.order-area .customer-queue__item.is-active .customer-queue__avatar {
+  width: 120px;
+  height: 120px;
+  background: transparent;
+}
+.order-bubble::before {
+  content: '';
+  position: absolute;
+  left: -13px;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  background: white;
+  border-left: 1px solid #dfceb0;
+  border-bottom: 1px solid #dfceb0;
+  transform: translateY(-50%) rotate(45deg);
+}
+.order-hint-explanation { margin: 12px 0; color: #593600; line-height: 1.9; font-weight: 700; }
+@media (max-width: 900px) {
+  .order-area .customer-queue { flex-basis: 88px; }
+  .order-area .customer-queue__item.is-active .customer-queue__avatar { width: 88px; height: 88px; }
+}
+@media (max-width: 650px) {
+  .order-area { gap: 16px; }
+  .order-area .customer-queue { flex-basis: 64px; }
+  .order-area .customer-queue__item.is-active .customer-queue__avatar { width: 64px; height: 64px; }
+  .order-bubble::before { width: 18px; height: 18px; left: -10px; }
+}
+
+@media (max-width: 1000px) {
+  .game-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'goal' 'order' 'board' 'tray'; }
+}
+
+.order-bubble__message-text .order-bonus-request {
+  display: block;
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: #79502b;
+  font-size: .85em;
+  line-height: 1.7;
+}
+
+
+/* Stage furniture and score row. */
+.side-panel { align-self: stretch; }
+.workbench-score { margin-top: auto; padding-top: 44px; align-items: center; gap: 14px; }
+.workbench-score .score-board { align-items: stretch; }
+.workbench-score .score-card { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 92px; border-radius: 999px; padding: 12px 18px; text-align: center; }
+.workbench-score .score-board dd { text-align: center; }
+.workbench-score .trophy-shelf { width: 90px; flex: 0 0 90px; border: 0; background: transparent; box-shadow: none; }
+.workbench-score .trophy-shelf__button { display: grid; justify-items: center; gap: 4px; padding: 0; background: transparent; border: 0; border-radius: 999px; box-shadow: none; }
+.trophy-shelf__asset { width: 72px; height: 72px; object-fit: contain; border-radius: 50%; }
+.workbench-score .trophy-shelf__header { flex-direction: column; gap: 0; font-size: .8rem; white-space: nowrap; }
+.play-area { background-color: transparent; }
+.order-bubble__plan summary { line-height: 2; }
+@media (max-width: 1000px) {
+  .workbench-score { margin-top: 12px; padding-top: 16px; }
+}
+@media (max-width: 420px) {
+  .workbench-score { gap: 6px; }
+  .workbench-score .trophy-shelf { flex-basis: 64px; width: 64px; }
+  .trophy-shelf__asset { width: 54px; height: 54px; }
+  .workbench-score .score-card { padding: 12px 8px; }
+}
+
+/* Shared press feedback across play, menus, dialogs and title screens. */
+#root button,
+#root summary {
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+@media (hover: hover) {
+  #root button:not(:disabled):not([aria-disabled="true"]):hover,
+  #root summary:hover {
+    transform: translateY(2px) scale(.98);
+    box-shadow: inset 0 3px 6px rgba(77, 43, 12, .24);
+  }
+}
+#root button:not(:disabled):not([aria-disabled="true"]):active,
+#root summary:active {
+  transform: translateY(3px) scale(.96);
+  box-shadow: inset 0 4px 8px rgba(77, 43, 12, .3);
+}
+@media (prefers-reduced-motion: reduce) {
+  #root button, #root summary { transition: none; }
+  #root button:not(:disabled):not([aria-disabled="true"]):hover,
+  #root button:not(:disabled):not([aria-disabled="true"]):active,
+  #root summary:hover, #root summary:active { transform: none; }
+}
+
+/* A narrow viewport must still allow dragging beneath the tutorial notice. */
+.guided-step-move-piece .guided-coach { pointer-events: none; }
+.guided-step-move-piece .guided-coach button { pointer-events: auto; }
+
+/* Keep trophy labels still; only press the round trophy image. */
+#root button.trophy-shelf__button:not(:disabled):not([aria-disabled="true"]):hover,
+#root button.trophy-shelf__button:not(:disabled):not([aria-disabled="true"]):active {
+  transform: none;
+  box-shadow: none;
+}
+.trophy-shelf__asset { transition: transform 140ms ease, box-shadow 140ms ease; }
+@media (hover: hover) {
+  .trophy-shelf__button:hover .trophy-shelf__asset {
+    transform: translateY(2px) scale(.98);
+    box-shadow: inset 0 3px 6px rgba(77, 43, 12, .24);
+  }
+}
+.trophy-shelf__button:active .trophy-shelf__asset {
+  transform: translateY(3px) scale(.96);
+  box-shadow: inset 0 4px 8px rgba(77, 43, 12, .3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .trophy-shelf__asset { transition: none; }
+  .trophy-shelf__button:hover .trophy-shelf__asset,
+  .trophy-shelf__button:active .trophy-shelf__asset { transform: none; }
+}
+
+/* Use more of the design viewport on the title and stage menu screens. */
+@media (min-width: 1600px) and (min-height: 1100px) {
+  .flow-panel--title { transform: scale(1.3); }
+  .flow-panel--stage-select { transform: scale(1.15); }
+}
+
+/* Larger text and a wider workbench within the 2048 × 1280 design space. */
+@media (min-width: 1600px) {
+  html:root { font-size: 20px; }
+  .workbench-navigation, .game-layout { max-width: 1840px; }
+  .game-layout { grid-template-columns: minmax(0, 1.8fr) minmax(480px, 1fr); gap: 24px 32px; }
+  .game-header { min-height: 130px; padding-top: 12px; padding-bottom: 12px; }
+  .game-header h1 { font-size: 2.6rem; }
+  .workbench-navigation button { font-size: 1.05rem; }
+  .order-bubble__message-text { font-size: 1.6rem; }
+  .order-area .customer-queue { flex-basis: 144px; }
+  .order-area .customer-queue__item.is-active .customer-queue__avatar { width: 144px; height: 144px; }
+  .cake-board__surface { width: min(100%, 460px); }
+  .play-area:has(.cake-selector) .cake-board__surface { width: min(100%, 400px); }
+  .flow-panel--stage-select { width: min(100%, 1080px); }
+  .cake-board__notice { max-width: 800px; font-size: 1rem; }
+  .cake-option { max-width: 310px; }
+  .cake-option h3 { font-size: 1rem; }
+  .tray { min-height: 330px; display: flex; flex-direction: column; }
+  .tray__pieces { flex: 1; }
+  .tray .cake-piece-preview svg { max-width: 150px; }
+  .tray-return-help { font-size: 1rem; }
+  .workbench-score { padding-top: 24px; }
+  .workbench-score .score-card { min-height: 116px; }
+  .workbench-score .score-board dd { font-size: 2rem; }
+}
+.status-dock .stage-card {
+  border: 3px solid #b96a18; border-radius: 16px; padding: 22px 24px;
+  background: #fff0bd; box-shadow: 0 5px 0 #d6b576; gap: 16px;
+}
+.status-dock .stage-card small { font-size: 1.3rem; color: #633b00; }
+.status-dock .stage-card strong { font-size: 1.35rem; line-height: 1.65; }
+.status-dock .stage-card__header span { font-size: 1.1rem; }
+.status-dock .stage-card__meter { height: 16px; }
+.play-area .mode-selector { gap: 16px; }
+.play-area .mode-selector button {
+  width: 112px; min-height: 116px; background: #fffaf0; color: #51320c;
+  border: 3px solid #8a6336; font-size: 1.15rem;
+}
+.play-area .mode-selector button.is-active {
+  background: #9a450f; color: #fff; border: 3px solid #542700;
+  box-shadow: inset 0 0 0 3px #ffe2a7;
+}
+.play-area .mode-selector button img { width: 56px; height: 56px; }
+.play-area .mode-selector button.is-active::after { content: '✓ 選択中'; font-size: .75rem; }
+.workbench-score .trophy-shelf { width: 120px; flex-basis: 120px; }
+.trophy-shelf__asset { display: block; position: relative; width: 112px; height: 112px; overflow: hidden; }
+.trophy-shelf__asset img, .trophy-shelf__fill { position: absolute; inset: 0; width: 100%; height: 100%; }
+.trophy-shelf__fill { pointer-events: none; }
+.workbench-score .trophy-shelf__header { font-size: 1.1rem; }
+
+/* Align the trophy circle with the score pills, reserving room for its count. */
+.workbench-score { padding-bottom: 34px; }
+.workbench-score .trophy-shelf__button { position: relative; height: 116px; align-content: center; }
+.workbench-score .trophy-shelf__header {
+  position: absolute; top: calc(100% + 4px); left: 0; width: 100%;
+  align-items: center; text-align: center; line-height: 1.2;
+}
+.workbench-score .combo-value > span { font-size: 2.4rem; }
+.workbench-score .combo-value small { font-size: .8rem; }
+
+/* Show the trophy count on hover or keyboard focus without taking row space. */
+.workbench-score { padding-bottom: 0; }
+.trophy-shelf__tooltip {
+  position: absolute; bottom: calc(100% + 12px); left: 0;
+  width: max-content; padding: 10px 14px; border-radius: 8px;
+  background: #593600; color: #fff; font-size: 1rem;
+  line-height: 1.5; white-space: nowrap; z-index: 20;
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.trophy-shelf__button:hover .trophy-shelf__tooltip,
+.trophy-shelf__button:focus-visible .trophy-shelf__tooltip {
+  opacity: 1; visibility: visible;
+}
+
+/* Let the count tooltip extend above the trophy container. */
+.workbench-score .trophy-shelf { overflow: visible; }
