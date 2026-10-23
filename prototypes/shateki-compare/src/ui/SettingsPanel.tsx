@@ -209,6 +209,12 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             <span className="row-label">効果音</span>
             <input type="checkbox" checked={settings.sound} onChange={(e) => update({ sound: e.target.checked })} />
           </label>
+          <label className="row">
+            <span className="row-label">BGM</span>
+            <input type="checkbox" checked={settings.bgm} onChange={(e) => update({ bgm: e.target.checked })} />
+            <span className="row-note">素材があるときに再生</span>
+          </label>
+          <Slider label="BGMの音量" value={settings.bgmVolume} min={0} max={1} step={0.05} onChange={(v) => update({ bgmVolume: v })} />
           <div className="row">
             <button className="btn small" onClick={() => onSettings({ ...DEFAULT_SETTINGS, shooter: settings.shooter })}>
               設定を元にもどす

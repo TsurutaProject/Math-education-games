@@ -34,6 +34,8 @@ export interface Settings {
   /** 今の式を画面に出すか */
   showExpression: boolean;
   sound: boolean;
+  bgm: boolean;
+  bgmVolume: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -54,6 +56,8 @@ export const DEFAULT_SETTINGS: Settings = {
   laneAssistSec: 8,
   showExpression: true,
   sound: true,
+  bgm: false,
+  bgmVolume: 0.25,
 };
 
 const KEY = 'shateki-settings-v1';
