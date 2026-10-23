@@ -273,3 +273,86 @@ body, #root {
   .trophy-shelf__button:hover .trophy-shelf__asset,
   .trophy-shelf__button:active .trophy-shelf__asset { transform: none; }
 }
+
+/* Use more of the design viewport on the title and stage menu screens. */
+@media (min-width: 1600px) and (min-height: 1100px) {
+  .flow-panel--title { transform: scale(1.3); }
+  .flow-panel--stage-select { transform: scale(1.15); }
+}
+
+/* Larger text and a wider workbench within the 2048 × 1280 design space. */
+@media (min-width: 1600px) {
+  html:root { font-size: 20px; }
+  .workbench-navigation, .game-layout { max-width: 1840px; }
+  .game-layout { grid-template-columns: minmax(0, 1.8fr) minmax(480px, 1fr); gap: 24px 32px; }
+  .game-header { min-height: 130px; padding-top: 12px; padding-bottom: 12px; }
+  .game-header h1 { font-size: 2.6rem; }
+  .workbench-navigation button { font-size: 1.05rem; }
+  .order-bubble__message-text { font-size: 1.6rem; }
+  .order-area .customer-queue { flex-basis: 144px; }
+  .order-area .customer-queue__item.is-active .customer-queue__avatar { width: 144px; height: 144px; }
+  .cake-board__surface { width: min(100%, 460px); }
+  .play-area:has(.cake-selector) .cake-board__surface { width: min(100%, 400px); }
+  .flow-panel--stage-select { width: min(100%, 1080px); }
+  .cake-board__notice { max-width: 800px; font-size: 1rem; }
+  .cake-option { max-width: 310px; }
+  .cake-option h3 { font-size: 1rem; }
+  .tray { min-height: 330px; display: flex; flex-direction: column; }
+  .tray__pieces { flex: 1; }
+  .tray .cake-piece-preview svg { max-width: 150px; }
+  .tray-return-help { font-size: 1rem; }
+  .workbench-score { padding-top: 24px; }
+  .workbench-score .score-card { min-height: 116px; }
+  .workbench-score .score-board dd { font-size: 2rem; }
+}
+.status-dock .stage-card {
+  border: 3px solid #b96a18; border-radius: 16px; padding: 22px 24px;
+  background: #fff0bd; box-shadow: 0 5px 0 #d6b576; gap: 16px;
+}
+.status-dock .stage-card small { font-size: 1.3rem; color: #633b00; }
+.status-dock .stage-card strong { font-size: 1.35rem; line-height: 1.65; }
+.status-dock .stage-card__header span { font-size: 1.1rem; }
+.status-dock .stage-card__meter { height: 16px; }
+.play-area .mode-selector { gap: 16px; }
+.play-area .mode-selector button {
+  width: 112px; min-height: 116px; background: #fffaf0; color: #51320c;
+  border: 3px solid #8a6336; font-size: 1.15rem;
+}
+.play-area .mode-selector button.is-active {
+  background: #9a450f; color: #fff; border: 3px solid #542700;
+  box-shadow: inset 0 0 0 3px #ffe2a7;
+}
+.play-area .mode-selector button img { width: 56px; height: 56px; }
+.play-area .mode-selector button.is-active::after { content: '✓ 選択中'; font-size: .75rem; }
+.workbench-score .trophy-shelf { width: 120px; flex-basis: 120px; }
+.trophy-shelf__asset { display: block; position: relative; width: 112px; height: 112px; overflow: hidden; }
+.trophy-shelf__asset img, .trophy-shelf__fill { position: absolute; inset: 0; width: 100%; height: 100%; }
+.trophy-shelf__fill { pointer-events: none; }
+.workbench-score .trophy-shelf__header { font-size: 1.1rem; }
+
+/* Align the trophy circle with the score pills, reserving room for its count. */
+.workbench-score { padding-bottom: 34px; }
+.workbench-score .trophy-shelf__button { position: relative; height: 116px; align-content: center; }
+.workbench-score .trophy-shelf__header {
+  position: absolute; top: calc(100% + 4px); left: 0; width: 100%;
+  align-items: center; text-align: center; line-height: 1.2;
+}
+.workbench-score .combo-value > span { font-size: 2.4rem; }
+.workbench-score .combo-value small { font-size: .8rem; }
+
+/* Show the trophy count on hover or keyboard focus without taking row space. */
+.workbench-score { padding-bottom: 0; }
+.trophy-shelf__tooltip {
+  position: absolute; bottom: calc(100% + 12px); left: 0;
+  width: max-content; padding: 10px 14px; border-radius: 8px;
+  background: #593600; color: #fff; font-size: 1rem;
+  line-height: 1.5; white-space: nowrap; z-index: 20;
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.trophy-shelf__button:hover .trophy-shelf__tooltip,
+.trophy-shelf__button:focus-visible .trophy-shelf__tooltip {
+  opacity: 1; visibility: visible;
+}
+
+/* Let the count tooltip extend above the trophy container. */
+.workbench-score .trophy-shelf { overflow: visible; }

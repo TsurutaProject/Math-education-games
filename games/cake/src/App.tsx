@@ -585,7 +585,13 @@ function App() {
     ? activeStage.targetServes : stageServedCount
   const stageProgressTarget = activeStage.targetServes
   const stageProgressRatio = Math.min(stageProgressValue / stageProgressTarget, 1)
-  const isStageGoalComplete = stageProgressValue >= stageProgressTarget
+  const goalCakeId = stages[activeStageIndex + 1]?.requiredUnlockedCakeId
+  const needsCakeUnlock = goalCakeId !== undefined && !stageAvailableCakeIds.includes(goalCakeId)
+  const isStageGoalComplete = stageProgressValue >= stageProgressTarget && !needsCakeUnlock
+  const showCakeSelector = tutorialExampleOrder === undefined && (
+    new Set(stageOrders.map((order) => order.cakeKind)).size > 1 ||
+    (goalCakeId !== undefined && activeStage.requiredUnlockedCakeId === undefined)
+  )
 
   const resetBoardState = (cakeId: CakeKind): void => {
     const cake = getCakeById(cakeId)
@@ -1286,7 +1292,7 @@ function App() {
           <div className="workbench-heading"><h2 className="asset-label board-label">まな板</h2>
             <button type="button" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ 切り直す</button>
           </div>
-          {new Set(stageOrders.map((order) => order.cakeKind)).size > 1 && tutorialExampleOrder === undefined ? <CakeSelector
+          {showCakeSelector ? <CakeSelector
             cakes={visibleCakes}
             activeCakeId={activeCake.id}
             unlockedCakeIds={stageAvailableCakeIds}
@@ -1322,7 +1328,6 @@ function App() {
           ) : null}
           <Tray
             selectedPieces={selectedPieces}
-            total={total}
             maxPieces={maxTrayPieces}
             cakeImageUrl={activeCake.imageUrl}
             toppings={activeToppings}

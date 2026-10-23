@@ -3196,7 +3196,7 @@ rt {
 
 .trophy-toast-region {
   position: fixed;
-  right: 18px;
+  left: 18px;
   bottom: 18px;
   z-index: 80;
   display: grid;
@@ -3254,7 +3254,7 @@ rt {
 @keyframes trophy-toast-slide {
   0% {
     opacity: 0;
-    transform: translateX(calc(100% + 22px));
+    transform: translateX(calc(-100% - 22px));
   }
 
   12%,
@@ -3265,7 +3265,7 @@ rt {
 
   100% {
     opacity: 0;
-    transform: translateX(calc(100% + 22px));
+    transform: translateX(calc(-100% - 22px));
   }
 }
 
