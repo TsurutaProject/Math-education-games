@@ -98,7 +98,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
     if (phase !== 'playing') return;
     const next = shoot(problem, game, info.targetId);
     if (next === game) return;
-    const reachable = canReach(problem, next.current, next.usedIds, next.shotsLeft);
+    const reachable = canReach(problem, next.calc, next.usedIds, next.shotsLeft);
     const target = info.targetId ? problem.targets.find((t) => t.id === info.targetId) : undefined;
     log({
       type: 'shot',
@@ -187,7 +187,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
         variant={variant}
         settings={settings}
         usedIds={game.usedIds}
-        current={game.current}
+        calc={game.calc}
         shotsLeft={game.shotsLeft}
         active={phase === 'playing'}
         onShot={onShot}

@@ -1,15 +1,33 @@
 import type { Op } from './types';
 
-export function apply(current: number, op: Op, value: number): number {
+/**
+ * 計算の途中の状態。当てた順に式を書き、かけ算・わり算を先に計算する（小学4年で習う計算の順序）。
+ * done = 確定した項の合計、last = 最後の項（× ÷ はこの項にだけかかる）。いまの数は done + last。
+ * 例：+5 → +10 → ×2 は 5 + 10 × 2 = 25（done 5, last 20）。
+ */
+export interface Calc {
+  done: number;
+  last: number;
+}
+
+/** 0 から始める（まだ項がない） */
+export const START: Calc = { done: 0, last: 0 };
+
+export function valueOf(c: Calc): number {
+  return c.done + c.last;
+}
+
+/** 1発ぶん計算を進める。+ − は新しい項を始め、× ÷ は最後の項にだけかける */
+export function step(c: Calc, op: Op, value: number): Calc {
   switch (op) {
     case '+':
-      return current + value;
+      return { done: c.done + c.last, last: value };
     case '-':
-      return current - value;
+      return { done: c.done + c.last, last: -value };
     case '*':
-      return current * value;
+      return { done: c.done, last: c.last * value };
     case '/':
-      return current / value;
+      return { done: c.done, last: c.last / value };
   }
 }
 
@@ -30,26 +48,13 @@ export function formatNumber(n: number): string {
 }
 
 /**
- * 撃った順の演算を左から計算した式にする。0 から始まる。
- * 例：[+10,+5,×2] → "(10 + 5) × 2"、[+10,×2,+5] → "10 × 2 + 5"
+ * 撃った順に並べた式にする。0 から始まる。かけ算が先なので括弧はつけない。
+ * 例：[+10,+5,×2] → "10 + 5 × 2"、[+10,×2,+5] → "10 × 2 + 5"
  */
 export function formatExpression(steps: ReadonlyArray<{ op: Op; value: number }>): string {
   if (steps.length === 0) return '0';
-  let expr: string;
-  // いちばん外側が足し算・引き算の形か（このあと × ÷ が来たら括弧が必要）
-  let topAdditive: boolean;
   const [first, ...rest] = steps;
-  if (first.op === '+') {
-    expr = String(first.value);
-    topAdditive = false;
-  } else {
-    expr = `0 ${OP_LABEL[first.op]} ${first.value}`;
-    topAdditive = isAdditive(first.op);
-  }
-  for (const { op, value } of rest) {
-    if (!isAdditive(op) && topAdditive) expr = `(${expr})`;
-    expr = `${expr} ${OP_LABEL[op]} ${value}`;
-    topAdditive = isAdditive(op);
-  }
+  let expr = first.op === '+' ? String(first.value) : `0 ${OP_LABEL[first.op]} ${first.value}`;
+  for (const { op, value } of rest) expr = `${expr} ${OP_LABEL[op]} ${value}`;
   return expr;
 }
