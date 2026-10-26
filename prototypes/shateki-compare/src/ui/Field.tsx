@@ -4,6 +4,7 @@ import {
   FIELD_H,
   FIELD_W,
   hitTest,
+  isInsideField,
   layoutTargets,
   swayOffset,
   targetPosition,
@@ -439,6 +440,8 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       return;
     }
     const point = reticleOf(aim);
+    // 照準がフィールドの外にあるときに離したら、撃たない（弾も減らない）
+    if (!isInsideField(point)) return;
     const assist = assistNow();
     const hit = hitTest(point, circlesAt(clockRef.current), assist);
     fire(point, hit, assist, aim.pointerType);
@@ -452,7 +455,9 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     if (aim && e.pointerId === aim.pointerId) setAim(null);
   };
 
-  const reticle = aim && !pullMode ? reticleOf(aim) : null;
+  // コルク銃の照準は、フィールドの外に出ているあいだは隠す（押したまま中に戻れば、また出る）
+  const reticleAt = aim && !pullMode ? reticleOf(aim) : null;
+  const reticle = reticleAt && isInsideField(reticleAt) ? reticleAt : null;
   const slingLaunch = aim && slingMode ? slingLaunchOf(aim) : null;
   const catapultShot = aim && catapultMode ? catapultShotOf(aim) : null;
   const f = flight.current;
