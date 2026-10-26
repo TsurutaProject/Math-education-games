@@ -135,7 +135,7 @@ export function GuidedTutorial({ step, onAdvance, onSkip }: GuidedTutorialProps)
         height: Math.max(focusRect.bottom, boardRect.bottom) - Math.min(focusRect.top, boardRect.top),
       }
       const coachRect = coach.getBoundingClientRect()
-      const coachWidth = Math.min(420, window.innerWidth - margin * 2)
+      const coachWidth = Math.min(680, window.innerWidth - margin * 2)
       const coachHeight = Math.max(coachRect.height, 180)
 
       const clamp = (value: number, min: number, max: number): number =>

@@ -12,6 +12,7 @@ interface TrophyShelfProps {
 export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShelfProps) {
   const maskId = useId()
   const filterId = useId()
+  const goldId = useId()
   const [isTrophyListOpen, setIsTrophyListOpen] = useState(false)
 
   return (
@@ -28,6 +29,12 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
             <img src={trophyIcon} alt="" draggable={false} />
             <svg className="trophy-shelf__fill" viewBox="0 0 256 256">
               <defs>
+                <linearGradient id={goldId} x1="0" x2="1">
+                  <stop offset="0%" stopColor="#a96c00" />
+                  <stop offset="35%" stopColor="#ffd85a" />
+                  <stop offset="55%" stopColor="#fff0a0" />
+                  <stop offset="100%" stopColor="#c18a09" />
+                </linearGradient>
                 <filter id={filterId} colorInterpolationFilters="sRGB">
                   <feColorMatrix type="saturate" values="0" />
                   <feComponentTransfer>
@@ -41,11 +48,10 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
                 </mask>
               </defs>
               <g mask={`url(#${maskId})`}>
-                {trophies.map((trophy, index) => (
-                  <rect key={trophy.id} x="0" y={222 - (index + 1) * 173 / trophies.length}
-                    width="256" height={173 / trophies.length - 0.8}
-                    fill={index < unlockedTrophyIds.length ? '#b45a16' : '#e3d7c5'} />
-                ))}
+                <rect width="256" height="256" fill="#e3d7c5" />
+                <rect x="0" y={222 - 173 * unlockedTrophyIds.length / Math.max(trophies.length, 1)}
+                  width="256" height={173 * unlockedTrophyIds.length / Math.max(trophies.length, 1)}
+                  fill={`url(#${goldId})`} />
               </g>
             </svg>
           </span>
