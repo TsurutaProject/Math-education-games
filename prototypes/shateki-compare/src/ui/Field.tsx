@@ -222,6 +222,23 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     if (!active) setAim(null);
   }, [active]);
 
+  // 画面の外で離すと、離した通知（pointerup）が届かないことがある。
+  // ウィンドウからフォーカスが外れた・タブが隠れたときも、撃たずに狙うのをやめる（押し直して狙い直す）
+  const aiming = aim !== null;
+  useEffect(() => {
+    if (!aiming) return;
+    const cancel = () => setAim(null);
+    const onVisibility = () => {
+      if (document.hidden) cancel();
+    };
+    window.addEventListener('blur', cancel);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('blur', cancel);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [aiming]);
+
   const positionOf = (id: string, t: number) => {
     if (lane.current) {
       const slot = lane.current.slots.findIndex((s) => s.cardId === id);
@@ -377,6 +394,11 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!aim || e.pointerId !== aim.pointerId) return;
+    // ボタンが押されていない＝どこかで離したのに、離した通知が届かなかった。撃たずにやめる
+    if (e.buttons === 0) {
+      setAim(null);
+      return;
+    }
     const pt = toField(e);
     if (pt) setAim({ ...aim, ...pt });
   };
@@ -422,6 +444,10 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     fire(point, hit, assist, aim.pointerType);
   };
 
+  /**
+   * 撃たずに狙うのをやめる。指の追跡が外れたとき（lostpointercapture）にも呼ぶ。
+   * 離した通知のあとにも追跡が外れた通知が来るが、照準を消すだけなので2回撃つことはない
+   */
   const onPointerCancel = (e: React.PointerEvent) => {
     if (aim && e.pointerId === aim.pointerId) setAim(null);
   };
@@ -445,6 +471,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
+        onLostPointerCapture={onPointerCancel}
       >
         <rect x={0} y={0} width={FIELD_W} height={FIELD_H} className="booth-bg" />
         {rowYs.map((y) => (
