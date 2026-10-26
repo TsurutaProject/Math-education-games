@@ -1,9 +1,12 @@
-import { apply } from './ops';
+import { START, step, valueOf, type Calc } from './ops';
 import type { Problem, Step } from './types';
 
 export type GameStatus = 'playing' | 'cleared' | 'out';
 
 export interface GameState {
+  /** 計算の途中の状態（× ÷ は最後の項にだけかかる） */
+  calc: Calc;
+  /** いまの数（calc を計算した値） */
   current: number;
   shotsLeft: number;
   usedIds: string[];
@@ -12,7 +15,7 @@ export interface GameState {
 }
 
 export function newGame(problem: Problem): GameState {
-  return { current: 0, shotsLeft: problem.shots, usedIds: [], steps: [], status: 'playing' };
+  return { calc: START, current: 0, shotsLeft: problem.shots, usedIds: [], steps: [], status: 'playing' };
 }
 
 /** 目標との差（目標 − 今の数）。正なら「あと〇」、負なら「〇 おおい」。 */
@@ -33,10 +36,12 @@ export function shoot(problem: Problem, state: GameState, targetId: string | nul
   const target = problem.targets.find((t) => t.id === targetId);
   if (!target || state.usedIds.includes(targetId)) return state;
   const before = state.current;
-  const after = apply(before, target.op, target.value);
+  const calc = step(state.calc, target.op, target.value);
+  const after = valueOf(calc);
   const shotsLeft = state.shotsLeft - 1;
   const usedIds = [...state.usedIds, targetId];
   return {
+    calc,
     current: after,
     shotsLeft,
     usedIds,

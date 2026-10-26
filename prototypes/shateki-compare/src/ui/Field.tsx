@@ -22,7 +22,7 @@ import {
   type LaneContext,
   type LaneState,
 } from '../logic/lane';
-import { targetLabel } from '../logic/ops';
+import { targetLabel, type Calc } from '../logic/ops';
 import { aimCatapult, CATAPULT, flightDuration, type CatapultShot } from '../logic/catapult';
 import { clampAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
 import type { Problem, Variant } from '../logic/types';
@@ -49,8 +49,8 @@ interface Props {
   variant: Variant;
   settings: Settings;
   usedIds: string[];
-  /** いまの数（D でマイナスになる札を出さないために使う） */
-  current: number;
+  /** 計算の途中の状態（D でマイナスになる札を出さないため・役立つ札を探すために使う） */
+  calc: Calc;
   shotsLeft: number;
   /** false のあいだは撃てない（クリア演出中など） */
   active: boolean;
@@ -120,7 +120,7 @@ const CATAPULT_SWAY_DEPTH = 0.8;
 /** コルクが飛び出す位置（画面の下の真ん中） */
 const MUZZLE = { x: FIELD_W / 2, y: FIELD_H + 40 };
 
-export function Field({ problem, variant, settings, usedIds, current, shotsLeft, active, onShot }: Props) {
+export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, onShot }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const riskMode = variant === 'C';
   const laneMode = variant === 'D';
@@ -173,14 +173,14 @@ export function Field({ problem, variant, settings, usedIds, current, shotsLeft,
   // ---- D：レーン。札の入れ替えは lane.ts、ここでは毎フレーム進めるだけ
   const geo = useMemo(() => laneGeometry(settings.laneVisible), [settings.laneVisible]);
   const useful = useMemo(
-    () => (laneMode ? usefulCards(problem, current, usedIds, shotsLeft) : new Set<string>()),
-    [laneMode, problem, current, usedIds, shotsLeft],
+    () => (laneMode ? usefulCards(problem, calc, usedIds, shotsLeft) : new Set<string>()),
+    [laneMode, problem, calc, usedIds, shotsLeft],
   );
   const laneCtx: LaneContext = {
     problem,
     geo,
     speed: settings.laneSpeed,
-    current,
+    calc,
     usedIds,
     useful,
     assistSec: settings.laneAssist ? settings.laneAssistSec : 0,

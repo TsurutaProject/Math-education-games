@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from './generator';
 import { FIELD_W, UNIFORM_RADIUS } from './hit';
+import { START, step, type Calc } from './ops';
 import {
   canShow,
   createLane,
   laneGeometry,
+  laterFactor,
   markHit,
+  playableInLane,
   slotLap,
   slotX,
   standingCards,
@@ -36,12 +39,15 @@ const problem: Problem = {
 
 const SPEED = 100;
 
+/** いまの数が n（項が1つだけ）の計算の状態 */
+const at = (n: number): Calc => (n === 0 ? START : step(START, '+', n));
+
 function ctxOf(over: Partial<LaneContext> = {}): LaneContext {
   return {
     problem,
     geo: laneGeometry(4),
     speed: SPEED,
-    current: 0,
+    calc: START,
     usedIds: [],
     useful: new Set(),
     assistSec: 0,
@@ -97,16 +103,67 @@ describe('laneGeometry / slotX', () => {
 });
 
 describe('canShow（マイナスにしない）', () => {
-  it('「−〇」は 〇 がいまの数以下のときだけ', () => {
-    expect(canShow({ id: 'a', op: '-', value: 5 }, 4)).toBe(false);
-    expect(canShow({ id: 'a', op: '-', value: 5 }, 5)).toBe(true);
+  const minus5 = { id: 'a', op: '-' as const, value: 5 };
+  const times2 = { id: 'b', op: '*' as const, value: 2 };
+
+  it('「−〇」は 〇 がいまの数以下のときだけ（掛け算の札が残っていなければ）', () => {
+    expect(canShow(minus5, at(4))).toBe(false);
+    expect(canShow(minus5, at(5))).toBe(true);
   });
-  it('0 のときの ×2 は出さない', () => {
-    expect(canShow({ id: 'a', op: '*', value: 2 }, 0)).toBe(false);
-    expect(canShow({ id: 'a', op: '*', value: 2 }, 10)).toBe(true);
+
+  it('掛け算の札が残っていれば、それを全部かけてもマイナスにならないときだけ（10 − 10 × 2 を防ぐ）', () => {
+    expect(canShow(minus5, at(9), 2)).toBe(false);
+    expect(canShow(minus5, at(10), 2)).toBe(true);
+    expect(canShow({ id: 'c', op: '-', value: 10 }, at(10), 2)).toBe(false);
   });
+
+  it('まだ項がないときの ×2 は何も変えないので出さない', () => {
+    expect(canShow(times2, START)).toBe(false);
+    expect(canShow(times2, at(10))).toBe(true);
+  });
+
+  it('×2 を当てるとマイナスになるときは出さない（5 − 5 × 2）', () => {
+    const c = step(at(5), '-', 5);
+    expect(canShow(times2, c)).toBe(false);
+  });
+
   it('足し算はいつでも出す', () => {
-    expect(canShow({ id: 'a', op: '+', value: 30 }, 0)).toBe(true);
+    expect(canShow({ id: 'a', op: '+', value: 30 }, START)).toBe(true);
+  });
+});
+
+describe('laterFactor', () => {
+  it('まだ当てていない掛け算の札を全部かけた倍率。自分自身と当てた札は数えない', () => {
+    expect(laterFactor(problem, [])).toBe(2);
+    expect(laterFactor(problem, ['x2'])).toBe(1);
+    expect(laterFactor(problem, [], 'x2')).toBe(1);
+  });
+});
+
+describe('playableInLane（D の流し方で撃てるか）', () => {
+  const p: Problem = {
+    ...problem,
+    goal: 20,
+    targets: [
+      { id: 'p10', op: '+', value: 10 },
+      { id: 'p20', op: '+', value: 20 },
+      { id: 'm10', op: '-', value: 10 },
+      { id: 'x2', op: '*', value: 2 },
+    ],
+  };
+  const t = (id: string) => p.targets.find((x) => x.id === id)!;
+
+  it('20 + 10 − 10 は撃てる（30 のときに −10 は 30 − 10 × 2 = 10 で大丈夫）', () => {
+    expect(playableInLane(p, [t('p20'), t('p10'), t('m10')])).toBe(true);
+  });
+
+  it('×2 が残っているあいだの 10 − 10 は撃てない（あとの ×2 で 10 − 20 になりうる）', () => {
+    expect(playableInLane(p, [t('p10'), t('m10')])).toBe(false);
+    expect(playableInLane(p, [t('p10'), t('m10')], START, ['x2'])).toBe(true);
+  });
+
+  it('まだ項がないときの ×2 から始める撃ち方は撃てない', () => {
+    expect(playableInLane(p, [t('x2'), t('p20')])).toBe(false);
   });
 });
 
@@ -130,7 +187,7 @@ describe('createLane', () => {
 
 describe('stepLane', () => {
   it('当てた札は倒れたまま流れ、1周したら二度と出てこない', () => {
-    const ctx = ctxOf({ current: 15, usedIds: ['p15'] });
+    const ctx = ctxOf({ calc: at(15), usedIds: ['p15'] });
     let lane = createLane(ctxOf());
     lane = markHit(lane, 'p15');
     const slot = lane.slots.findIndex((s) => s.cardId === 'p15');
@@ -144,7 +201,7 @@ describe('stepLane', () => {
   });
 
   it('当てずに流れていった札も、何周かのうちに必ずまた出てくる', () => {
-    const ctx = ctxOf({ current: 10 });
+    const ctx = ctxOf({ calc: at(10) });
     let lane = createLane(ctx);
     const seen = new Set(cardsOf(lane));
     const lapTime = ctx.geo.loop / SPEED;
@@ -159,7 +216,7 @@ describe('stepLane', () => {
   });
 
   it('札が入れ替わるのは、スロットが1周して画面外にいるときだけ', () => {
-    const ctx = ctxOf({ current: 10 });
+    const ctx = ctxOf({ calc: at(10) });
     let lane = createLane(ctx);
     for (let t = 1 / 30; t < 30; t += 1 / 30) {
       const before = lane.slots.map((s) => s.cardId);
@@ -183,16 +240,16 @@ describe('stepLane', () => {
       lastUsefulAt: 0,
     };
     // いまの数が 0 に戻って、×2 はもう出さない札になった
-    const next = stepLane(lane, 0.01, ctxOf({ geo: { ...laneGeometry(4), slots: 2 }, current: 0 }));
+    const next = stepLane(lane, 0.01, ctxOf({ geo: { ...laneGeometry(4), slots: 2 }, calc: at(0) }));
     expect(next.slots[0]).toMatchObject({ cardId: 'x2', down: false });
     expect(standingCards(next).map((c) => c.cardId)).toEqual(['x2', 'p10']);
   });
 
   it('画面外で入れ替えるときは、いまの数で出してよい札だけを選ぶ', () => {
     const geo = laneGeometry(3);
-    let lane = createLane(ctxOf({ geo, current: 10 }));
+    let lane = createLane(ctxOf({ geo, calc: at(10) }));
     // いまの数が 0 に戻ったあと、2周ぶん進めても −5 と ×2 は新しく置かれない
-    const ctx = ctxOf({ geo, current: 0 });
+    const ctx = ctxOf({ geo, calc: at(0) });
     const before = { ...lane.lastShown };
     lane = run(lane, 0.01, (geo.loop / SPEED) * 2, ctx);
     expect(lane.lastShown.m5).toBe(before.m5);
@@ -204,7 +261,7 @@ describe('救済', () => {
   /** 役立つ札が1枚（p30）しかない状況：レーンに乗っていない状態から始める */
   function setup(assistSec: number) {
     const geo = laneGeometry(3);
-    const ctx = ctxOf({ geo, current: 10, useful: new Set(['p30']), assistSec });
+    const ctx = ctxOf({ geo, calc: at(10), useful: new Set(['p30']), assistSec });
     const lane: LaneState = {
       slots: [
         { cardId: 'p5', down: false, lap: 0 },
@@ -259,11 +316,12 @@ describe('usefulCards', () => {
         { id: 'p35', op: '+', value: 35 },
       ],
     };
+    const at15 = step(START, '+', 15);
     // 0 から：10+20, 20+10, 35−5。−5 から始める道（0−5+35）はマイナスを通るので入れない
-    expect([...usefulCards(p, 0, [], 2)].sort()).toEqual(['p10', 'p20', 'p35']);
+    expect([...usefulCards(p, START, [], 2)].sort()).toEqual(['p10', 'p20', 'p35']);
     // 15 から1発（×2 は使用済み）：届く札はない
-    expect(usefulCards(p, 15, ['x2'], 1).size).toBe(0);
+    expect(usefulCards(p, at15, ['x2'], 1).size).toBe(0);
     // 15 から2発：15×2 で届く
-    expect([...usefulCards(p, 15, [], 2)]).toContain('x2');
+    expect([...usefulCards(p, at15, [], 2)]).toContain('x2');
   });
 });
