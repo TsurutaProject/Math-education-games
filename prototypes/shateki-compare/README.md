@@ -25,7 +25,7 @@ npm run dev
 | `npm run dev` | 開発サーバー |
 | `npm test` | ロジックのテスト（Vitest） |
 | `npm run build` | 型チェック＋本番ビルド（`dist/` を静的ホスティングに置けば動く） |
-| `npm run gen:problems` | 問題データ `src/data/problems.json` を作り直す（`-- 42` のようにシード指定可） |
+| `npm run gen:problems` | 問題データ `src/data/problems.json` の足りない問題だけを作る（今ある問題はそのまま。遊び比べ中の問題を変えないため）。全部作り直すときは `-- --all`（`-- --all 42` のようにシード指定可） |
 | `npm run list:problems` | 全問題の解き方の一覧を表示（答え合わせ用） |
 
 ## 遊び方とバリエーション

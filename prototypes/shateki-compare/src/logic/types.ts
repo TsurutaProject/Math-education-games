@@ -14,8 +14,11 @@ export interface Target {
   moving?: boolean;
 }
 
-/** standard = A/B 用、risk = C 用（安全な道と近道がある問題）、lane = D 用（同じ札が2枚ない問題）。 */
-export type ProblemSet = 'standard' | 'risk' | 'lane';
+/**
+ * standard = A/B 用、risk = C 用（安全な道と近道がある問題）、lane = D 用（同じ札が2枚ない問題）、
+ * rise = E 用（lane と同じ条件で、札を8枚にした問題）。
+ */
+export type ProblemSet = 'standard' | 'risk' | 'lane' | 'rise';
 
 export interface Problem {
   id: string;
