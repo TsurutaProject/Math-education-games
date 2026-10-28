@@ -1085,13 +1085,13 @@ function App() {
       }
 
       if (!hasExplainedCombo) {
-        resultHighlights.push('コンボ開始！続けて成功すると売上ボーナスが増えるよ。')
+        resultHighlights.push('コンボ開始！')
         setHasExplainedCombo(true)
       }
 
       if (!hasExplainedTrophies && newlyUnlockedTrophies.length > 0) {
         resultHighlights.push(
-          `トロフィーを${newlyUnlockedTrophies.length}個獲得！左の「一覧」で見られるよ。`,
+          `トロフィー ${newlyUnlockedTrophies.length}個獲得！`,
         )
         setHasExplainedTrophies(true)
       }
@@ -1146,6 +1146,7 @@ function App() {
           earnedMoney,
           combo: nextCombo,
           highlights: resultHighlights,
+          trophyHint: newlyUnlockedTrophies.length > 0,
           primaryLabel: '次へ',
         })
         return
@@ -1160,6 +1161,7 @@ function App() {
         earnedMoney,
         combo: nextCombo,
         highlights: resultHighlights,
+          trophyHint: newlyUnlockedTrophies.length > 0,
         primaryLabel: '次へ',
       })
       return

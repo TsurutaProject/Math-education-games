@@ -61,11 +61,21 @@ export function ResultMessage({ result, onDismiss, onConfirm }: ResultMessagePro
                     ) : null}
                   </div>
                 ) : null}
-                {result.highlights?.map((highlight) => (
-                  <p key={highlight} className="result-highlight">
-                    <FuriganaText text={highlight} />
+                {result.highlights !== undefined && result.highlights.length > 0 ? (
+                  <ul className="result-highlights" aria-label="今回の成果">
+                    {result.highlights.map((highlight) => (
+                      <li key={highlight} className="result-highlight">
+                        <span><FuriganaText text={highlight} /></span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {result.trophyHint ? (
+                  <p className="result-trophy-hint">
+                    <span><FuriganaText text="右下の売上横にあるトロフィーマークから" /></span>
+                    <span><FuriganaText text="一覧を見られるよ。" /></span>
                   </p>
-                ))}
+                ) : null}
               </div>
               <div className="result-message__actions">
                 {isWarning ? (

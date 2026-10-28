@@ -115,4 +115,5 @@ export interface ResultState {
   combo?: number
   earnedMoney?: number
   highlights?: string[]
+  trophyHint?: boolean
 }

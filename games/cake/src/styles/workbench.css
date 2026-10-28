@@ -379,3 +379,30 @@ body, #root {
 .guided-coach p { font-size: 1.35rem; }
 .guided-coach__header, .guided-coach small { font-size: 1rem; }
 .guided-coach > .button { font-size: 1.3rem; min-height: 68px; }
+
+/* Keep the result readable and align ruby-bearing rewards with combo badges. */
+.result-message__content { gap: 22px; }
+.result-message__content > strong { font-size: 3rem; line-height: 1.3; }
+.result-message__summary { gap: 18px; }
+.result-message__summary > span { font-size: 1.6rem; }
+.result-reward { align-items: stretch; justify-content: center; gap: 16px; }
+.result-message__content .result-reward strong,
+.result-message__content .result-reward b {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 230px; min-height: 94px; padding: 16px 22px;
+  margin: 0; font-size: 2.2rem; line-height: 1.4;
+}
+.result-highlights { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.result-highlights .result-highlight {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid #ebc88d; border-radius: 999px; padding: 10px 18px;
+  font-size: 1.25rem; line-height: 1.7; text-align: center;
+}
+.result-message__actions .button { min-width: 220px; min-height: 74px; font-size: 1.5rem; }
+
+/* Keep ruby fragments in normal inline flow, never separate flex items. */
+.result-highlights .result-highlight { display: block; }
+.result-trophy-hint { margin: 0; color: #69503b; font-size: 1.1rem; line-height: 1.8; text-align: center; }
+.result-trophy-hint > span { display: block; }
+.result-message__content { inset: 6% 8% 25% 12%; gap: 14px; }
+.result-message__summary { gap: 12px; }
