@@ -5,6 +5,8 @@ interface FuriganaTextProps {
 }
 
 const readings: Array<[string, string]> = [
+  ['最高評価', 'さいこうひょうか'],
+  ['条件', 'じょうけん'],
   ['分ケーキ', 'わけーき'],
   ['基本の分け方', 'きほんのわけかた'],
   ['分け方', 'わけかた'],
