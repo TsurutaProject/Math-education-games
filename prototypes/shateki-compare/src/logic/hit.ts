@@ -83,6 +83,14 @@ export function swayOffset(t: number, amplitude: number): { dx: number; dy: numb
   };
 }
 
+/**
+ * 点がフィールドの中にあるか。横はパチンコの弾がはね返る壁（フィールドの左右の端）と同じ。
+ * 画面がフィールドより横長・縦長だと、SVG の余白にもフィールドの外の座標が出るので、それを外す。
+ */
+export function isInsideField(p: { x: number; y: number }): boolean {
+  return p.x >= 0 && p.x <= FIELD_W && p.y >= 0 && p.y <= FIELD_H;
+}
+
 export interface HitCircle {
   id: string;
   x: number;

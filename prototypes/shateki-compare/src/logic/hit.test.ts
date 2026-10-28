@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { assistMultiplier, FIELD_W, hitTest, layoutTargets, swayOffset, targetPosition, UNIFORM_RADIUS } from './hit';
+import {
+  assistMultiplier,
+  FIELD_H,
+  FIELD_W,
+  hitTest,
+  isInsideField,
+  layoutTargets,
+  swayOffset,
+  targetPosition,
+  UNIFORM_RADIUS,
+} from './hit';
 import type { Problem } from './types';
 
 describe('assistMultiplier', () => {
@@ -11,6 +21,20 @@ describe('assistMultiplier', () => {
   it('強さ 0 なら常に補正なし、強いほど広がる', () => {
     expect(assistMultiplier(1, 0)).toBe(1);
     expect(assistMultiplier(1, 2)).toBeGreaterThan(assistMultiplier(1, 1));
+  });
+});
+
+describe('isInsideField', () => {
+  it('フィールドの中と端はOK', () => {
+    expect(isInsideField({ x: 500, y: 300 })).toBe(true);
+    expect(isInsideField({ x: 0, y: 0 })).toBe(true);
+    expect(isInsideField({ x: FIELD_W, y: FIELD_H })).toBe(true);
+  });
+  it('左右（パチンコの壁の外）・上下にはみ出したら外', () => {
+    expect(isInsideField({ x: -1, y: 300 })).toBe(false);
+    expect(isInsideField({ x: FIELD_W + 1, y: 300 })).toBe(false);
+    expect(isInsideField({ x: 500, y: -1 })).toBe(false);
+    expect(isInsideField({ x: 500, y: FIELD_H + 1 })).toBe(false);
   });
 });
 
