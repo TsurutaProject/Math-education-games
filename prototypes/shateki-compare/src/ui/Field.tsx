@@ -24,12 +24,25 @@ import {
   type LaneState,
 } from '../logic/lane';
 import { targetLabel, type Calc } from '../logic/ops';
+import {
+  createRise,
+  hitRise,
+  isHittable,
+  RISE_POSITIONS,
+  RISE_Y,
+  riseSlotPlace,
+  stepRise,
+  swapRise,
+  type RiseContext,
+  type RiseState,
+} from '../logic/rise';
 import { aimCatapult, CATAPULT, flightDuration, type CatapultShot } from '../logic/catapult';
 import { clampAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
 import type { Problem, Variant } from '../logic/types';
 import { shooterOf, type Settings } from './settings';
 import { CatapultLayer } from './CatapultLayer';
 import { LaneLayer } from './LaneLayer';
+import { RiseLayer } from './RiseLayer';
 import { SlingLayer } from './SlingLayer';
 import { TargetMark } from './TargetMark';
 import { sfxCatapult, sfxHit, sfxMiss, sfxShot, sfxSling, sfxThud, unlockAudio } from './sound';
@@ -111,7 +124,7 @@ type Flight = SlingFlight | CatapultFlight;
 /** A でタップを少し大目に拾う（指の太さ分） */
 const TAP_TOLERANCE = 1.15;
 /** 連打で2発同時に出ないようにする間（ミリ秒）。C は倒れるのを見せるため長め。 */
-const COOLDOWN_MS: Record<Variant, number> = { A: 200, B: 250, C: 550, D: 250 };
+const COOLDOWN_MS: Record<Variant, number> = { A: 200, B: 250, C: 550, D: 250, E: 550 };
 /** タッチのとき、指で隠れないように照準を指より上に出す（フィールド単位） */
 const TOUCH_AIM_OFFSET = 90;
 /** パチンコ・カタパルトの揺れ：照準の揺れ幅 1 あたり何度ぶれるか */
@@ -125,6 +138,9 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const svgRef = useRef<SVGSVGElement>(null);
   const riskMode = variant === 'C';
   const laneMode = variant === 'D';
+  const riseMode = variant === 'E';
+  /** 当てたときの手応えを厚くする（C と、それに合わせた E）：一瞬止まる・揺れる・ぐらついて倒れる */
+  const heavyFeel = riskMode || riseMode;
   const aimMode = variant !== 'A';
   const shooter = shooterOf(variant, settings);
   const slingMode = shooter === 'sling';
@@ -196,6 +212,16 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     laneMadeFor.current = laneKey;
   }
 
+  // ---- E：置き場所。札の入れ替えは rise.ts、ここでは毎フレーム進めるだけ
+  const riseCtx: RiseContext = { problem, calc, usedIds, rng: Math.random };
+  const rise = useRef<RiseState | null>(null);
+  // 設定パネルで立っている的の数を変えたら、置き場所を作り直す
+  const riseMadeFor = useRef<number | null>(null);
+  if (riseMode && riseMadeFor.current !== settings.riseStanding) {
+    rise.current = createRise(riseCtx, RISE_POSITIONS, settings.riseStanding);
+    riseMadeFor.current = settings.riseStanding;
+  }
+
   // やり直しなどで消えたあとに、飛んでいた弾が1発ぶんとして数えられないようにする
   useEffect(
     () => () => {
@@ -245,11 +271,20 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       const slot = lane.current.slots.findIndex((s) => s.cardId === id);
       return { x: slotX(slot, t, geo, settings.laneSpeed), y: LANE_Y };
     }
+    if (rise.current) {
+      const slot = rise.current.slots.findIndex((s) => s.cardId === id);
+      const { x, y } = riseSlotPlace(slot);
+      return { x, y };
+    }
     const p = placed.find((x) => x.id === id)!;
     return downAt.current.get(id) ?? targetPosition(p, t, speed);
   };
 
-  const radiusOf = (id: string) => (lane.current ? UNIFORM_RADIUS : placed.find((p) => p.id === id)!.r);
+  const radiusOf = (id: string) => {
+    if (lane.current) return UNIFORM_RADIUS;
+    if (rise.current) return riseSlotPlace(0).r;
+    return placed.find((p) => p.id === id)!.r;
+  };
 
   const toField = (e: React.PointerEvent): { x: number; y: number } | null => {
     const ctm = svgRef.current?.getScreenCTM();
@@ -263,6 +298,13 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       return standingCards(lane.current)
         .filter(({ cardId }) => !usedIds.includes(cardId))
         .map(({ slot, cardId }) => ({ id: cardId, x: slotX(slot, t, geo, settings.laneSpeed), y: LANE_Y, r: UNIFORM_RADIUS }));
+    }
+    if (rise.current) {
+      // 起き上がる途中の的には、まだ当たらない
+      return rise.current.slots
+        .map((s, i) => ({ s, i }))
+        .filter(({ s }) => isHittable(s, t) && !usedIds.includes(s.cardId!))
+        .map(({ s, i }) => ({ id: s.cardId!, ...riseSlotPlace(i) }));
     }
     return placed.filter((p) => !usedIds.includes(p.id)).map((p) => ({ id: p.id, ...targetPosition(p, t, speed), r: p.r }));
   };
@@ -283,7 +325,9 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
 
   // D は当たり判定を広げない（救済は「役立つ札を流す」ほうで行う）
   const assistNow = () =>
-    laneMode || (riskMode && !settings.assistInC) ? 1 : assistMultiplier(shotsLeft, settings.assistStrength);
+    laneMode || riseMode || (riskMode && !settings.assistInC)
+      ? 1
+      : assistMultiplier(shotsLeft, settings.assistStrength);
 
   const fire = (
     point: { x: number; y: number },
@@ -298,12 +342,13 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       const t = problem.targets.find((x) => x.id === targetId)!;
       const pos = positionOf(targetId, clockRef.current);
       const r = radiusOf(targetId);
-      // D の的は倒れたまま流れていく。それ以外は当たった場所で止める
+      // D の的は倒れたまま流れていく。E は倒れて、別の場所に新しい的が起き上がる。それ以外は当たった場所で止める
       if (lane.current) lane.current = markHit(lane.current, targetId);
+      else if (rise.current) rise.current = hitRise(rise.current, targetId, clockRef.current, settings.riseDelay, Math.random);
       else downAt.current.set(targetId, pos);
       addEffect(pos, pos.x, pos.y - r - 10, targetLabel(t.op, t.value), 'hit');
-      sfxHit(riskMode);
-      if (riskMode) {
+      sfxHit(heavyFeel);
+      if (heavyFeel) {
         freezeUntil.current = performance.now() + 110;
         setShaking((s) => s + 1);
       }
@@ -319,6 +364,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   // カタパルト：飛んでいる時間がたったら、着地点で当たりを決める（手前の的は飛び越える）
   onFrame.current = (dt: number) => {
     if (lane.current) lane.current = stepLane(lane.current, clockRef.current, laneCtx);
+    if (rise.current) rise.current = stepRise(rise.current, clockRef.current, riseCtx);
     const f = flight.current;
     if (!f) return;
     if (f.kind === 'catapult') {
@@ -464,7 +510,16 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const sf = f?.kind === 'sling' ? f : null;
   const cf = f?.kind === 'catapult' ? f : null;
   const firstShot = shotsLeft === problem.shots;
-  const rowYs = laneMode ? [LANE_Y] : [...new Set(placed.map((p) => p.y))];
+  const rowYs = laneMode ? [LANE_Y] : riseMode ? [RISE_Y] : [...new Set(placed.map((p) => p.y))];
+  // E の「いれかえる」：撃てるとき・起き上がりきった的があるときだけ押せる
+  const canSwap = !!rise.current && active && !f && rise.current.slots.some((s) => isHittable(s, clock));
+  const onSwap = (e: React.PointerEvent) => {
+    // フィールドの「押して狙う」を始めない
+    e.stopPropagation();
+    unlockAudio();
+    if (!canSwap || !rise.current) return;
+    rise.current = swapRise(rise.current, clockRef.current, settings.riseDelay, Math.random);
+  };
 
   return (
     <div className={`field field-${variant} ${shaking ? 'shake' : ''}`}>
@@ -484,6 +539,8 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
         ))}
         {lane.current ? (
           <LaneLayer problem={problem} lane={lane.current} geo={geo} speed={settings.laneSpeed} clock={clock} />
+        ) : rise.current ? (
+          <RiseLayer problem={problem} rise={rise.current} />
         ) : (
           placed.map((p) => {
             const t = problem.targets.find((x) => x.id === p.id)!;
@@ -507,11 +564,25 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
               </circle>
             )}
             {ef.dust && <ellipse cx={ef.tx} cy={ef.ty} rx={34} ry={14} className="cat-dust" />}
-            <text x={ef.x} y={ef.y} className={`pop pop-${ef.kind} ${riskMode ? 'pop-big' : ''}`}>
+            <text x={ef.x} y={ef.y} className={`pop pop-${ef.kind} ${heavyFeel ? 'pop-big' : ''}`}>
               {ef.text}
             </text>
           </g>
         ))}
+        {rise.current && (
+          <g
+            className={`swap-btn ${canSwap ? '' : 'disabled'}`}
+            transform={`translate(24 ${FIELD_H - 76})`}
+            onPointerDown={onSwap}
+            role="button"
+            aria-label="いれかえる"
+          >
+            <rect width={200} height={56} rx={28} />
+            <text x={100} y={28} dy="0.35em">
+              いれかえる
+            </text>
+          </g>
+        )}
         {aim && reticle && (
           <g className="reticle" transform={`translate(${reticle.x} ${reticle.y})`}>
             <circle r={26} />

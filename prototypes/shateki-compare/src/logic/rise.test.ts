@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from './generator';
+import { FIELD_W } from './hit';
 import { START, step, type Calc } from './ops';
 import {
   createRise,
@@ -7,7 +8,9 @@ import {
   isHittable,
   isStanding,
   pickCard,
+  RISE_POSITIONS,
   RISE_SEC,
+  riseSlotPlace,
   stepRise,
   swapRise,
   type RiseContext,
@@ -42,6 +45,17 @@ function ctxOf(over: Partial<RiseContext> = {}): RiseContext {
 }
 
 const standingCards = (s: RiseState) => s.slots.filter(isStanding).map((x) => x.cardId!);
+
+describe('riseSlotPlace（置き場所の位置）', () => {
+  it('1段に等間隔に並び、となりの的と重ならず、フィールドからはみ出さない', () => {
+    const places = Array.from({ length: RISE_POSITIONS }, (_, i) => riseSlotPlace(i));
+    for (let i = 1; i < places.length; i++) {
+      expect(places[i].x - places[i - 1].x).toBeGreaterThan(places[i].r + places[i - 1].r);
+    }
+    expect(places[0].x - places[0].r).toBeGreaterThanOrEqual(0);
+    expect(places.at(-1)!.x + places.at(-1)!.r).toBeLessThanOrEqual(FIELD_W);
+  });
+});
 
 describe('createRise（最初の置き場所）', () => {
   it('8か所のうち6か所に、同じ札が重ならないように立てる', () => {

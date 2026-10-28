@@ -93,7 +93,11 @@ export function App() {
               key={sh}
               className={sh === shooterOf(variant, settings) ? 'on' : ''}
               disabled={!shooterAllowed(variant, sh)}
-              title={variant === 'D' && sh === 'catapult' ? 'D はレーンが1本なのでカタパルトは使いません' : undefined}
+              title={
+                (variant === 'D' || variant === 'E') && sh === 'catapult'
+                  ? 'D・E は的が1段なのでカタパルトは使いません'
+                  : undefined
+              }
               onClick={() => changeShooter(sh)}
             >
               {SHOOTER_LABEL[sh]}

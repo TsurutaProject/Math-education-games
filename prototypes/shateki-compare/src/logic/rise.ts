@@ -1,3 +1,4 @@
+import { FIELD_W, UNIFORM_RADIUS } from './hit';
 import { canShow, laterFactor } from './lane';
 import type { Calc } from './ops';
 import type { Problem } from './types';
@@ -15,6 +16,17 @@ import type { Problem } from './types';
 
 /** 起き上がる演出の長さ（秒）。起き上がりきるまでは当たらない */
 export const RISE_SEC = 0.35;
+
+/** 置き場所の数（1段に並べる）。立っている的の数（設定）より多くして、空きに新しい的が起き上がる */
+export const RISE_POSITIONS = 8;
+/** 置き場所の高さ（的の中心の y）。パチンコの1段・D のレーンと同じ */
+export const RISE_Y = 240;
+
+/** 置き場所 i の中心の x と、的の半径（となりと重ならない大きさ） */
+export function riseSlotPlace(i: number, positions = RISE_POSITIONS): { x: number; y: number; r: number } {
+  const cell = FIELD_W / positions;
+  return { x: cell * (i + 0.5), y: RISE_Y, r: Math.min(UNIFORM_RADIUS, cell / 2 - 12) };
+}
 
 /** 倒れた理由（演出を分けるため）。hit = 当てた（C と同じ倒れ方）、swap = いれかえで静かに倒れた */
 export type FallReason = 'hit' | 'swap';
@@ -61,12 +73,12 @@ function isFree(s: RiseSlot): boolean {
 
 /**
  * ゲーム開始時の置き場所。positions か所のうち、ランダムな standing か所に、ランダムな札を立てる。
- * やり直すたびに組み合わせが変わる。最初から立っているので、起き上がる途中にはしない。
+ * やり直すたびに組み合わせが変わる。最初から立っているので、起き上がる時刻は「ずっと前」にして、時計に関係なく当てられる。
  */
 export function createRise(ctx: RiseContext, positions: number, standing: number): RiseState {
   let slots: RiseSlot[] = Array.from({ length: positions }, () => ({
     cardId: null,
-    appearAt: -RISE_SEC,
+    appearAt: -Infinity,
     fell: null,
     reserved: false,
     avoidId: null,
@@ -137,6 +149,7 @@ function fall(state: RiseState, i: number, reason: FallReason): RiseState {
 /**
  * 空いている場所を1つ予約する。今倒れたばかりの場所（justFell）は、ほかに空きがないときだけ使う。
  * avoidId は、起き上がるときに選ばないようにする札。
+ * 予約した場所に前に倒れた的が残っていれば消す（倒れきって見えなくなっている。描き直しで倒れる演出がまた出ないように）。
  */
 function reserveRise(
   state: RiseState,
@@ -147,9 +160,8 @@ function reserveRise(
 ): RiseState {
   const free = state.slots.map((s, i) => ({ s, i })).filter(({ s, i }) => isFree(s) && i !== justFell);
   const i = free.length > 0 ? free[Math.floor(rng() * free.length)].i : justFell;
-  const target = state.slots[i];
   return {
-    slots: replaceAt(state.slots, i, { cardId: target.cardId, appearAt, fell: target.fell, reserved: true, avoidId }),
+    slots: replaceAt(state.slots, i, { cardId: null, appearAt, fell: null, reserved: true, avoidId }),
   };
 }
 

@@ -352,6 +352,27 @@ button {
     opacity: 0.85;
   }
 }
+/* E：いれかえるボタン（フィールドの左下） */
+.swap-btn {
+  cursor: pointer;
+}
+.swap-btn rect {
+  fill: var(--panel);
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+.swap-btn text {
+  font-size: 24px;
+  font-weight: 800;
+  text-anchor: middle;
+  fill: var(--accent);
+  pointer-events: none;
+}
+.swap-btn.disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
 .rail {
   stroke: var(--shelf);
   stroke-width: 4;
