@@ -25,7 +25,7 @@ import {
 } from '../logic/lane';
 import { targetLabel, type Calc } from '../logic/ops';
 import { aimCatapult, CATAPULT, flightDuration, type CatapultShot } from '../logic/catapult';
-import { clampAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
+import { normalizeAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
 import type { Problem, Variant } from '../logic/types';
 import { shooterOf, type Settings } from './settings';
 import { CatapultLayer } from './CatapultLayer';
@@ -86,6 +86,7 @@ interface Aim {
 
 interface SlingFlight {
   kind: 'sling';
+  elapsed: number;
   ball: Ball;
   launch: Launch;
   startedAt: number;
@@ -116,6 +117,8 @@ const COOLDOWN_MS: Record<Variant, number> = { A: 200, B: 250, C: 550, D: 250 };
 const TOUCH_AIM_OFFSET = 90;
 /** パチンコ・カタパルトの揺れ：照準の揺れ幅 1 あたり何度ぶれるか */
 const SLING_SWAY_DEG = 0.2;
+/** 下端へ消えたあと、外れを表示するまでの間（秒）。 */
+const BOTTOM_MISS_DELAY = 0.1;
 /** カタパルトの揺れ：照準の揺れ幅 1 あたり、飛ぶ距離がどれだけぶれるか */
 const CATAPULT_SWAY_DEPTH = 0.8;
 /** コルクが飛び出す位置（画面の下の真ん中） */
@@ -145,6 +148,13 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const downAt = useRef(new Map<string, { x: number; y: number }>());
   /** パチンコ・カタパルト：飛んでいる弾（1発ずつ） */
   const flight = useRef<Flight | null>(null);
+  const pendingMiss = useRef<{
+    at: number;
+    point: { x: number; y: number };
+    assist: number;
+    pointerType: string;
+    launch: ShotInfo['launch'];
+  } | null>(null);
   /** 毎フレーム呼ぶ処理（最新の props を使うため、描画のたびに入れ替える） */
   const onFrame = useRef<(dt: number) => void>(() => {});
 
@@ -279,6 +289,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     active &&
     shotsLeft > 0 &&
     !flight.current &&
+    !pendingMiss.current &&
     performance.now() - lastShotAt.current >= (pullMode ? 0 : COOLDOWN_MS[variant]);
 
   // D は当たり判定を広げない（救済は「役立つ札を流す」ほうで行う）
@@ -319,6 +330,14 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   // カタパルト：飛んでいる時間がたったら、着地点で当たりを決める（手前の的は飛び越える）
   onFrame.current = (dt: number) => {
     if (lane.current) lane.current = stepLane(lane.current, clockRef.current, laneCtx);
+    const pending = pendingMiss.current;
+    if (pending) {
+      if (clockRef.current >= pending.at) {
+        pendingMiss.current = null;
+        fire(pending.point, null, pending.assist, pending.pointerType, pending.launch);
+      }
+      return;
+    }
     const f = flight.current;
     if (!f) return;
     if (f.kind === 'catapult') {
@@ -337,7 +356,9 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     const r = stepBall(f.ball, dt, circlesAt(clockRef.current), { bounce: settings.slingBounce, multiplier: f.assist });
     f.trail = [...f.trail.slice(-5), { x: f.ball.x, y: f.ball.y }];
     f.ball = r.ball;
-    if (!r.hit && !r.exited) return;
+    f.elapsed += dt;
+    // 水平に撃つと左右を往復し続けるため、3秒で外れとして確定する。
+    if (!r.hit && !r.exited && f.elapsed < 3) return;
     flight.current = null;
     const launch = {
       angleDeg: Math.round(f.launch.angleDeg * 10) / 10,
@@ -349,15 +370,19 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     const point = r.hit
       ? { x: r.ball.x, y: r.ball.y }
       : { x: Math.max(40, Math.min(FIELD_W - 40, r.ball.x)), y: Math.max(40, Math.min(FIELD_H - 40, r.ball.y)) };
-    fire(point, r.hit, f.assist, f.pointerType, launch);
+    if (!r.hit && r.exited && r.ball.y > FIELD_H) {
+      pendingMiss.current = { at: clockRef.current + BOTTOM_MISS_DELAY, point, assist: f.assist, pointerType: f.pointerType, launch };
+    } else {
+      fire(point, r.hit, f.assist, f.pointerType, launch);
+    }
   };
 
   /** パチンコの飛ぶ角度（引っ張りの向き + 揺れ）。引っ張りが短いときは null */
   const slingLaunchOf = (a: Aim): Launch | null => {
-    const l = launchFromPull(a.x - a.sx, a.y - a.sy);
+    const l = launchFromPull(a.x - a.sx, a.y - a.sy, true);
     if (!l) return null;
     const jitter = swayOffset(clockRef.current, settings.swayAmplitude).dx * SLING_SWAY_DEG;
-    return { ...l, angleDeg: clampAngle(l.angleDeg + jitter) };
+    return { ...l, angleDeg: normalizeAngle(l.angleDeg + jitter) };
   };
 
   /** カタパルトのねらい（引っ張りの向きと長さ + 揺れ）。引っ張りが短いときは null */
@@ -415,6 +440,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       sfxSling();
       flight.current = {
         kind: 'sling',
+        elapsed: 0,
         ball: launchBall(launch.angleDeg, settings.slingSpeed),
         launch,
         startedAt: performance.now(),
