@@ -45,7 +45,7 @@ import { LaneLayer } from './LaneLayer';
 import { RiseLayer } from './RiseLayer';
 import { SlingLayer } from './SlingLayer';
 import { TargetMark } from './TargetMark';
-import { sfxCatapult, sfxHit, sfxMiss, sfxShot, sfxSling, sfxThud, unlockAudio } from './sound';
+import { sfxCatapult, sfxHit, sfxMiss, sfxRise, sfxShot, sfxSling, sfxThud, unlockAudio } from './sound';
 
 export interface ShotInfo {
   /** 照準の位置（フィールド単位） */
@@ -364,7 +364,12 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   // カタパルト：飛んでいる時間がたったら、着地点で当たりを決める（手前の的は飛び越える）
   onFrame.current = (dt: number) => {
     if (lane.current) lane.current = stepLane(lane.current, clockRef.current, laneCtx);
-    if (rise.current) rise.current = stepRise(rise.current, clockRef.current, riseCtx);
+    if (rise.current) {
+      const before = rise.current;
+      rise.current = stepRise(before, clockRef.current, riseCtx);
+      // 新しい的が起き上がったら、小さな音を鳴らす
+      if (rise.current.slots.some((s, i) => before.slots[i].reserved && s.cardId !== null)) sfxRise();
+    }
     const f = flight.current;
     if (!f) return;
     if (f.kind === 'catapult') {
