@@ -1,3 +1,7 @@
+import buttonSe from './ケーキアセット/ケーキゲームSE/ボタン押す.mp3'
+import resetSe from './ケーキアセット/ケーキゲームSE/コルク栓を抜く1_切り直す.mp3'
+import moveSe from './ケーキアセット/ケーキゲームSE/パッ_トレーに移した時の音.mp3'
+import retrySe from './ケーキアセット/ケーキゲームSE/決定ボタンを押す35_作り直し！.mp3'
 import bananaImage from './ケーキアセット/バナナ.png'
 import chocolateCakeImage from './ケーキアセット/ケーキ（チョコ）.png'
 import whippedCakeImage from './ケーキアセット/ケーキ（ホイップ）.png'
@@ -47,3 +51,5 @@ export const feedbackImages = {
 export const audioAssets = {
   cakeBgm: cakeBgmAudio,
 } as const
+
+export const soundEffects = { button: buttonSe, reset: resetSe, move: moveSe, retry: retrySe } as const

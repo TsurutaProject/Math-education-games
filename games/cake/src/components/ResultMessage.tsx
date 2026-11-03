@@ -79,13 +79,14 @@ export function ResultMessage({ result, onDismiss, onConfirm }: ResultMessagePro
               </div>
               <div className="result-message__actions">
                 {isWarning ? (
-                  <button type="button" className="button button--secondary" onClick={onDismiss}>
+                  <button type="button" className="button button--secondary" data-se="retry" onClick={onDismiss}>
                     <FuriganaText text={result.secondaryLabel ?? '戻る'} />
                   </button>
                 ) : null}
                 <button
                   type="button"
                   className="button button--primary"
+                  data-se={isWarning ? 'none' : undefined}
                   onClick={isWarning ? onConfirm : onDismiss}
                 >
                   <FuriganaText text={result.primaryLabel ?? 'OK'} />

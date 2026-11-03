@@ -1,3 +1,4 @@
+import { useSoundEffects } from './hooks/useSoundEffects'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CakeBoard } from './components/CakeBoard'
 import { CakeSelector } from './components/CakeSelector'
@@ -362,10 +363,10 @@ function App() {
   const [maxUnlockedStage, setMaxUnlockedStage] = useState(readMaxUnlockedStage)
   const [stageResultSummary, setStageResultSummary] = useState<StageResultSummary | null>(null)
   const [isSoundEnabled, setIsSoundEnabled] = useState(false)
+  const playSound = useSoundEffects(isSoundEnabled)
   const stageCompletionRef = useRef(false)
   const tutorialSnapshotRef = useRef<TutorialSnapshot | null>(null)
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null)
-  const [hasExplainedCombo, setHasExplainedCombo] = useState(false)
   const [hasExplainedTrophies, setHasExplainedTrophies] = useState(false)
 
   const activeStage = stages[activeStageIndex] ?? stages[0]
@@ -439,6 +440,12 @@ function App() {
       // Cake unlocks remain available for this session when browser storage is unavailable.
     }
   }, [unlockedCakeIds])
+
+  const lastSoundResult = useRef(result)
+  useEffect(() => {
+    if (lastSoundResult.current !== result && result.kind === 'try-again') playSound('retry')
+    lastSoundResult.current = result
+  }, [result, playSound])
 
   useEffect(() => {
     const audio = bgmAudioRef.current
@@ -641,7 +648,6 @@ function App() {
     setStageBestCombo(0)
     setCurrentCutDenominators([])
     setTrophyToasts([])
-    setHasExplainedCombo(false)
     setHasExplainedTrophies(false)
     setStageResultSummary(null)
     setGuidedTutorialStep(showTutorial ? 'intro' : null)
@@ -681,6 +687,7 @@ function App() {
       return
     }
 
+    playSound('reset')
     resetBoardState(activeCake.id)
     setResult(idleResult)
   }
@@ -885,6 +892,7 @@ function App() {
       return
     }
 
+    playSound('move')
     setBoardPieces((currentPieces) =>
       currentPieces.filter((currentPiece) => currentPiece.id !== piece.id),
     )
@@ -975,6 +983,8 @@ function App() {
         })
         return
       }
+
+      playSound('button')
 
       if (guidedTutorialStep === 'serve') {
         const nextOrderId = selectNextOrderId(
@@ -1084,9 +1094,8 @@ function App() {
         resultHighlights.push(`${activeOrder.perfectPieceCount}ピースで最高評価！`)
       }
 
-      if (!hasExplainedCombo) {
+      if (nextCombo === 1) {
         resultHighlights.push('コンボ開始！')
-        setHasExplainedCombo(true)
       }
 
       if (!hasExplainedTrophies && newlyUnlockedTrophies.length > 0) {
@@ -1292,7 +1301,7 @@ function App() {
         </section>
         <section className="play-area" aria-label="まな板">
           <div className="workbench-heading"><h2 className="asset-label board-label">まな板</h2>
-            <button type="button" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ 切り直す</button>
+            <button type="button" data-se="none" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ 切り直す</button>
           </div>
           {showCakeSelector ? <CakeSelector
             cakes={visibleCakes}
@@ -1336,7 +1345,7 @@ function App() {
             onRemovePiece={handleReturnPieceToBoard}
             onDropPiece={handleMovePieceToTrayById}
           />
-          <button type="button" className={canServeCurrentTray ? 'button serve-button is-ready' : 'button serve-button'} disabled={selectedPieces.length === 0} onClick={() => handleServe()}>
+          <button type="button" data-se="none" className={canServeCurrentTray ? 'button serve-button is-ready' : 'button serve-button'} disabled={selectedPieces.length === 0} onClick={() => handleServe()}>
             <FuriganaText text="提供する" />
           </button>
           <p className="tray-return-help">ピースを押すと、まな板に戻せます。</p>
