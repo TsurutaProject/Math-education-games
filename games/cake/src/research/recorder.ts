@@ -111,12 +111,19 @@ export class ResearchRecorder {
     this.stage = undefined
     this.tutorial = false
   }
-  resetProgress() {
-    this.leave('progress_reset')
-    for (const stage of this.log.stages) {
-      if (!stage.cleared && !stage.reset) { stage.reset = true; stage.endedAt = iso() }
-    }
-    this.event('progress_reset')
+  resetAll() {
+    // Clear memory too: pagehide/interval saves must never restore the old log.
+    this.running = false
+    this.stage = undefined
+    this.order = undefined
+    this.tutorial = false
+    this.progressSignature = ''
+    this.snapshots.clear()
+    this.last = this.now()
+    this.sessionId = uid()
+    this.log = { schemaVersion: 1, appVersion: 'cake-research-1', playerId: uid(), createdAt: iso(), events: [], stages: [], orders: [] }
+    this.save()
+    if (this.storageError) throw Error(this.storageError)
   }
   tutorialStart() { this.setRunning(false, 'tutorial'); this.tutorial = true; this.event('tutorial_start', { initial: false }) }
   tutorialEnd(reason: string, initial: boolean) {

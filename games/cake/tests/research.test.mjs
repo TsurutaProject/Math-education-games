@@ -85,10 +85,17 @@ test('HTTP LAN環境でrandomUUIDがなくても匿名IDを生成できる', () 
     const {r}=setup(); assert.match(r.log.playerId,/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
   } finally { crypto.randomUUID=original }
 })
-test('進捗リセット後は旧ログを残し、新しい挑戦と合算しない', () => {
-  const {r,tick}=setup(); r.enter(stage,0,false,false); r.setRunning(true,'playing'); r.ensureOrder(order); tick(2000); r.action('hint_open'); r.resetProgress()
-  r.enter(stage,0,false,true); r.save()
-  assert.equal(r.log.stages.length,2); assert.equal(r.log.stages[0].reset,true); assert.equal(r.log.stages[0].activeMs,2000)
-  assert.equal(r.log.stages[1].activeMs,0); assert.equal(r.log.stages[1].hints,0); assert.equal(r.log.orders[0].status,'interrupted')
-  assert.ok(r.log.events.some(e=>e.type==='progress_reset')); assert.ok(r.export('stages').includes('"reset"'))
+test('キャッシュクリアで記録・集計・匿名IDを初期化し終了時にも旧記録が戻らない', () => {
+  const {r,tick,storage,now}=setup()
+  r.enter(stage,0,false,false); r.setRunning(true,'playing'); r.ensureOrder(order); tick(2000); r.action('hint_open')
+  const oldId=r.log.playerId
+  r.resetAll()
+  const cleared=JSON.parse(r.export('json'))
+  assert.notEqual(cleared.playerId,oldId)
+  assert.deepEqual(cleared.events,[]); assert.deepEqual(cleared.stages,[]); assert.deepEqual(cleared.orders,[]); assert.equal(cleared.totalHints,0)
+  tick(5000); r.setRunning(false,'pagehide'); r.event('pagehide'); r.save()
+  const reloaded=new ResearchRecorder(storage,now)
+  const data=JSON.parse(reloaded.export('json'))
+  assert.equal(data.playerId,cleared.playerId); assert.deepEqual(data.stages,[]); assert.deepEqual(data.orders,[]); assert.equal(data.totalHints,0)
+  assert.ok(!data.events.some(e=>e.type==='hint_open' || e.type==='order_start'))
 })

@@ -25,10 +25,10 @@ export function LogExport({ open, onChange }: { open: boolean; onChange: (open: 
   }
   const resetProgress = () => {
     try {
-      // Only this game's progress: research logs and other apps' data are preserved.
+      // Reset only this game's progress and research data.
       const keys = ['fraction-cake-guided-tutorial-seen-v3', 'cake-game:completed-stages', 'cake-game:stage-serves', 'cake-game:max-unlocked-stage', 'cake-game:unlocked-cakes']
       for (const key of keys) window.localStorage.removeItem(key)
-      getResearch().resetProgress()
+      getResearch().resetAll()
       window.location.reload()
     } catch {
       setError('クリアできませんでした。ブラウザーの保存設定を確認してください。')
@@ -50,7 +50,7 @@ export function LogExport({ open, onChange }: { open: boolean; onChange: (open: 
         <div className="research-actions"><button type="button" onClick={() => setView('settings')}>キャンセル</button><button type="button" onClick={download}>取得する</button></div>
       </> : <>
         <p>ステージの進捗・ケーキの解放状態・売上・コンボ・トロフィーをリセットし、初回チュートリアルからやり直します。この操作は元に戻せません。</p>
-        <p>収集済みのログは残ります。ブラウザー全体のキャッシュは削除しません。</p>
+        <p>収集済みのログ・集計・匿名IDも初期化します。必要なログは先に取得してください。</p>
         <div className="research-actions"><button type="button" onClick={() => setView('settings')}>キャンセル</button><button type="button" onClick={resetProgress}>クリアしてやり直す</button></div>
       </>}
       {error && <p role="alert">{error}</p>}
