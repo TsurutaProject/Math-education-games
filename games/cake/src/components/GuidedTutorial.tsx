@@ -210,7 +210,7 @@ export function GuidedTutorial({ step, onAdvance, onSkip }: GuidedTutorialProps)
     return (
       <div className="guided-intro" role="dialog" aria-modal="true" aria-labelledby="guided-intro-title">
         <section className="guided-intro__dialog">
-          <p className="guided-intro__label">はじめての<FuriganaText text="接客" /></p>
+          <p className="guided-intro__label">チュートリアル</p>
           <h2 id="guided-intro-title"><FuriganaText text="いっしょに注文を完成させよう" /></h2>
           <p>
             <FuriganaText text="1/2の販売を練習しよう" />
@@ -220,7 +220,7 @@ export function GuidedTutorial({ step, onAdvance, onSkip }: GuidedTutorialProps)
               あとで
             </button>
             <button type="button" className="button button--primary" onClick={onAdvance}>
-              <FuriganaText text="接客を始める" />
+              <FuriganaText text="チュートリアルを始める" />
             </button>
           </div>
         </section>

@@ -19,6 +19,7 @@ interface CakeBoardProps {
   interactionMode: InteractionMode
   currentCuts: number
   showCuttingGuide?: boolean
+  onCutAttempt: (outcome: string, pointerType: string) => void
   onCutCake: (cuts: number, cutAngles: number[]) => void
   onMovePieceToTray: (piece: CakePieceModel) => void
   onCarryPieceChange: (
@@ -169,6 +170,7 @@ export function CakeBoard({
   interactionMode,
   currentCuts,
   showCuttingGuide = true,
+  onCutAttempt,
   onCutCake,
   onMovePieceToTray,
   onCarryPieceChange,
@@ -234,6 +236,7 @@ export function CakeBoard({
     setSwipeEnd(null)
 
     if (swipeLength < minimumSwipeLength) {
+      onCutAttempt('too_short', event.pointerType)
       return
     }
 
@@ -248,14 +251,17 @@ export function CakeBoard({
       )
 
       if (validCutAngles.length === 0) {
+        onCutAttempt('no_cake', event.pointerType)
         setCutNotice('そこにはケーキがありません。')
         return
       }
 
+      onCutAttempt('on_guide', event.pointerType)
       onCutCake(currentCuts, validCutAngles)
       return
     }
 
+    onCutAttempt('off_guide', event.pointerType)
     setCutNotice('点線に沿って切ってみよう。4分の1などは外側から中心までの短いカットでも作れます。')
   }
 

@@ -4,6 +4,7 @@ import { FuriganaText } from './FuriganaText'
 
 interface OrderBubbleProps {
   order: Order
+  onHintToggle: (open: boolean) => void
   cake: CakeDefinition
 }
 
@@ -15,7 +16,7 @@ const getPiecePlan = (order: Order): Fraction[] => {
   return [order.target]
 }
 
-export function OrderBubble({ order, cake }: OrderBubbleProps) {
+export function OrderBubble({ order, cake, onHintToggle }: OrderBubbleProps) {
   const amount = order.target.denominator === 1
     ? `${order.target.numerator}`
     : `${order.target.denominator}分の${order.target.numerator}`
@@ -46,7 +47,7 @@ export function OrderBubble({ order, cake }: OrderBubbleProps) {
             {bonusRequest !== '' && <span className="order-bonus-request"><FuriganaText text={bonusRequest} /></span>}
           </strong>
         </p>
-        <details key={order.id} className="order-bubble__plan"><summary><FuriganaText text="ヒント・最高評価の条件" /></summary>
+        <details key={order.id} className="order-bubble__plan" onToggle={event => { onHintToggle(event.currentTarget.open) }}><summary><FuriganaText text="ヒント・最高評価の条件" /></summary>
           <p className="order-hint-explanation"><FuriganaText text={hint} /></p>
           <span className="order-bubble__label">
             <FuriganaText text={isPieceCountChallenge ? '最高評価' : order.recipePieces !== undefined ? '作るピース' : '必要な量'} />

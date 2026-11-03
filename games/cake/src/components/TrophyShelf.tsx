@@ -1,3 +1,4 @@
+import { getResearch } from '../research/recorder'
 import { useId, useState } from 'react'
 import trophyIcon from '../data/ui/trophy.png'
 import type { TrophyDefinition, TrophyProgress } from '../types/game'
@@ -21,7 +22,7 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
         <button
           type="button"
           className="trophy-shelf__button"
-          onClick={() => setIsTrophyListOpen(true)}
+          onClick={() => { getResearch().action('trophy_list_open'); setIsTrophyListOpen(true) }}
           aria-haspopup="dialog"
           aria-label={`トロフィー一覧、${unlockedTrophyIds.length}/${trophies.length}獲得`}
         >
@@ -75,7 +76,7 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
               type="button"
               className="help-dialog__close"
               aria-label="閉じる"
-              onClick={() => setIsTrophyListOpen(false)}
+              onClick={() => { getResearch().action('trophy_list_close'); setIsTrophyListOpen(false) }}
             >
               ×
             </button>

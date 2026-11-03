@@ -1756,7 +1756,6 @@ rt {
   color: #fff;
   font-size: 1.08rem;
   box-shadow: 0 12px 22px rgba(242, 112, 89, 0.3), inset 0 -4px 0 rgba(179, 77, 49, 0.28);
-  animation: guided-cta-pulse 1s ease-in-out infinite alternate;
 }
 
 .guided-shade {
@@ -1893,7 +1892,6 @@ rt {
   font-size: 1.08rem;
   box-shadow: 0 12px 22px rgba(242, 112, 89, 0.3), inset 0 -4px 0 rgba(179, 77, 49, 0.28);
   transform: translateY(0);
-  animation: guided-cta-pulse 1s ease-in-out infinite alternate;
 }
 
 .guided-coach small {
@@ -3730,3 +3728,15 @@ rt {
     width: 100%;
   }
 }
+
+/* Research export is deliberately separate from the silent recording process. */
+.sound-toggle.research-export { right: 190px; }
+.research-dialog { width: min(820px, 85vw); padding: 40px; border: 3px solid #d88c3d; border-radius: 20px; color: #573c29; font-size: 24px; background: #fffdf5; }
+.research-dialog::backdrop { background: rgb(42 28 15 / 55%); }
+.research-actions { display: flex; gap: 20px; justify-content: flex-end; margin-top: 32px; }
+.research-actions button { font: inherit; border: 0; border-radius: 10px; padding: 14px 24px; background: #f3e8cb; color: #573c29; cursor: pointer; }
+.research-actions button:last-child { background: #9b5800; color: white; }
+
+.research-settings { display: grid; gap: 16px; }
+.research-settings button { padding: 20px; border: 2px solid #d8aa74; border-radius: 12px; background: #fff4d4; color: #573c29; font: inherit; cursor: pointer; }
+.research-dialog { max-height: 85vh; overflow-y: auto; }

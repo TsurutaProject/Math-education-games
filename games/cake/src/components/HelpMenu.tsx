@@ -1,3 +1,4 @@
+import { getResearch } from '../research/recorder'
 import { useState } from 'react'
 import { cakeImages, feedbackImages, toolImages } from '../data/assets'
 import { FuriganaText } from './FuriganaText'
@@ -14,10 +15,10 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
   return (
     <>
       <section className="help-menu" aria-label="ヘルプ">
-        <button type="button" onClick={() => setOpenView('guide')}>
+        <button type="button" onClick={() => { getResearch().action('help_open', { view: 'guide' }); setOpenView('guide') }}>
           <FuriganaText text="操作ガイド" />
         </button>
-        <button type="button" onClick={() => setOpenView('tutorial')}>
+        <button type="button" onClick={() => { getResearch().action('help_open', { view: 'tutorial' }); setOpenView('tutorial') }}>
           チュートリアル
         </button>
       </section>
@@ -29,7 +30,7 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
               type="button"
               className="help-dialog__close"
               aria-label="閉じる"
-              onClick={() => setOpenView(null)}
+              onClick={() => { getResearch().action('help_close', { view: openView }); setOpenView(null) }}
             >
               ×
             </button>
