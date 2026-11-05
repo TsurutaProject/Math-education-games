@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { MAX_VISIBLE, MIN_VISIBLE } from '../logic/lane';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
-import { clearLog, downloadLog, getLogCount, subscribeLog } from './logStore';
+import { clearLog, downloadLog, getLogCount, getLogLevel, getLogUsage, subscribeLog } from './logStore';
 import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, VARIANT_LABEL, VARIANTS, type Settings } from './settings';
 
 interface Props {
@@ -50,6 +50,8 @@ function Slider({
 
 export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose, onNextPlayer, exhibit }: Props) {
   const logCount = useSyncExternalStore(subscribeLog, getLogCount);
+  const logUsage = useSyncExternalStore(subscribeLog, getLogUsage);
+  const logLevel = useSyncExternalStore(subscribeLog, getLogLevel);
   const set = setForVariant(variant);
   const stages = stagesFor(set);
   const problems = problemsFor(set, stage);
@@ -243,6 +245,20 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
 
         <section className="staff">
           <h3>ログ（{logCount}件）</h3>
+          <div className="row">
+            <span className="row-label">保存の量（目安）</span>
+            <span className={logLevel === 'ok' ? '' : 'log-warn'}>{Math.round(logUsage * 100)}%</span>
+          </div>
+          {logLevel === 'warn' && (
+            <p className="log-warn">
+              ログの保存がいっぱいに近づいています。ダウンロードしてから、展示モードを外した画面で「ログを消去」してください。
+            </p>
+          )}
+          {logLevel === 'failed' && (
+            <p className="log-warn">
+              ログを保存できていません。今すぐダウンロードしてください（画面を閉じると、保存できていない分が消えます）。
+            </p>
+          )}
           <div className="row">
             <button className="btn small" onClick={downloadLog} disabled={logCount === 0}>
               JSONをダウンロード

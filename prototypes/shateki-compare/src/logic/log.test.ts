@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exportLog, LOG_SCHEMA_VERSION, makeEvent } from './log';
+import { exportLog, LOG_SCHEMA_VERSION, LOG_STORAGE_ESTIMATE, makeEvent, storageLevel } from './log';
 
 const now = new Date('2026-11-01T00:00:00Z');
 
@@ -34,5 +34,17 @@ describe('exportLog', () => {
     const out = JSON.parse(exportLog([e], { deviceId: 'd1' }, now));
     expect(out).toMatchObject({ schemaVersion: LOG_SCHEMA_VERSION, deviceId: 'd1', count: 1, exportedAt: '2026-11-01T00:00:00.000Z' });
     expect(out.events).toHaveLength(1);
+  });
+});
+
+describe('storageLevel（ログの保存の状態）', () => {
+  it('目安の 8 割より少なければ問題なし、8 割以上なら注意', () => {
+    expect(storageLevel(0, false)).toBe('ok');
+    expect(storageLevel(LOG_STORAGE_ESTIMATE * 0.79, false)).toBe('ok');
+    expect(storageLevel(LOG_STORAGE_ESTIMATE * 0.8, false)).toBe('warn');
+  });
+
+  it('保存に失敗したら、量に関係なく失敗', () => {
+    expect(storageLevel(0, true)).toBe('failed');
   });
 });

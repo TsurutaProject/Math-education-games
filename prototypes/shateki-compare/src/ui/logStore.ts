@@ -7,6 +7,9 @@ import {
   type LogEvent,
   type LogPayload,
   type SessionPayload,
+  LOG_STORAGE_ESTIMATE,
+  storageLevel,
+  type StorageLevel,
 } from '../logic/log';
 
 const KEY = 'shateki-log-v1';
@@ -15,6 +18,10 @@ const DEVICE_KEY = 'shateki-device-v1';
 /** いま遊んでいる人の id。再読み込みでは変えず、「つぎの人へ」でだけ変える */
 const PLAYER_KEY = 'shateki-player-v1';
 
+/** 保存しているログの文字数（保存の量の目安に使う） */
+let storedChars = 0;
+/** 最後の保存に失敗したか（容量不足など） */
+let saveFailed = false;
 let events: LogEvent[] = load();
 const listeners = new Set<() => void>();
 
@@ -25,9 +32,23 @@ const deviceId = loadOrCreateId(DEVICE_KEY).id;
 let player = loadOrCreateId(PLAYER_KEY);
 let sessionStarted = false;
 
+// 同じゲームをほかのタブでも開いていると、それぞれが自分の覚えている分だけで保存し直して、相手の分を消してしまう。
+// ほかのタブが保存したら読み直して、上書きで消さないようにする（ほぼ同時に保存したときまでは防げない）
+window.addEventListener('storage', (e) => {
+  if (e.key !== KEY) return;
+  try {
+    events = e.newValue ? (JSON.parse(e.newValue) as LogEvent[]) : [];
+    storedChars = e.newValue?.length ?? 0;
+  } catch {
+    return;
+  }
+  listeners.forEach((l) => l());
+});
+
 function load(): LogEvent[] {
   try {
     const raw = localStorage.getItem(KEY);
+    storedChars = raw?.length ?? 0;
     return raw ? (JSON.parse(raw) as LogEvent[]) : [];
   } catch {
     return [];
@@ -56,10 +77,14 @@ function saveId(key: string, id: string) {
 }
 
 function persist() {
+  const raw = JSON.stringify(events);
   try {
-    localStorage.setItem(KEY, JSON.stringify(events));
+    localStorage.setItem(KEY, raw);
+    storedChars = raw.length;
+    saveFailed = false;
   } catch {
-    // 容量不足などでもゲームは止めない（メモリ上には残る）
+    // 容量不足などでもゲームは止めない（メモリ上には残るので、画面を閉じる前ならダウンロードできる）
+    saveFailed = true;
   }
   listeners.forEach((l) => l());
 }
@@ -116,6 +141,16 @@ export function nextAttemptNo(playerId: string, key: string): number {
 
 export function getLogCount(): number {
   return events.length;
+}
+
+/** 保存の量（目安に対する割合、0〜） */
+export function getLogUsage(): number {
+  return storedChars / LOG_STORAGE_ESTIMATE;
+}
+
+/** 保存の状態（いっぱいに近い・失敗したら、スタッフに知らせる） */
+export function getLogLevel(): StorageLevel {
+  return storageLevel(storedChars, saveFailed);
 }
 
 export function subscribeLog(fn: () => void): () => void {

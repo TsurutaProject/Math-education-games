@@ -84,6 +84,21 @@ button {
   font-size: 14px;
   white-space: nowrap;
 }
+/* ログの保存がいっぱいに近い・失敗したときの小さな印（スタッフ向け） */
+.log-alert {
+  margin-left: auto;
+  color: #c0392b;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.log-alert + .where {
+  margin-left: 0;
+}
+.log-warn {
+  color: #c0392b;
+  font-weight: 700;
+}
 .gear {
   border: none;
   background: none;

@@ -109,3 +109,19 @@ export function exportLog(events: ReadonlyArray<LogEvent>, meta: { deviceId: str
 export function randomId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
+
+/**
+ * ブラウザに保存できるログの量の目安（文字数）。localStorage の上限は 1 つのサイトにつき 5MB 前後と言われるが、
+ * ブラウザによって違い、展示に使うブラウザでは測れていない。目安を超える前でも、保存に失敗したら知らせる（storageLevel）。
+ */
+export const LOG_STORAGE_ESTIMATE = 5_000_000;
+/** 保存の量がこの割合を超えたら注意を出す */
+export const LOG_STORAGE_WARN_RATIO = 0.8;
+
+/** 保存の状態：ok = 問題なし、warn = いっぱいに近い、failed = 保存に失敗した（画面を閉じると保存できていない分が消える） */
+export type StorageLevel = 'ok' | 'warn' | 'failed';
+
+export function storageLevel(usedChars: number, failed: boolean): StorageLevel {
+  if (failed) return 'failed';
+  return usedChars / LOG_STORAGE_ESTIMATE >= LOG_STORAGE_WARN_RATIO ? 'warn' : 'ok';
+}

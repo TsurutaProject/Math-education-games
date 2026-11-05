@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { LogPayload } from '../logic/log';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GameScreen } from './GameScreen';
-import { currentPlayerId, logSessionEvent, nextPlayer } from './logStore';
+import { currentPlayerId, getLogLevel, logSessionEvent, nextPlayer, subscribeLog } from './logStore';
 import { SettingsPanel } from './SettingsPanel';
 import {
   exhibitFromUrl,
@@ -33,6 +33,8 @@ export function App() {
   const [index, setIndex] = useState(0);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
+  // ログの保存がいっぱいに近い・失敗したら、画面の隅に小さな印を出す（スタッフが気づけるように）
+  const logLevel = useSyncExternalStore(subscribeLog, getLogLevel);
   // 遊んでいる人の id（ログ用）。「つぎの人へ」でだけ変わる
   const [playerId, setPlayerId] = useState(currentPlayerId);
   // ログに最後に残した設定（設定パネルを閉じたとき、変わっていれば残す）
@@ -144,6 +146,14 @@ export function App() {
               ))}
             </div>
           </>
+        )}
+        {logLevel !== 'ok' && (
+          <span
+            className="log-alert"
+            title={logLevel === 'failed' ? 'ログを保存できていません。今すぐダウンロードしてください' : 'ログの保存がいっぱいに近づいています'}
+          >
+            ● ログ
+          </span>
         )}
         <div className="where">
           ステージ{stage}・{Math.min(index, problems.length - 1) + 1}問め
