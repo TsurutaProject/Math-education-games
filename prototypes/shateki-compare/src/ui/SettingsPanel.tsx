@@ -63,8 +63,6 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
           </button>
         </div>
 
-        {exhibit && <p className="row-note">弾の速さなどの細かい調整は、URL から mode=exhibit を外した画面で行います。</p>}
-
         <section className="staff">
           <h3>あそぶもの</h3>
           <div className="row">
