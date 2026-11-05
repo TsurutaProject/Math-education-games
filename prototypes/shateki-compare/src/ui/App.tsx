@@ -4,17 +4,15 @@ import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GameScreen } from './GameScreen';
+import { StageSelect, stageNodes } from './StageSelect';
 import { SettingsPanel } from './SettingsPanel';
 import {
   exhibitFromUrl,
   isStaffKey,
   loadSettings,
   saveSettings,
-  SHOOTER_LABEL,
   shooterAllowed,
   shooterOf,
-  SHOOTERS,
-  VARIANT_LABEL,
   VARIANTS,
   variantFromUrl,
   writeUrlParams,
@@ -25,13 +23,13 @@ import { setBgmSettings, setSoundEnabled, unlockAudio } from './sound';
 type StartReason = Extract<LogPayload, { type: 'problem_start' }>['reason'];
 
 export function App() {
-  // 展示モードでは、上の切り替えと ⚙️ を出さない（遊ぶものは URL で決める）
   const [exhibit] = useState(exhibitFromUrl);
   const [variant, setVariant] = useState<Variant>(() => variantFromUrl() ?? 'A');
   const [stage, setStage] = useState(1);
   const [index, setIndex] = useState(0);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
+  const [selectingStage, setSelectingStage] = useState(() => !exhibit);
   // 図鑑はこのセッションの間だけ（再読み込みで消える）
   const zukan = useRef<Zukan>(new Map());
   // 問題を作り直すたびに増やして GameScreen を新しくする
@@ -93,46 +91,20 @@ export function App() {
   };
 
   return (
-    <div className="app game-ui" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
+    <div className={`app game-ui ${selectingStage ? 'festival-map' : 'festival-playing'}`} onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
       <header className="topbar">
         <div className="title">さんすう射的 {!exhibit && <span className="tag">試作</span>}</div>
-        {!exhibit && (
-          <>
-            <div className="seg variant-switch">
-              {VARIANTS.map((v) => (
-                <button key={v} className={v === variant ? 'on' : ''} onClick={() => changeVariant(v)}>
-                  {VARIANT_LABEL[v]}
-                </button>
-              ))}
-            </div>
-            <div className={`seg shooter-switch ${variant === 'A' ? 'disabled' : ''}`} title={variant === 'A' ? 'A はタップ式なので射撃タイプはありません' : '射撃タイプ'}>
-              {SHOOTERS.map((sh) => (
-                <button
-                  key={sh}
-                  className={sh === shooterOf(variant, settings) ? 'on' : ''}
-                  disabled={!shooterAllowed(variant, sh)}
-                  title={
-                    (variant === 'D' || variant === 'E') && sh === 'catapult'
-                      ? 'D・E は的が1段なのでカタパルトは使いません'
-                      : undefined
-                  }
-                >
-                  {SHOOTER_LABEL[sh]}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
         <div className="where">
-          ステージ{stage}・{Math.min(index, problems.length - 1) + 1}問め
+          {selectingStage ? 'ステージセレクト' : `ステージ ${VARIANTS.indexOf(variant) + 1}-${stageNodes(variant).findIndex((n) => n.stage === stage && n.index === Math.min(index, problems.length - 1)) + 1}`}
         </div>
-        {!exhibit && (
-          <button className="gear" onClick={() => setShowSettings(true)} aria-label="設定">
-            ⚙️
-          </button>
-        )}
+        {!exhibit && !selectingStage && <button className="btn small" onClick={() => setSelectingStage(true)}>マップへ</button>}
+        {!exhibit && <button className="gear" onClick={() => setShowSettings(true)} aria-label="設定">
+          ⚙️
+        </button>}
       </header>
-      <GameScreen
+      {selectingStage ? <StageSelect variant={variant} stage={stage} index={index} zukan={zukan.current} onSelect={(v, s, i) => {
+        setVariant(v); setStage(s); setIndex(i); restartWith('switch'); setSelectingStage(false);
+      }} /> : <GameScreen
         key={`${session.n}-${variant}-${shooterOf(variant, settings)}-${problem.id}`}
         problem={problem}
         variant={variant}
@@ -140,7 +112,7 @@ export function App() {
         zukan={zukan.current}
         startReason={session.reason}
         onNext={next}
-      />
+      />}
       {showSettings && (
         <SettingsPanel
           variant={variant}
@@ -151,8 +123,8 @@ export function App() {
           onShooter={changeShooter}
           onProblem={changeProblem}
           onSettings={setSettings}
-          onClose={() => setShowSettings(false)}
           exhibit={exhibit}
+          onClose={() => setShowSettings(false)}
         />
       )}
     </div>

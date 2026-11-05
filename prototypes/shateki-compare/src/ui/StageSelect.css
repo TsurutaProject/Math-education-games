@@ -1,0 +1,50 @@
+/* ステージセレクトの試案：既存の的・棚・照準と同じ色を使う。 */
+.topbar [hidden] { display: none; }
+.stage-select { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 20px 24px 10px; }
+.stage-select-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.stage-select h1 { margin: 0 0 6px; font-size: 25px; }
+.stage-select-heading p { margin: 0; color: var(--muted); font-size: 15px; }
+.stage-map-scroll { flex: 1; min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 20px; background: var(--booth); }
+.stage-map { display: block; width: 100%; height: 100%; min-width: 540px; min-height: 300px; touch-action: none; }
+.stage-target { fill: var(--target-face); stroke: var(--line); stroke-width: 4; }
+.stage-node { cursor: crosshair; outline: none; }
+.stage-node.current .stage-target, .stage-node:focus-visible .stage-target { stroke: var(--accent); stroke-width: 6; }
+.stage-node-number { fill: var(--ink); font-size: 28px; font-weight: 800; }
+.stage-node-state { fill: var(--accent); font-size: 18px; font-weight: 700; }
+.stage-node.cleared .stage-node-state { fill: var(--good); }
+@media (max-width: 760px) {
+  .stage-select { padding: 12px; gap: 10px; }
+  .stage-select-heading { align-items: start; flex-direction: column; }
+  .stage-select h1 { font-size: 21px; }
+}
+
+/* メインステージを横に並べ、1画面ずつ止まるマップ。 */
+.stage-pages { display: flex; flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; border-radius: 20px; }
+.stage-page { flex: 0 0 100%; min-width: 0; min-height: 0; display: flex; scroll-snap-align: start; scroll-snap-stop: always; }
+.stage-page .stage-map-scroll { overflow-x: hidden; }
+.stage-page .stage-map { min-width: 0; touch-action: pan-x pan-y; }
+.stage-pages:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 1つのステージを画面いっぱいに表示する。 */
+.stage-pages { scroll-snap-type: x mandatory; border: 1px solid var(--line); background: var(--booth); }
+.stage-page { flex-basis: 100%; min-width: 0; flex-direction: column; scroll-snap-align: start; scroll-snap-stop: always; border-right: none; }
+.stage-page:last-child { border-right: none; }
+.stage-page .stage-map-scroll { border: none; border-radius: 0; background: transparent; }
+.stage-world-title { margin: 0; padding: 16px 24px 0; font-size: 21px; }
+@media (max-width: 760px) {
+  .stage-page { flex-basis: 100%; min-width: 0; }
+  .stage-world-title { padding: 12px 16px 0; font-size: 18px; }
+}
+
+/* 銃と発射アニメーションは、スクロールするマップから独立させる。 */
+.stage-map-viewport { position: relative; display: flex; flex: 1; min-height: 0; min-width: 0; overflow: hidden; border-radius: 20px; }
+.stage-fixed-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.stage-map-viewport.is-shooting .stage-pages { overflow: hidden; pointer-events: none; }
+
+
+/* マップの左右に控えめな移動矢印を重ねる。 */
+.stage-edge-arrow { position: absolute; z-index: 2; top: 50%; transform: translateY(-50%); width: 40px; height: 80px; padding: 0; border: 0; border-radius: 18px; background: rgb(255 247 230 / 8%); color: #fff7e6; opacity: .3; font-size: 54px; line-height: 1; cursor: pointer; }
+.stage-edge-prev { left: 8px; }
+.stage-edge-next { right: 8px; }
+.stage-edge-arrow:hover, .stage-edge-arrow:focus-visible { opacity: .8; background: rgb(255 247 230 / 15%); }
+.stage-edge-arrow:disabled { visibility: hidden; }
