@@ -7,6 +7,7 @@ import { GameScreen } from './GameScreen';
 import { SettingsPanel } from './SettingsPanel';
 import {
   exhibitFromUrl,
+  isStaffKey,
   loadSettings,
   saveSettings,
   SHOOTER_LABEL,
@@ -42,6 +43,18 @@ export function App() {
     setSoundEnabled(settings.sound);
     setBgmSettings(settings.bgm, settings.bgmVolume);
   }, [settings]);
+
+  // 展示モード：スタッフだけが知っているキー（Ctrl + Shift + S）で、確認してから設定パネルを開く
+  useEffect(() => {
+    if (!exhibit || showSettings) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!isStaffKey(e) || e.repeat) return;
+      e.preventDefault();
+      if (window.confirm('スタッフ用の設定を開きます。よろしいですか？')) setShowSettings(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [exhibit, showSettings]);
 
   const set = setForVariant(variant);
   const problems = problemsFor(set, stage);
@@ -136,6 +149,7 @@ export function App() {
           onProblem={changeProblem}
           onSettings={setSettings}
           onClose={() => setShowSettings(false)}
+          exhibit={exhibit}
         />
       )}
     </div>
