@@ -1,3 +1,5 @@
+import { Artwork } from './Artwork';
+import { FestivalDecor } from './FestivalDecor';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   assistMultiplier,
@@ -568,6 +570,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
         onLostPointerCapture={onPointerCancel}
       >
         <rect x={0} y={0} width={FIELD_W} height={FIELD_H} className="booth-bg" />
+        <FestivalDecor />
         {rowYs.map((y) => (
           <rect key={y} x={0} y={y + 74} width={FIELD_W} height={16} rx={4} className="shelf" />
         ))}
@@ -593,9 +596,9 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
         {effects.map((ef) => (
           <g key={ef.id}>
             {ef.trail && (
-              <circle r={7} className="cork-shot">
+              <g className="cork-shot"><Artwork name="cork" x={-7} y={-9} width={14} height={18} />
                 <animateMotion dur="0.12s" fill="freeze" path={`M${MUZZLE.x},${MUZZLE.y} L${ef.tx},${ef.ty}`} />
-              </circle>
+              </g>
             )}
             {ef.dust && <ellipse cx={ef.tx} cy={ef.ty} rx={34} ry={14} className="cat-dust" />}
             <text x={ef.x} y={ef.y} className={`pop pop-${ef.kind} ${heavyFeel ? 'pop-big' : ''}`}>

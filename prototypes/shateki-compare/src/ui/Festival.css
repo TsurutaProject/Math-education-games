@@ -1,0 +1,128 @@
+/* 祭りの屋台：紺の幕、紅白のひさし、木枠、赤いカウンター。 */
+.festival {
+  --bg: #fbf3e3;
+  --ink: #2e251e;
+  --muted: #78634f;
+  --panel: #fff9ed;
+  --line: #dec8a9;
+  --accent: #c34230;
+  --booth: #2f3255;
+  --booth-stripe: #282b48;
+  --shelf: #926039;
+  --stand: #79502d;
+  --target-face: #fff7e6;
+  --target-rim: #cc4d3c;
+  --target-number: #30251c;
+  --cork: #efbb54;
+  --ring-floor: #dabb8e;
+  background: var(--bg);
+}
+.festival-awning { height: 25px; flex: 0 0 25px; display: flex; overflow: hidden; background: var(--booth-stripe); }
+.festival-awning span { flex: 1 0 48px; height: 25px; border-radius: 0 0 50% 50%; background: #c74a3a; }
+.festival-awning span:nth-child(even) { background: #fff5e4; }
+.festival .topbar { height: 46px; flex: 0 0 46px; flex-wrap: nowrap; padding: 6px 24px; background: #895832; color: #fff7e6; border-bottom: 4px solid #714525; gap: 16px; }
+.festival .topbar .title { font-size: 16px; }
+.festival .topbar .tag { border-color: #bd9067; color: #fff7e6; }
+.festival .where { display: block; color: #fff7e6; font-size: 16px; font-weight: 800; }
+.festival .gear { font-size: 21px; border-radius: 50%; background: #744525; width: 36px; height: 36px; padding: 0; color: #fff7e6; }
+.festival .topbar .btn { background: transparent; border-color: #edceab; color: #fff7e6; }
+.festival .play-layout { padding: 0; gap: 0; grid-template-rows: auto minmax(0, 1fr) auto; }
+.festival .play-top { display: block; padding: 12px 24px; background: #895832; }
+.festival-hud { min-height: 122px; display: flex; align-items: stretch; border: 2px solid #e8d6bd; border-radius: 18px; background: #fffaf1; color: #30251c; overflow: hidden; }
+.festival-goal { flex: 0 0 140px; padding: 12px 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px solid #ead8be; color: #c34230; }
+.festival-goal span { font-size: 16px; font-weight: 800; letter-spacing: .08em; }
+.festival-goal strong { font-size: 52px; font-weight: 900; line-height: 1.1; overflow-wrap: anywhere; }
+.festival-equation-area { flex: 1; min-width: 0; padding: 10px 20px; display: flex; flex-direction: column; justify-content: center; gap: 7px; }
+.festival-equation-caption { font-size: 13px; font-weight: 700; color: #79634e; }
+.festival-equation { overflow-x: auto; overflow-y: hidden; min-width: 0; padding: 2px 0 4px; touch-action: pan-x; }
+.festival-equation:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.festival-equation-track { display: flex; align-items: center; gap: 12px; width: max-content; min-height: 68px; padding-right: 8px; }
+.equation-value, .equation-slot { min-width: 90px; height: 68px; border-radius: 10px; display: inline-flex; justify-content: center; align-items: center; }
+.equation-value { padding: 0 13px; background: #eaf1fb; color: #2e62a2; border: 2px solid #5689c5; font-size: 42px; font-weight: 900; }
+.equation-operator { font-size: 34px; font-weight: 700; color: #6d5845; }
+.equation-pending { display: flex; align-items: center; gap: 12px; }
+.equation-slot { border: 2px dashed #b49b7b; background: #fffdf8; }
+.equation-continuation { font-size: 24px; color: #b19a7e; }
+.slot-ball { display: block; width: 18px; height: 18px; border: 2px solid #b78a3f; background: #f0bd57; border-radius: 50%; }
+.slot-ring { display: block; width: 32px; height: 13px; border: 4px solid #c74a3b; border-radius: 50%; }
+.festival .play-area { margin: 0 24px; border: solid #94613a; border-width: 4px 6px 0; background: var(--booth); min-height: 0; }
+.festival .play-bottom { grid-template-columns: minmax(0, 1fr) auto; gap: 18px; padding: 12px 24px; background: #ad3b2e; border-top: 5px solid #822c24; color: #fff7e6; }
+.festival .play-zukan { height: auto; overflow: visible; flex-shrink: 0; }
+.festival .play-zukan h2 { font-size: 17px; }
+.festival .play-zukan-count { color: #fae4cb; }
+.festival .play-zukan-count b { color: #ffe099; }
+.festival .cards-compact .card { background: #fff7e6; color: #38271b; border-color: #e5bbaa; }
+.festival .cards-compact .unknown { background: #98352a; color: #ffe4c5; border: 1px dashed #e7b295; }
+.festival-footer-actions { display: flex; align-items: center; gap: 14px; align-self: center; }
+.festival-footer-actions .restart { background: transparent; color: #fff7e6; border: 2px solid #fff0d8; border-radius: 28px; white-space: nowrap; min-height: 44px; }
+.festival-footer-actions .prize-board { background: #e8ae66; }
+.festival-footer-actions .prize { font-size: 34px; }
+.festival-tap-ammo { background: #8c2d25; border-radius: 12px; padding: 9px 13px; display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 9px; }
+.festival-tap-ammo > span { grid-column: 1 / -1; font-size: 12px; font-weight: 700; }
+.festival-tap-ammo strong { font-size: 22px; }
+.festival-tap-ammo .corks { padding: 4px 0; gap: 6px; }
+.festival-tap-ammo .cork { width: 15px; height: 15px; border-radius: 50%; background: var(--cork); border: 1px solid #fff6df; }
+.festival-tap-ammo .cork.used { background: transparent; opacity: .35; }
+.festival .gun-ammo-panel { fill: #8d2e26; stroke: #c96953; }
+.festival .gun-ammo-label, .festival .gun-ammo-value { fill: #fff7e6; }
+.festival .gun-cork { fill: #efbb54; stroke: #fff7e6; stroke-width: 1; }
+.festival .gun-cork.used { fill: none; stroke: #e7ab89; }
+.festival .ring-ammo rect { fill: #8d2e26; stroke: #c96953; }
+.festival .ring-ammo text { fill: #fff7e6; font-weight: 700; }
+.festival .ring-grid { stroke: #9d7447; opacity: .38; }
+.festival .reticle circle, .festival .reticle line { stroke: #ffd46a; }
+.festival .reticle .dot { fill: #ffd46a; }
+.festival .stage-world-title { color: #fff2dd; }
+.festival .stage-node-state { fill: #ffd06d; }
+.festival .stage-node.current .stage-target { stroke: #efad47; }
+.festival .stage-pages { border-color: #94613a; }
+@media (max-width: 1050px) {
+  .festival .topbar { padding-inline: 16px; }
+  .festival .play-top { padding: 10px 16px; }
+  .festival .play-area { margin-inline: 16px; }
+  .festival .play-bottom { padding: 10px 16px; }
+  .festival-goal { flex-basis: 120px; }
+  .festival-footer-actions { gap: 10px; }
+}
+@media (max-width: 760px) {
+  .festival .topbar { gap: 8px; padding-inline: 10px; }
+  .festival .topbar .title { font-size: 13px; }
+  .festival .where { font-size: 13px; }
+  .festival .topbar .tag { display: none; }
+  .festival .play-top { padding: 8px; }
+  .festival-hud { min-height: 96px; border-radius: 12px; }
+  .festival-goal { flex-basis: 88px; padding: 8px; }
+  .festival-goal strong { font-size: 42px; }
+  .festival-goal span { font-size: 13px; }
+  .festival-equation-area { padding: 8px 12px; }
+  .festival-equation-caption { font-size: 11px; }
+  .festival-equation-track { gap: 7px; }
+  .equation-value, .equation-slot { min-width: 52px; height: 48px; font-size: 28px; }
+  .equation-pending { gap: 7px; }
+  .equation-operator { font-size: 26px; }
+  .festival .play-area { margin-inline: 8px; border-width: 3px 4px 0; }
+  .festival .play-bottom { padding: 10px; gap: 10px; }
+  .festival-footer-actions { flex-direction: column; gap: 8px; }
+  .festival-footer-actions .restart { padding: 7px 11px; font-size: 13px; }
+  .festival-tap-ammo strong { font-size: 18px; }
+}
+@media (max-width: 600px) {
+  .festival .play-bottom { grid-template-columns: minmax(0, 1fr) auto; }
+  .festival .play-layout { grid-template-rows: auto 300px auto; }
+  .festival .where { margin-left: auto; }
+}
+
+.festival .sling-ball { fill: #efbb54; stroke: #fff7e6; stroke-width: 2; }
+.festival .sling-band { stroke: #30251c; }
+
+/* 提供素材の球を使用する。 */
+.slot-ball-art { display: block; width: 24px; height: 24px; }
+.ammo-art { display: inline-flex; width: 16px; height: 16px; }
+.ammo-art.used { opacity: .2; }
+
+.festival .play-zukan .cards-compact { grid-template-columns: repeat(4, minmax(0, 1fr)); overflow: visible; padding-right: 0; scrollbar-gutter: auto; }
+@media (max-width: 600px) {
+  .festival .play-zukan .cards-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.festival .festival-footer-actions .restart { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; min-width: 46px; padding: 0; border-radius: 50%; }

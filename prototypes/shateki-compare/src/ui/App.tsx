@@ -91,7 +91,8 @@ export function App() {
   };
 
   return (
-    <div className={`app game-ui ${selectingStage ? 'festival-map' : 'festival-playing'}`} onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
+    <div className={`app game-ui festival ${selectingStage ? 'festival-map' : 'festival-playing'}`} onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
+      <div className="festival-awning" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <span key={i} />)}</div>
       <header className="topbar">
         <div className="title">さんすう射的 {!exhibit && <span className="tag">試作</span>}</div>
         <div className="where">

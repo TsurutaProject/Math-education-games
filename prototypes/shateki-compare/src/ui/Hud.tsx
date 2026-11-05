@@ -1,3 +1,4 @@
+import { artworkUrl } from './artworkAssets';
 import { formatExpression, formatNumber } from '../logic/ops';
 import type { Step } from '../logic/types';
 
@@ -24,7 +25,7 @@ export function Hud({ goal, steps, shotsLeft, showExpression, ring, instruction 
           {tokens.map((token, i) => <span key={`${i}-${token}`} className={/^\d/.test(token) ? 'equation-value' : 'equation-operator'}>{token}</span>)}
           {Array.from({ length: Math.max(0, shotsLeft) }, (_, i) => <span className="equation-pending" key={`pending-${i}`}>
             {(tokens.length > 0 || i > 0) && <span className="equation-continuation" aria-hidden="true">…</span>}
-            <span className="equation-slot" aria-label="これから狙う的"><span className={ring ? 'slot-ring' : 'slot-ball'} aria-hidden="true" /></span>
+            <span className="equation-slot" aria-label="これから狙う的">{ring ? <span className="slot-ring" aria-hidden="true" /> : <svg className="slot-ball-art" viewBox="1289 867 928 928" aria-hidden="true"><image href={artworkUrl('sling-ball')} width={3508} height={2481} /></svg>}</span>
           </span>)}
         </div>
       </div>}

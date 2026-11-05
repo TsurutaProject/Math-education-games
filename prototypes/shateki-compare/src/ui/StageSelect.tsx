@@ -1,3 +1,4 @@
+import { Artwork } from './Artwork';
 import './StageSelect.css';
 import { useEffect, useRef, useState } from 'react';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
@@ -82,6 +83,7 @@ function WorldMap({ world, variant, stage, index, zukan, onSelect, onShoot }: Pr
               aria-label={`${worldNumber}-${i + 1}${done ? ' クリア済み' : ''}`} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(i); } }}>
               <rect x="-6" y="32" width="12" height="42" rx="3" fill="var(--stand)" />
               <circle r="48" className="stage-target" />
+              <Artwork name="target-red" x={-48} y={-48} width={96} height={96} />
               <text textAnchor="middle" y="9" className="stage-node-number">{worldNumber}-{i + 1}</text>
               <text textAnchor="middle" y="-64" className="stage-node-state">{shot === i ? 'スタート！' : done ? '★ クリア' : current ? 'いま ここ' : i === 0 ? 'START' : i === nodes.length - 1 ? 'GOAL' : ''}</text>
             </g>;
@@ -144,7 +146,7 @@ export function StageSelect(props: Props) {
       </div>
         <svg ref={fixedLayer} className="stage-fixed-layer" viewBox="0 0 1000 480" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
           <GunLayer />
-          {shot && <g><circle r={7} className="cork-shot" /><animateMotion dur="0.25s" fill="freeze" path={`M${GUN_MUZZLE.x} ${GUN_MUZZLE.y} L${shot.x} ${shot.y}`} /></g>}
+          {shot && <g><Artwork name="cork" x={-7} y={-9} width={14} height={18} /><animateMotion dur="0.25s" fill="freeze" path={`M${GUN_MUZZLE.x} ${GUN_MUZZLE.y} L${shot.x} ${shot.y}`} /></g>}
         </svg>
       </div>
 

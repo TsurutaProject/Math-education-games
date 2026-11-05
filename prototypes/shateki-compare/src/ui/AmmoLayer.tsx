@@ -1,3 +1,4 @@
+import { Artwork } from './Artwork';
 interface Props {
   x: number;
   y: number;
@@ -13,8 +14,9 @@ export function AmmoLayer({ x, y, shots, shotsLeft }: Props) {
         <text x={64} y={5} className="gun-ammo-label">のこりの たま</text>
         <text x={64} y={29} className="gun-ammo-value">{shotsLeft} / {shots}</text>
         {Array.from({ length: shots }, (_, index) => (
-          <rect key={index} x={124 + index * 16} y={15} width={10} height={16} rx={3}
-            className={`gun-cork ${index < shotsLeft ? '' : 'used'}`} />
+          <g key={index} opacity={index < shotsLeft ? 1 : .2}>
+            <Artwork name="ammo" x={124 + index * 16} y={15} width={13} height={13} />
+          </g>
         ))}
       </g>
   );
