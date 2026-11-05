@@ -97,6 +97,14 @@ export function variantFromUrl(): Variant | null {
   return isVariant(v) ? v : null;
 }
 
+/**
+ * 展示モードか（URL に ?mode=exhibit）。展示では子どもが切り替えや設定を触れないようにする。
+ * URL で決めるので、再読み込みしても展示モードのまま（writeUrlParams はほかの項目を残す）。
+ */
+export function exhibitFromUrl(search: string = location.search): boolean {
+  return new URLSearchParams(search).get('mode') === 'exhibit';
+}
+
 export function writeUrlParams(v: Variant, shooter: Shooter): void {
   const url = new URL(location.href);
   url.searchParams.set('variant', v);
