@@ -126,3 +126,12 @@
 }
 
 .festival .festival-footer-actions .restart { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; min-width: 46px; padding: 0; border-radius: 50%; }
+
+/* 壁はSVGの物理境界へ描く。横長画面の余白は幕と異なる色にする。 */
+.festival .play-area-sling { border-inline-width: 0; background: #754b2e; }
+.festival .field-sling { background: #754b2e; }
+.festival .sling-wall { fill: #a87548; }
+.festival .sling-wall-edge { stroke: #edc79a; stroke-width: 1; }
+
+.festival .field-sling-no-bounce { background: var(--booth); }
+

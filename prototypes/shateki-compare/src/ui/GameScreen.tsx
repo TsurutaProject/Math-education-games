@@ -172,7 +172,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
         <div className="play-top">
           <Hud goal={problem.goal} steps={game.steps} shotsLeft={game.shotsLeft} showExpression={settings.showExpression} ring={false} instruction={instruction} />
         </div>
-        <div className="play-area">
+        <div className={`play-area ${shooter === 'sling' ? 'play-area-sling' : ''}`}>
           <Field
             key={`field-${round}`}
             problem={problem}

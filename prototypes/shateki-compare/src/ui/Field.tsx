@@ -140,6 +140,7 @@ const BOTTOM_MISS_DELAY = 0.1;
 const CATAPULT_SWAY_DEPTH = 0.8;
 /** コルクが飛び出す位置（画面の下の真ん中） */
 const MUZZLE = GUN_MUZZLE;
+const SLING_WALL_WIDTH = 12;
 
 export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, onShot }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -558,10 +559,10 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   };
 
   return (
-    <div className={`field field-${variant} ${shaking ? 'shake' : ''}`}>
+    <div className={`field field-${variant} ${slingMode ? `field-sling ${settings.slingBounce ? '' : 'field-sling-no-bounce'}` : ''} ${shaking ? 'shake' : ''}`}>
       <svg
         ref={svgRef}
-        viewBox={`0 0 ${FIELD_W} ${FIELD_H}`}
+        viewBox={slingMode ? `${-SLING_WALL_WIDTH} 0 ${FIELD_W + SLING_WALL_WIDTH * 2} ${FIELD_H}` : `0 0 ${FIELD_W} ${FIELD_H}`}
         preserveAspectRatio="xMidYMid meet"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -570,6 +571,12 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
         onLostPointerCapture={onPointerCancel}
       >
         <rect x={0} y={0} width={FIELD_W} height={FIELD_H} className="booth-bg" />
+        {slingMode && settings.slingBounce && <g className="sling-walls" pointerEvents="none" aria-hidden="true">
+          <rect x={-SLING_WALL_WIDTH} y={0} width={SLING_WALL_WIDTH} height={FIELD_H} className="sling-wall" />
+          <rect x={FIELD_W} y={0} width={SLING_WALL_WIDTH} height={FIELD_H} className="sling-wall" />
+          <line x1={0} x2={0} y1={0} y2={FIELD_H} className="sling-wall-edge" />
+          <line x1={FIELD_W} x2={FIELD_W} y1={0} y2={FIELD_H} className="sling-wall-edge" />
+        </g>}
         <FestivalDecor />
         {rowYs.map((y) => (
           <rect key={y} x={0} y={y + 74} width={FIELD_W} height={16} rx={4} className="shelf" />
