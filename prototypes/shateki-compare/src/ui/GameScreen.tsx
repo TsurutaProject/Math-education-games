@@ -1,3 +1,4 @@
+import { RingField } from './RingField';
 import { Artwork } from './Artwork';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { newGame, shoot, type GameState } from '../logic/game';
@@ -57,6 +58,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   const entries = foundEntries(zukan, zid);
   const feel = FEEL[variant];
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
+  const PlayField = shooter === 'catapult' ? RingField : Field;
   const instruction = shooter === 'tap'
     ? 'まとを タップして うとう'
     : shooter === 'sling'
@@ -170,10 +172,10 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
     <div className="game">
       <div className="play-layout">
         <div className="play-top">
-          <Hud goal={problem.goal} steps={game.steps} shotsLeft={game.shotsLeft} showExpression={settings.showExpression} ring={false} instruction={instruction} />
+          <Hud goal={problem.goal} steps={game.steps} shotsLeft={game.shotsLeft} showExpression={settings.showExpression} ring={shooter === 'catapult'} instruction={instruction} />
         </div>
         <div className={`play-area ${shooter === 'sling' ? 'play-area-sling' : ''}`}>
-          <Field
+          <PlayField
             key={`field-${round}`}
             problem={problem}
             variant={variant}
