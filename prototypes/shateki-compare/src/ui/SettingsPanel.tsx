@@ -16,6 +16,8 @@ interface Props {
   onProblem: (stage: number, index: number) => void;
   onSettings: (s: Settings) => void;
   onClose: () => void;
+  /** 展示モード：スタッフ用の項目（あそぶもの・ログ）だけを出し、細かい調整は隠す */
+  exhibit: boolean;
 }
 
 function Slider({
@@ -45,7 +47,7 @@ function Slider({
   );
 }
 
-export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose }: Props) {
+export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose, exhibit }: Props) {
   const logCount = useSyncExternalStore(subscribeLog, getLogCount);
   const set = setForVariant(variant);
   const stages = stagesFor(set);
@@ -54,15 +56,15 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
 
   return (
     <div className="overlay settings-overlay" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="panel settings">
+      <div className={`panel settings ${exhibit ? 'exhibit' : ''}`}>
         <div className="settings-head">
-          <b>設定（開発用）</b>
+          <b>{exhibit ? 'スタッフ用（展示モード）' : '設定（開発用）'}</b>
           <button className="btn small" onClick={onClose}>
             とじる
           </button>
         </div>
 
-        <section>
+        <section className="staff">
           <h3>あそぶもの</h3>
           <div className="row">
             <span className="row-label">バリエーション</span>
@@ -245,21 +247,24 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
           </div>
         </section>
 
-        <section>
+        <section className="staff">
           <h3>ログ（{logCount}件）</h3>
           <div className="row">
             <button className="btn small" onClick={downloadLog} disabled={logCount === 0}>
               JSONをダウンロード
             </button>
-            <button
-              className="btn small danger"
-              onClick={() => {
-                if (window.confirm(`ログ ${logCount} 件を消去します。よろしいですか？`)) clearLog();
-              }}
-              disabled={logCount === 0}
-            >
-              ログを消去
-            </button>
+            {/* 展示中に誤って消さないよう、展示モードでは出さない（消すのは展示の前に、展示モードを外した画面で） */}
+            {!exhibit && (
+              <button
+                className="btn small danger"
+                onClick={() => {
+                  if (window.confirm(`ログ ${logCount} 件を消去します。よろしいですか？`)) clearLog();
+                }}
+                disabled={logCount === 0}
+              >
+                ログを消去
+              </button>
+            )}
           </div>
         </section>
       </div>

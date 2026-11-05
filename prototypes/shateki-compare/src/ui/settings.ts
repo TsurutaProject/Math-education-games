@@ -103,6 +103,22 @@ export function variantFromUrl(): Variant | null {
   return isVariant(v) ? v : null;
 }
 
+/**
+ * 展示モードか（URL に ?mode=exhibit）。展示では子どもが切り替えや設定を触れないようにする。
+ * URL で決めるので、再読み込みしても展示モードのまま（writeUrlParams はほかの項目を残す）。
+ */
+export function exhibitFromUrl(search: string = location.search): boolean {
+  return new URLSearchParams(search).get('mode') === 'exhibit';
+}
+
+/**
+ * 展示モードで、スタッフ用の設定パネルを開くキーか（Ctrl + Shift + S）。
+ * Mac でも Control キー。かな入力でも同じように効くよう、文字ではなくキーの位置（code）で見る。
+ */
+export function isStaffKey(e: Pick<KeyboardEvent, 'ctrlKey' | 'shiftKey' | 'altKey' | 'metaKey' | 'code'>): boolean {
+  return e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.code === 'KeyS';
+}
+
 export function writeUrlParams(v: Variant, shooter: Shooter): void {
   const url = new URL(location.href);
   url.searchParams.set('variant', v);

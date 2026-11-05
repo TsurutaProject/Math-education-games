@@ -817,6 +817,10 @@ button {
   margin-top: 12px;
   padding-top: 8px;
 }
+/* 展示モードでは、スタッフ用の項目だけを出す */
+.settings.exhibit section:not(.staff) {
+  display: none;
+}
 .settings h3 {
   font-size: 14px;
   margin: 4px 0 8px;

@@ -6,6 +6,8 @@ import type { Zukan } from '../logic/zukan';
 import { GameScreen } from './GameScreen';
 import { SettingsPanel } from './SettingsPanel';
 import {
+  exhibitFromUrl,
+  isStaffKey,
   loadSettings,
   saveSettings,
   SHOOTER_LABEL,
@@ -23,6 +25,8 @@ import { setBgmSettings, setSoundEnabled, unlockAudio } from './sound';
 type StartReason = Extract<LogPayload, { type: 'problem_start' }>['reason'];
 
 export function App() {
+  // 展示モードでは、上の切り替えと ⚙️ を出さない（遊ぶものは URL で決める）
+  const [exhibit] = useState(exhibitFromUrl);
   const [variant, setVariant] = useState<Variant>(() => variantFromUrl() ?? 'A');
   const [stage, setStage] = useState(1);
   const [index, setIndex] = useState(0);
@@ -39,6 +43,18 @@ export function App() {
     setSoundEnabled(settings.sound);
     setBgmSettings(settings.bgm, settings.bgmVolume);
   }, [settings]);
+
+  // 展示モード：スタッフだけが知っているキー（Ctrl + Shift + S）で、確認してから設定パネルを開く
+  useEffect(() => {
+    if (!exhibit || showSettings) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (!isStaffKey(e) || e.repeat) return;
+      e.preventDefault();
+      if (window.confirm('スタッフ用の設定を開きます。よろしいですか？')) setShowSettings(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [exhibit, showSettings]);
 
   const set = setForVariant(variant);
   const problems = problemsFor(set, stage);
@@ -79,37 +95,42 @@ export function App() {
   return (
     <div className="app" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
       <header className="topbar">
-        <div className="title">さんすう射的 <span className="tag">試作</span></div>
-        <div className="seg variant-switch">
-          {VARIANTS.map((v) => (
-            <button key={v} className={v === variant ? 'on' : ''} onClick={() => changeVariant(v)}>
-              {VARIANT_LABEL[v]}
-            </button>
-          ))}
-        </div>
-        <div className={`seg shooter-switch ${variant === 'A' ? 'disabled' : ''}`} title={variant === 'A' ? 'A はタップ式なので射撃タイプはありません' : '射撃タイプ'}>
-          {SHOOTERS.map((sh) => (
-            <button
-              key={sh}
-              className={sh === shooterOf(variant, settings) ? 'on' : ''}
-              disabled={!shooterAllowed(variant, sh)}
-              title={
-                (variant === 'D' || variant === 'E') && sh === 'catapult'
-                  ? 'D・E は的が1段なのでカタパルトは使いません'
-                  : undefined
-              }
-              onClick={() => changeShooter(sh)}
-            >
-              {SHOOTER_LABEL[sh]}
-            </button>
-          ))}
-        </div>
+        <div className="title">さんすう射的 {!exhibit && <span className="tag">試作</span>}</div>
+        {!exhibit && (
+          <>
+            <div className="seg variant-switch">
+              {VARIANTS.map((v) => (
+                <button key={v} className={v === variant ? 'on' : ''} onClick={() => changeVariant(v)}>
+                  {VARIANT_LABEL[v]}
+                </button>
+              ))}
+            </div>
+            <div className={`seg shooter-switch ${variant === 'A' ? 'disabled' : ''}`} title={variant === 'A' ? 'A はタップ式なので射撃タイプはありません' : '射撃タイプ'}>
+              {SHOOTERS.map((sh) => (
+                <button
+                  key={sh}
+                  className={sh === shooterOf(variant, settings) ? 'on' : ''}
+                  disabled={!shooterAllowed(variant, sh)}
+                  title={
+                    (variant === 'D' || variant === 'E') && sh === 'catapult'
+                      ? 'D・E は的が1段なのでカタパルトは使いません'
+                      : undefined
+                  }
+                >
+                  {SHOOTER_LABEL[sh]}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <div className="where">
           ステージ{stage}・{Math.min(index, problems.length - 1) + 1}問め
         </div>
-        <button className="gear" onClick={() => setShowSettings(true)} aria-label="設定">
-          ⚙️
-        </button>
+        {!exhibit && (
+          <button className="gear" onClick={() => setShowSettings(true)} aria-label="設定">
+            ⚙️
+          </button>
+        )}
       </header>
       <GameScreen
         key={`${session.n}-${variant}-${shooterOf(variant, settings)}-${problem.id}`}
@@ -131,6 +152,7 @@ export function App() {
           onProblem={changeProblem}
           onSettings={setSettings}
           onClose={() => setShowSettings(false)}
+          exhibit={exhibit}
         />
       )}
     </div>
