@@ -1,8 +1,29 @@
-import { exportLog, makeEvent, type LogContext, type LogEvent, type LogPayload } from '../logic/log';
+import {
+  exportLog,
+  makeEvent,
+  randomId,
+  type LogBody,
+  type LogContext,
+  type LogEvent,
+  type LogPayload,
+  type SessionPayload,
+} from '../logic/log';
 
 const KEY = 'shateki-log-v1';
+/** パソコン（ブラウザ）ごとの id。ログを消しても変えない（複数台のログをまとめたときに区別するため） */
+const DEVICE_KEY = 'shateki-device-v1';
+/** いま遊んでいる人の id。再読み込みでは変えず、「つぎの人へ」でだけ変える */
+const PLAYER_KEY = 'shateki-player-v1';
+
 let events: LogEvent[] = load();
 const listeners = new Set<() => void>();
+
+/** ページを開くごとの id と、その中の通し番号 */
+const sessionId = randomId();
+let seq = 0;
+const deviceId = loadOrCreateId(DEVICE_KEY).id;
+let player = loadOrCreateId(PLAYER_KEY);
+let sessionStarted = false;
 
 function load(): LogEvent[] {
   try {
@@ -10,6 +31,27 @@ function load(): LogEvent[] {
     return raw ? (JSON.parse(raw) as LogEvent[]) : [];
   } catch {
     return [];
+  }
+}
+
+/** 保存してある id を読む。なければ作って保存する（created = 新しく作った） */
+function loadOrCreateId(key: string): { id: string; created: boolean } {
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved) return { id: saved, created: false };
+  } catch {
+    // 読めなくても、新しい id で続ける
+  }
+  const id = randomId();
+  saveId(key, id);
+  return { id, created: true };
+}
+
+function saveId(key: string, id: string) {
+  try {
+    localStorage.setItem(key, id);
+  } catch {
+    // 保存できなくても、この起動の間はメモリ上の id を使う
   }
 }
 
@@ -22,9 +64,43 @@ function persist() {
   listeners.forEach((l) => l());
 }
 
-export function logEvent(ctx: LogContext, payload: LogPayload): void {
-  events = [...events, makeEvent(ctx, payload)];
+function push(body: LogBody) {
+  seq += 1;
+  events = [...events, makeEvent({ sessionId, seq }, body)];
   persist();
+}
+
+/** 遊びのイベント（1回の挑戦の中）を記録する */
+export function logEvent(ctx: LogContext, payload: LogPayload): void {
+  push({ ...ctx, ...payload });
+}
+
+/** 遊びの外のイベント（起動・人の切り替え・設定）を、いまの人の id で記録する */
+export function logSessionEvent(payload: SessionPayload): void {
+  push({ playerId: player.id, ...payload });
+}
+
+export function currentPlayerId(): string {
+  return player.id;
+}
+
+/**
+ * 起動を記録する（ページを開いたときに1回だけ。画面を描く前に呼ぶ）。
+ * このパソコンで初めて開いたときは、新しい人として player_start も残す。
+ */
+export function startSession(mode: 'exhibit' | 'dev', settings: object): void {
+  if (sessionStarted) return;
+  sessionStarted = true;
+  logSessionEvent({ type: 'session_start', deviceId, mode, settings });
+  if (player.created) logSessionEvent({ type: 'player_start', reason: 'first' });
+}
+
+/** 「つぎの人へ」：新しい人の id に替えて記録する。新しい id を返す */
+export function nextPlayer(): string {
+  player = { id: randomId(), created: true };
+  saveId(PLAYER_KEY, player.id);
+  logSessionEvent({ type: 'player_start', reason: 'next_player' });
+  return player.id;
 }
 
 export function getLogCount(): number {
@@ -43,7 +119,7 @@ export function clearLog(): void {
 
 export function downloadLog(): void {
   const now = new Date();
-  const blob = new Blob([exportLog(events, now)], { type: 'application/json' });
+  const blob = new Blob([exportLog(events, { deviceId }, now)], { type: 'application/json' });
   const a = document.createElement('a');
   const pad = (n: number) => String(n).padStart(2, '0');
   a.href = URL.createObjectURL(blob);

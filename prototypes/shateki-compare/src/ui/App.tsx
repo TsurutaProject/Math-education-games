@@ -4,6 +4,7 @@ import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GameScreen } from './GameScreen';
+import { currentPlayerId, logSessionEvent, nextPlayer } from './logStore';
 import { SettingsPanel } from './SettingsPanel';
 import {
   exhibitFromUrl,
@@ -32,6 +33,10 @@ export function App() {
   const [index, setIndex] = useState(0);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
+  // 遊んでいる人の id（ログ用）。「つぎの人へ」でだけ変わる
+  const [playerId, setPlayerId] = useState(currentPlayerId);
+  // ログに最後に残した設定（設定パネルを閉じたとき、変わっていれば残す）
+  const loggedSettings = useRef(JSON.stringify(settings));
   // 図鑑はこのセッションの間だけ（再読み込みで消える）
   const zukan = useRef<Zukan>(new Map());
   // 問題を作り直すたびに増やして GameScreen を新しくする
@@ -78,6 +83,26 @@ export function App() {
     setStage(s);
     setIndex(i);
     restartWith('switch');
+  };
+
+  /** 設定パネルを閉じる。設定が変わっていれば、変更後の設定をログに残す（スライダーを動かすたびには残さない） */
+  const closeSettings = () => {
+    const now = JSON.stringify(settings);
+    if (now !== loggedSettings.current) {
+      loggedSettings.current = now;
+      logSessionEvent({ type: 'settings_change', settings });
+    }
+    setShowSettings(false);
+  };
+
+  /** つぎの人へ：新しい人の id にして、図鑑を空にし、最初のステージの1問めから始める（バリエーションはそのまま） */
+  const startNextPlayer = () => {
+    closeSettings();
+    setPlayerId(nextPlayer());
+    zukan.current = new Map();
+    setStage(stagesFor(set)[0]);
+    setIndex(0);
+    restartWith('next_player');
   };
 
   const next = () => {
@@ -135,6 +160,7 @@ export function App() {
         variant={variant}
         settings={settings}
         zukan={zukan.current}
+        playerId={playerId}
         startReason={session.reason}
         onNext={next}
       />
@@ -148,7 +174,8 @@ export function App() {
           onShooter={changeShooter}
           onProblem={changeProblem}
           onSettings={setSettings}
-          onClose={() => setShowSettings(false)}
+          onClose={closeSettings}
+          onNextPlayer={startNextPlayer}
           exhibit={exhibit}
         />
       )}

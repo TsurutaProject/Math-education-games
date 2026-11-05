@@ -15,6 +15,8 @@ interface Props {
   onProblem: (stage: number, index: number) => void;
   onSettings: (s: Settings) => void;
   onClose: () => void;
+  /** つぎの人へ（新しい人として記録し、図鑑を空にして最初から） */
+  onNextPlayer: () => void;
   /** 展示モード：スタッフ用の項目（あそぶもの・ログ）だけを出し、細かい調整は隠す */
   exhibit: boolean;
 }
@@ -46,7 +48,7 @@ function Slider({
   );
 }
 
-export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose, exhibit }: Props) {
+export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose, onNextPlayer, exhibit }: Props) {
   const logCount = useSyncExternalStore(subscribeLog, getLogCount);
   const set = setForVariant(variant);
   const stages = stagesFor(set);
@@ -62,6 +64,21 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             とじる
           </button>
         </div>
+
+        <section className="staff">
+          <h3>遊ぶ人</h3>
+          <div className="row">
+            <button
+              className="btn small"
+              onClick={() => {
+                if (window.confirm('つぎの人に替えます。図鑑を空にして、ステージ1の1問めにもどります。よろしいですか？')) onNextPlayer();
+              }}
+            >
+              つぎの人へ
+            </button>
+            <span className="row-note">新しい人として記録します（図鑑を空にして、最初の問題から）</span>
+          </div>
+        </section>
 
         <section className="staff">
           <h3>あそぶもの</h3>

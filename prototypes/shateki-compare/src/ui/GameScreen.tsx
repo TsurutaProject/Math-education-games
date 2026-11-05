@@ -24,6 +24,8 @@ interface Props {
   variant: Variant;
   settings: Settings;
   zukan: Zukan;
+  /** 遊んでいる人の id（ログ用） */
+  playerId: string;
   startReason: StartReason;
   onNext: () => void;
 }
@@ -36,7 +38,7 @@ const FEEL: Record<Variant, { countMs: number; countDelayMs: number; celebrateMs
   D: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 600 },
 };
 
-export function GameScreen({ problem, variant, settings, zukan, startReason, onNext }: Props) {
+export function GameScreen({ problem, variant, settings, zukan, playerId, startReason, onNext }: Props) {
   const [game, setGame] = useState<GameState>(() => newGame(problem));
   const [phase, setPhase] = useState<Phase>('playing');
   const [round, setRound] = useState(0);
@@ -56,6 +58,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
 
   const ctx = (): LogContext => ({
+    playerId,
     variant,
     shooter,
     stage: problem.stage,
@@ -74,6 +77,22 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   }, []);
   useEffect(() => clearTimers, []);
 
+  // 画面が隠れた・戻ったことを残す（途中でやめたかを見るため）
+  const latestGame = useRef(game);
+  latestGame.current = game;
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        log({ type: 'page_hide', current: latestGame.current.current, shotsLeft: latestGame.current.shotsLeft });
+      } else {
+        log({ type: 'page_show' });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const startAgain = useCallback(
     (reason: StartReason) => {
       clearTimers();
@@ -82,11 +101,11 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
       setPhase('playing');
       setRound((r) => r + 1);
       logEvent(
-        { variant, shooter, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current },
+        { playerId, variant, shooter, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current },
         { type: 'problem_start', reason },
       );
     },
-    [problem, variant, shooter],
+    [problem, variant, shooter, playerId],
   );
 
   const onRestartButton = () => {
