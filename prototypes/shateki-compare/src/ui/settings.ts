@@ -118,7 +118,7 @@ export const SHOOTER_LABEL: Record<Shooter, string> = {
 
 export const SHOOTERS: Shooter[] = ['gun', 'sling', 'catapult'];
 
-/** そのバリエーションで選べる射撃タイプか。D はレーンが1本なので、奥と手前の2段が前提のカタパルトは使わない。 */
+/** そのバリエーションで選べる射撃タイプか。D・E は的が1段なので、奥と手前の2段が前提のカタパルトは使わない。 */
 export function shooterAllowed(v: Variant, sh: Shooter): boolean {
   if (v === 'A') return false;
   return !((v === 'D' || v === 'E') && sh === 'catapult');
@@ -126,7 +126,7 @@ export function shooterAllowed(v: Variant, sh: Shooter): boolean {
 
 /**
  * 実際に使う射撃タイプ。ログ・図鑑の区別にも使う。A はタップなので射撃タイプなし。
- * D でカタパルトが選ばれていたら、コルク銃にする。
+ * D・E でカタパルトが選ばれていたら、コルク銃にする。
  */
 export function shooterOf(v: Variant, s: Settings): 'tap' | Shooter {
   if (v === 'A') return 'tap';
