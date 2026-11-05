@@ -82,15 +82,24 @@ function keysPlayableInLane(problem: Problem, all: ReadonlyArray<Solution>): boo
   return all.every((s) => playable.has(s.key));
 }
 
+/**
+ * 札を山札から出す問題か（D「ながれる」・E「おきあがる」）。
+ * どちらも「マイナスにならない札だけ出す」「見えている札は倒さない」ので、同じ条件をかける。
+ */
+export function isDeckSet(set: ProblemSet): boolean {
+  return set === 'lane' || set === 'rise';
+}
+
 /** 問題が条件を満たしているか。満たさない理由を返す（空なら OK）。 */
 export function validateProblem(problem: Problem): string[] {
   const errors: string[] = [];
-  if (problem.set === 'lane' && hasDuplicateCard(problem.targets)) errors.push('同じ札が2枚以上ある');
-  // D は見えている札を倒さないので、引き算が2枚あると、片方を当てたあとにもう片方でマイナスになりうる
-  if (problem.set === 'lane' && problem.targets.filter((t) => t.op === '-').length > 1) errors.push('引き算の札が2枚以上ある');
+  const deck = isDeckSet(problem.set);
+  if (deck && hasDuplicateCard(problem.targets)) errors.push('同じ札が2枚以上ある');
+  // D・E は見えている札を倒さないので、引き算が2枚あると、片方を当てたあとにもう片方でマイナスになりうる
+  if (deck && problem.targets.filter((t) => t.op === '-').length > 1) errors.push('引き算の札が2枚以上ある');
   const a = analyzeProblem(problem);
-  // 図鑑の「？」に、D では撃てない解き方が混ざらないようにする
-  if (problem.set === 'lane' && !a.allPlayableInLane) errors.push('D の流し方では撃てない解き方がある');
+  // 図鑑の「？」に、D・E では撃てない解き方が混ざらないようにする
+  if (deck && !a.allPlayableInLane) errors.push('マイナスにならない札の出し方では撃てない解き方がある');
   if (problem.targets.length <= problem.shots) errors.push('的の数が弾数以下');
   if (new Set(problem.targets.map((t) => t.id)).size !== problem.targets.length) errors.push('的の id が重複');
   if (a.keys.length < 2) errors.push(`解き方が ${a.keys.length} 種類しかない`);
@@ -172,6 +181,19 @@ export function generateProblem(rng: () => number, spec: GenerateSpec, tries = 5
     } else if (spec.set === 'lane') {
       const specs: Array<[Op, number]> = [
         ...pickDistinct(rng, [5, 10, 15, 20, 25, 30], 5).map((v) => ['+', v] as [Op, number]),
+        ['-', pick(rng, [5, 10])],
+        ['*', 2],
+      ];
+      targets = makeTargets(shuffle(rng, specs));
+      goal = randomPathValue(rng, targets, shots);
+    } else if (spec.set === 'rise' && spec.stage === 1) {
+      // 6つ立てて、残りの2枚は起き上がりで出てくる。8枚でも山札が毎回同じにならないよう、数は 5〜50 から選ぶ
+      const values = pickDistinct(rng, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50], 8);
+      targets = makeTargets(values.map((v) => ['+', v] as [Op, number]));
+      goal = randomPathValue(rng, targets, shots);
+    } else if (spec.set === 'rise') {
+      const specs: Array<[Op, number]> = [
+        ...pickDistinct(rng, [5, 10, 15, 20, 25, 30, 35, 40], 6).map((v) => ['+', v] as [Op, number]),
         ['-', pick(rng, [5, 10])],
         ['*', 2],
       ];

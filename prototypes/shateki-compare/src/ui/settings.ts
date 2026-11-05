@@ -31,6 +31,10 @@ export interface Settings {
   laneAssist: boolean;
   /** D の救済：役立つ札が何秒出ていなければ流すか */
   laneAssistSec: number;
+  /** E で立っている的の数（置き場所は8つ。残りは空き） */
+  riseStanding: number;
+  /** E で、当てた・いれかえたあと、別の場所に新しい的が起き上がるまでの秒数 */
+  riseDelay: number;
   /** 今の式を画面に出すか */
   showExpression: boolean;
   sound: boolean;
@@ -54,6 +58,8 @@ export const DEFAULT_SETTINGS: Settings = {
   laneVisible: 4,
   laneAssist: true,
   laneAssistSec: 8,
+  riseStanding: 6,
+  riseDelay: 1,
   showExpression: true,
   sound: true,
   bgm: false,
@@ -89,7 +95,7 @@ export function saveSettings(s: Settings): void {
 }
 
 export function isVariant(v: unknown): v is Variant {
-  return v === 'A' || v === 'B' || v === 'C' || v === 'D';
+  return v === 'A' || v === 'B' || v === 'C' || v === 'D' || v === 'E';
 }
 
 export function variantFromUrl(): Variant | null {
@@ -128,15 +134,15 @@ export const SHOOTER_LABEL: Record<Shooter, string> = {
 
 export const SHOOTERS: Shooter[] = ['gun', 'sling', 'catapult'];
 
-/** そのバリエーションで選べる射撃タイプか。D はレーンが1本なので、奥と手前の2段が前提のカタパルトは使わない。 */
+/** そのバリエーションで選べる射撃タイプか。D・E は的が1段なので、奥と手前の2段が前提のカタパルトは使わない。 */
 export function shooterAllowed(v: Variant, sh: Shooter): boolean {
   if (v === 'A') return false;
-  return !(v === 'D' && sh === 'catapult');
+  return !((v === 'D' || v === 'E') && sh === 'catapult');
 }
 
 /**
  * 実際に使う射撃タイプ。ログ・図鑑の区別にも使う。A はタップなので射撃タイプなし。
- * D でカタパルトが選ばれていたら、コルク銃にする。
+ * D・E でカタパルトが選ばれていたら、コルク銃にする。
  */
 export function shooterOf(v: Variant, s: Settings): 'tap' | Shooter {
   if (v === 'A') return 'tap';
@@ -148,6 +154,7 @@ export const VARIANT_LABEL: Record<Variant, string> = {
   B: 'B ねらう',
   C: 'C リスク',
   D: 'D ながれる',
+  E: 'E おきあがる',
 };
 
-export const VARIANTS: Variant[] = ['A', 'B', 'C', 'D'];
+export const VARIANTS: Variant[] = ['A', 'B', 'C', 'D', 'E'];

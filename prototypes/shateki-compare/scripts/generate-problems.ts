@@ -1,16 +1,24 @@
 /**
  * 問題データ src/data/problems.json を作るスクリプト。
- *   npm run gen:problems
+ *   npm run gen:problems            足りない問題だけ作る（今ある問題はそのまま残す）
+ *   npm run gen:problems -- --all   全部作り直す
  * 各ステージの1問目は手で決めた問題、残りはソルバーで条件を満たすものを探す。
- * シードを変えると別の問題セットになる（例：npm run gen:problems -- 42）。
+ * シードを変えると別の問題セットになる（例：npm run gen:problems -- --all 42）。
+ *
+ * 今ある問題を残すのは、遊び比べに使っている問題を変えないため。
+ * 問題の作り方や条件を変えると乱数の進み方が変わり、全部作り直すと関係ない問題まで変わってしまう。
  */
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createRng, generateProblem, sizeFor, validateProblem } from '../src/logic/generator';
 import type { Problem, ProblemSet } from '../src/logic/types';
 
-const seed = Number(process.argv[2] ?? 20261102);
+const args = process.argv.slice(2);
+const all = args.includes('--all');
+const seed = Number(args.find((a) => a !== '--all') ?? 20261102);
 const rng = createRng(seed);
+const out = fileURLToPath(new URL('../src/data/problems.json', import.meta.url));
+const existing: Problem[] = all ? [] : (JSON.parse(readFileSync(out, 'utf8')) as { problems: Problem[] }).problems;
 
 const handmade: Problem[] = [
   {
@@ -57,24 +65,27 @@ const plan: Array<{ set: ProblemSet; stage: number }> = [
   // D 用。乱数の順番が変わらないように、いちばん後ろに足す
   { set: 'lane', stage: 1 },
   { set: 'lane', stage: 2 },
+  // E 用。同じく、いちばん後ろに足す
+  { set: 'rise', stage: 1 },
+  { set: 'rise', stage: 2 },
 ];
 for (const { set, stage } of plan) {
   const prefix = set === 'standard' ? 'std' : set;
   const goals = new Set<number>();
   for (let n = 1; n <= 3; n++) {
     const id = `${prefix}-${stage}-${n}`;
-    let p = handmade.find((h) => h.id === id) ?? null;
-    while (!p || (goals.has(p.goal) && !handmade.includes(p))) {
+    const kept = handmade.find((h) => h.id === id) ?? existing.find((e) => e.id === id) ?? null;
+    let p = kept;
+    while (!p || (goals.has(p.goal) && p !== kept)) {
       p = generateProblem(rng, { set, stage, id });
       if (!p) throw new Error(`${id} を作れませんでした`);
     }
     const errors = validateProblem(p);
-    if (errors.length) throw new Error(`${id}: ${errors.join(', ')}`);
+    if (errors.length) throw new Error(`${id}: ${errors.join(', ')}（今ある問題が条件を満たさないときは --all で作り直す）`);
     goals.add(p.goal);
     problems.push(p);
   }
 }
 
-const out = fileURLToPath(new URL('../src/data/problems.json', import.meta.url));
 writeFileSync(out, JSON.stringify({ seed, problems }, null, 2) + '\n');
 console.log(`wrote ${problems.length} problems to ${out}`);

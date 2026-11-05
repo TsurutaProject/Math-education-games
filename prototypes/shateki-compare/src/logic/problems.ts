@@ -6,6 +6,7 @@ export const ALL_PROBLEMS: Problem[] = (data as { problems: Problem[] }).problem
 export function setForVariant(variant: Variant): ProblemSet {
   if (variant === 'C') return 'risk';
   if (variant === 'D') return 'lane';
+  if (variant === 'E') return 'rise';
   return 'standard';
 }
 

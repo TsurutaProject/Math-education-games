@@ -1,9 +1,10 @@
 import { useSyncExternalStore } from 'react';
 import { MAX_VISIBLE, MIN_VISIBLE } from '../logic/lane';
+import { RISE_POSITIONS } from '../logic/rise';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import { clearLog, downloadLog, getLogCount, getLogLevel, getLogUsage, subscribeLog } from './logStore';
-import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, VARIANT_LABEL, VARIANTS, type Settings } from './settings';
+import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, shooterAllowed, VARIANT_LABEL, VARIANTS, type Settings } from './settings';
 
 interface Props {
   variant: Variant;
@@ -95,13 +96,13 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             </div>
           </div>
           <div className="row">
-            <span className="row-label">射撃タイプ（B・C・D）</span>
+            <span className="row-label">射撃タイプ（B〜E）</span>
             <div className="seg">
               {SHOOTERS.map((sh) => (
                 <button
                   key={sh}
                   className={sh === settings.shooter ? 'on' : ''}
-                  disabled={variant === 'D' && sh === 'catapult'}
+                  disabled={variant !== 'A' && !shooterAllowed(variant, sh)}
                   onClick={() => onShooter(sh)}
                 >
                   {SHOOTER_LABEL[sh]}
@@ -142,11 +143,11 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             onChange={(v) => update({ assistStrength: v })}
             note="0=なし 1=標準（残り2発で×1.35、1発で×1.8）"
           />
-          <Slider label="照準の揺れ（B・C・D）" value={settings.swayAmplitude} min={0} max={40} step={2} onChange={(v) => update({ swayAmplitude: v })} />
+          <Slider label="照準の揺れ（B〜E）" value={settings.swayAmplitude} min={0} max={40} step={2} onChange={(v) => update({ swayAmplitude: v })} />
         </section>
 
         <section>
-          <h3>パチンコ（B・C・D）</h3>
+          <h3>パチンコ（B〜E）</h3>
           <Slider label="弾の速さ" value={settings.slingSpeed} min={300} max={1600} step={50} onChange={(v) => update({ slingSpeed: v })} note="遅いほど、動く的は先を読んで撃つ必要がある" />
           <div className="row">
             <span className="row-label">ガイドの比較</span>
@@ -217,6 +218,28 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             max={20}
             step={1}
             onChange={(v) => update({ laneAssistSec: v })}
+          />
+        </section>
+
+        <section>
+          <h3>E：おきあがる</h3>
+          <Slider
+            label="立っている的の数"
+            value={settings.riseStanding}
+            min={3}
+            max={RISE_POSITIONS - 1}
+            step={1}
+            onChange={(v) => update({ riseStanding: v })}
+            note={`置き場所は ${RISE_POSITIONS} つ。残りは空きで、新しい的はそこに起き上がる`}
+          />
+          <Slider
+            label="起き上がるまでの秒数"
+            value={settings.riseDelay}
+            min={0.3}
+            max={3}
+            step={0.1}
+            onChange={(v) => update({ riseDelay: v })}
+            note="当てた・いれかえたあと、別の場所に新しい的が起き上がるまで"
           />
         </section>
 

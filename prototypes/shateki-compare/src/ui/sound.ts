@@ -8,7 +8,7 @@ let bgmGain: GainNode | null = null;
 const buffers = new Map<string, AudioBuffer>();
 const activeSounds = new Set<AudioBufferSourceNode>();
 let loading = false;
-const soundNames = ['shot', 'hit', 'hit-heavy', 'miss', 'sling', 'catapult', 'thud', 'clear', 'clear-big', 'out'];
+const soundNames = ['shot', 'hit', 'hit-heavy', 'miss', 'sling', 'catapult', 'thud', 'clear', 'clear-big', 'out', 'rise'];
 
 async function loadAudio(name: string, folder: string) {
   for (const extension of ['mp3', 'ogg', 'wav']) {
@@ -177,4 +177,10 @@ export function sfxOut() {
   if (playFile('out')) return;
   tone(440, 0.15, { type: 'triangle', gain: 0.15 });
   tone(392, 0.25, { type: 'triangle', gain: 0.15, delay: 0.15 });
+}
+
+/** E の的が起き上がった「ピョコッ」 */
+export function sfxRise() {
+  if (playFile('rise')) return;
+  tone(520, 0.09, { type: 'triangle', gain: 0.12, to: 880 });
 }
