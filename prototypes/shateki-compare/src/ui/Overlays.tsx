@@ -1,29 +1,26 @@
-import { formatExpression, formatNumber } from '../logic/ops';
+import { formatExpression } from '../logic/ops';
 import type { Step } from '../logic/types';
 import type { ZukanEntry } from '../logic/zukan';
 
 export function OutOverlay({
   goal,
-  current,
   steps,
   onRetry,
   onNext,
 }: {
   goal: number;
-  current: number;
   steps: Step[];
   onRetry: () => void;
   onNext: () => void;
 }) {
-  const diff = goal - current;
   return (
     <div className="overlay">
       <div className="panel out-panel">
         <div className="big-msg">おしい！</div>
-        <div className="sub-msg">{diff > 0 ? `あと ${diff}` : `${-diff} こえちゃった`}</div>
+        <div className="sub-msg">めあて {goal}</div>
         {steps.length > 0 && (
           <div className="mini-expr">
-            {formatExpression(steps)} = {formatNumber(current)}
+            {formatExpression(steps)}
           </div>
         )}
         <button className="btn primary" onClick={onRetry} autoFocus>
@@ -91,19 +88,8 @@ export function ZukanScreen({
               ? 'あたらしい 解き方を 見つけた！'
               : 'この 解き方は もう 見つけているよ。ほかにもあるかな？'}
         </div>
-        <div className="cards">
-          {entries.map((e) => (
-            <div key={e.key} className={`card ${e.key === latestKey ? 'latest' : ''}`}>
-              {e.key === latestKey && latestIsNew && <span className="new-badge">NEW</span>}
-              {e.expression} = {goal}
-            </div>
-          ))}
-          {Array.from({ length: Math.max(0, total - entries.length) }, (_, i) => (
-            <div key={`q${i}`} className="card unknown">
-              ？
-            </div>
-          ))}
-        </div>
+        <SolutionCards entries={entries} total={total} goal={goal} latestKey={latestKey} latestIsNew={latestIsNew} />
+
         <div className="zukan-buttons">
           {!all && (
             <button className="btn primary" onClick={onAnother} autoFocus>
@@ -120,6 +106,30 @@ export function ZukanScreen({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** 遊んでいる画面とクリア後で、発見済み・未発見の見せ方をそろえる。 */
+export function SolutionCards({ entries, total, goal, latestKey = '', latestIsNew = false, compact = false }: {
+  entries: ZukanEntry[];
+  total: number;
+  goal: number;
+  latestKey?: string;
+  latestIsNew?: boolean;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`cards ${compact ? 'cards-compact' : ''}`} tabIndex={compact ? 0 : undefined} role={compact ? 'region' : undefined} aria-label={compact ? '見つけた解き方と未発見の一覧' : undefined}>
+      {entries.map((entry) => (
+        <div key={entry.key} className={`card ${entry.key === latestKey ? 'latest' : ''}`}>
+          {entry.key === latestKey && latestIsNew && <span className="new-badge">NEW</span>}
+          {entry.expression} = {goal}
+        </div>
+      ))}
+      {Array.from({ length: Math.max(0, total - entries.length) }, (_, index) => (
+        <div key={`q${index}`} className="card unknown" aria-label="まだ見つけていない解き方">？</div>
+      ))}
     </div>
   );
 }

@@ -41,6 +41,8 @@ import { normalizeAngle, launchBall, launchFromPull, stepBall, type Ball, type L
 import type { Problem, Variant } from '../logic/types';
 import { shooterOf, type Settings } from './settings';
 import { CatapultLayer } from './CatapultLayer';
+import { GunLayer, GUN_MUZZLE } from './GunLayer';
+import { AmmoLayer } from './AmmoLayer';
 import { LaneLayer } from './LaneLayer';
 import { RiseLayer } from './RiseLayer';
 import { SlingLayer } from './SlingLayer';
@@ -135,7 +137,7 @@ const BOTTOM_MISS_DELAY = 0.1;
 /** カタパルトの揺れ：照準の揺れ幅 1 あたり、飛ぶ距離がどれだけぶれるか */
 const CATAPULT_SWAY_DEPTH = 0.8;
 /** コルクが飛び出す位置（画面の下の真ん中） */
-const MUZZLE = { x: FIELD_W / 2, y: FIELD_H + 40 };
+const MUZZLE = GUN_MUZZLE;
 
 export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, onShot }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -150,6 +152,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const catapultMode = shooter === 'catapult';
   /** 引っ張って撃つ（パチンコ・カタパルト） */
   const pullMode = slingMode || catapultMode;
+  const laneY = slingMode ? LANE_Y : 210;
   const placed = useMemo(
     () => layoutTargets(problem, { riskMode, sizeScale: settings.cSizeScale, singleRow: slingMode }),
     [problem, riskMode, settings.cSizeScale, slingMode],
@@ -279,7 +282,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const positionOf = (id: string, t: number) => {
     if (lane.current) {
       const slot = lane.current.slots.findIndex((s) => s.cardId === id);
-      return { x: slotX(slot, t, geo, settings.laneSpeed), y: LANE_Y };
+      return { x: slotX(slot, t, geo, settings.laneSpeed), y: laneY };
     }
     if (rise.current) {
       const slot = rise.current.slots.findIndex((s) => s.cardId === id);
@@ -307,7 +310,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     if (lane.current) {
       return standingCards(lane.current)
         .filter(({ cardId }) => !usedIds.includes(cardId))
-        .map(({ slot, cardId }) => ({ id: cardId, x: slotX(slot, t, geo, settings.laneSpeed), y: LANE_Y, r: UNIFORM_RADIUS }));
+        .map(({ slot, cardId }) => ({ id: cardId, x: slotX(slot, t, geo, settings.laneSpeed), y: laneY, r: UNIFORM_RADIUS }));
     }
     if (rise.current) {
       // 起き上がる途中の的には、まだ当たらない
@@ -541,7 +544,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const sf = f?.kind === 'sling' ? f : null;
   const cf = f?.kind === 'catapult' ? f : null;
   const firstShot = shotsLeft === problem.shots;
-  const rowYs = laneMode ? [LANE_Y] : riseMode ? [RISE_Y] : [...new Set(placed.map((p) => p.y))];
+  const rowYs = laneMode ? [laneY] : riseMode ? [RISE_Y] : [...new Set(placed.map((p) => p.y))];
   // E の「いれかえる」：撃てるとき・起き上がりきった的があるときだけ押せる
   const canSwap = !!rise.current && active && !f && rise.current.slots.some((s) => isHittable(s, clock));
   const onSwap = (e: React.PointerEvent) => {
@@ -569,7 +572,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           <rect key={y} x={0} y={y + 74} width={FIELD_W} height={16} rx={4} className="shelf" />
         ))}
         {lane.current ? (
-          <LaneLayer problem={problem} lane={lane.current} geo={geo} speed={settings.laneSpeed} clock={clock} />
+          <LaneLayer problem={problem} lane={lane.current} geo={geo} speed={settings.laneSpeed} clock={clock} y={laneY} />
         ) : rise.current ? (
           <RiseLayer problem={problem} rise={rise.current} />
         ) : (
@@ -624,6 +627,8 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
             <circle r={3} className="dot" />
           </g>
         )}
+        {shooter === 'gun' && <GunLayer />}
+        {shooter !== 'tap' && <AmmoLayer x={MUZZLE.x} y={MUZZLE.y - 5} shots={problem.shots} shotsLeft={shotsLeft} />}
         {slingMode && (
           <SlingLayer
             pull={aim ? { dx: aim.x - aim.sx, dy: aim.y - aim.sy } : null}

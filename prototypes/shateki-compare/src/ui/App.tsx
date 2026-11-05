@@ -93,7 +93,7 @@ export function App() {
   };
 
   return (
-    <div className="app" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
+    <div className="app game-ui" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
       <header className="topbar">
         <div className="title">さんすう射的 {!exhibit && <span className="tag">試作</span>}</div>
         {!exhibit && (
