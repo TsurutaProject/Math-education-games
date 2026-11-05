@@ -97,10 +97,24 @@ export function makeEvent(stamp: Omit<LogStamp, 't'>, body: LogBody, now: Date =
   return { t: now.toISOString(), ...stamp, ...body };
 }
 
-/** ダウンロード用の JSON 文字列。deviceId で、どのパソコンのログかわかるようにする */
-export function exportLog(events: ReadonlyArray<LogEvent>, meta: { deviceId: string }, now: Date = new Date()): string {
+/**
+ * ダウンロード用の JSON 文字列。deviceId で、どのパソコンのログかわかるようにする。
+ * attempts は挑戦ごとのまとめ（summarizeAttempts）。events は時系列のすべてのイベント。
+ */
+export function exportLog(
+  events: ReadonlyArray<LogEvent>,
+  meta: { deviceId: string; attempts?: ReadonlyArray<object> },
+  now: Date = new Date(),
+): string {
   return JSON.stringify(
-    { schemaVersion: LOG_SCHEMA_VERSION, exportedAt: now.toISOString(), deviceId: meta.deviceId, count: events.length, events },
+    {
+      schemaVersion: LOG_SCHEMA_VERSION,
+      exportedAt: now.toISOString(),
+      deviceId: meta.deviceId,
+      count: events.length,
+      attempts: meta.attempts ?? [],
+      events,
+    },
     null,
     2,
   );

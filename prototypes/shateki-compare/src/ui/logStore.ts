@@ -1,3 +1,4 @@
+import { summarizeAttempts } from '../logic/attempts';
 import {
   exportLog,
   makeEvent,
@@ -11,6 +12,7 @@ import {
   storageLevel,
   type StorageLevel,
 } from '../logic/log';
+import { ALL_PROBLEMS } from '../logic/problems';
 
 const KEY = 'shateki-log-v1';
 /** パソコン（ブラウザ）ごとの id。ログを消しても変えない（複数台のログをまとめたときに区別するため） */
@@ -165,7 +167,9 @@ export function clearLog(): void {
 
 export function downloadLog(): void {
   const now = new Date();
-  const blob = new Blob([exportLog(events, { deviceId }, now)], { type: 'application/json' });
+  const goalOf = (id: string) => ALL_PROBLEMS.find((p) => p.id === id)?.goal ?? null;
+  const attempts = summarizeAttempts(events, { deviceId, goalOf });
+  const blob = new Blob([exportLog(events, { deviceId, attempts }, now)], { type: 'application/json' });
   const a = document.createElement('a');
   const pad = (n: number) => String(n).padStart(2, '0');
   a.href = URL.createObjectURL(blob);
