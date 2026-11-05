@@ -41,7 +41,7 @@ export function OrderBubble({ order, cake, onHintToggle }: OrderBubbleProps) {
     <section className="order-bubble" aria-label="注文">
       <div className="order-bubble__body">
         <p className="order-bubble__message">
-          <span className="asset-label order-label">注文</span>
+          <span className="asset-label order-label"><FuriganaText text="注文" /></span>
           <strong className="order-bubble__message-text">
             <FuriganaText text={request} />
             {bonusRequest !== '' && <span className="order-bonus-request"><FuriganaText text={bonusRequest} /></span>}

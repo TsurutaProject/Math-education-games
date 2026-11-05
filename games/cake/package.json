@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
+    "test:furigana": "node --test tests/furigana.test.mjs",
     "test:interaction": "node --test tests/cake-piece.test.mjs",
     "test:research": "node --test tests/research.test.mjs",
     "build": "tsc -b && vite build",

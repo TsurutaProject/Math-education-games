@@ -106,7 +106,7 @@ export function StageSelectScreen({
                   disabled={!isUnlocked}
                   onClick={() => onSelectStage(index)}
                 >
-                  {isUnlocked ? '遊ぶ' : 'ロック'}
+                  <FuriganaText text={isUnlocked ? '遊ぶ' : 'ロック'} />
                 </button>
               </article>
             )

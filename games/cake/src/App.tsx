@@ -1295,7 +1295,7 @@ function App() {
         aria-pressed={isSoundEnabled}
       >
         <span aria-hidden="true">♪</span>
-        {isSoundEnabled ? '音 ON' : '音 OFF'}
+        <span><FuriganaText text={isSoundEnabled ? '音 ON' : '音 OFF'} /></span>
       </button>
     </>
   )
@@ -1349,13 +1349,13 @@ function App() {
       {soundControl}
       <main className={mainClassName}>
       <header className="game-header">
-        <span className="game-logo">分ケーキ</span>
+        <span className="game-logo"><FuriganaText text="分ケーキ" /></span>
         <div className="stage-heading"><span>ステージ {activeStageIndex + 1}</span>
           <h1><FuriganaText text={activeStage.title} /></h1>
         </div>
       </header>
       <nav className="workbench-navigation" aria-label="ゲームメニュー">
-        <button type="button" className="button stage-select-return" onClick={showStageSelect}>← ステージ一覧</button>
+        <button type="button" className="button stage-select-return" onClick={showStageSelect}><FuriganaText text="← ステージ一覧" /></button>
         <HelpMenu onOpenTutorial={openGuidedTutorial} />
       </nav>
       <div className="game-layout">
@@ -1364,7 +1364,7 @@ function App() {
           <OrderBubble order={activeOrder} cake={getCakeById(activeOrder.cakeKind)} onHintToggle={open => getResearch().action(open ? 'hint_open' : 'hint_close')} />
         </section>
         <section className="play-area" aria-label="まな板">
-          <div className="workbench-heading"><h2 className="asset-label board-label">まな板</h2>
+          <div className="workbench-heading"><h2 className="asset-label board-label"><FuriganaText text="まな板" /></h2>
             <button type="button" data-se="none" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ <FuriganaText text="切り直す" /></button>
           </div>
           {showCakeSelector ? <CakeSelector

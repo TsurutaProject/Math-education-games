@@ -55,8 +55,7 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
               </g>
             </svg>
           </span>
-          <span className="trophy-shelf__tooltip" aria-hidden="true">
-            現在のトロフィー {unlockedTrophyIds.length}/{trophies.length}
+          <span className="trophy-shelf__tooltip" aria-hidden="true"><FuriganaText text="現在のトロフィー" />{unlockedTrophyIds.length}/{trophies.length}
           </span>
           <span className="trophy-open-button__body">
             <span className="trophy-open-button__icon" aria-hidden="true">★</span>

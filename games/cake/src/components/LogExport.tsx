@@ -38,24 +38,24 @@ export function LogExport({ open, onChange }: { open: boolean; onChange: (open: 
   return <>
     <button type="button" className="sound-toggle research-export" aria-label="設定" aria-haspopup="dialog" onClick={() => { setView('settings'); setError(''); onChange(true) }}>⚙️</button>
     <dialog className="research-dialog" ref={dialog} onCancel={() => onChange(false)} aria-labelledby="research-title">
-      <h2 id="research-title">{view === 'settings' ? '設定' : view === 'export' ? 'ログを取得しますか？' : 'キャッシュをクリアしますか？'}</h2>
+      <h2 id="research-title"><FuriganaText text={view === 'settings' ? '設定' : view === 'export' ? 'ログを取得しますか？' : 'キャッシュをクリアしますか？'} /></h2>
       {view === 'settings' ? <>
         <div className="research-settings">
-          <button type="button" onClick={() => setView('export')}>ログ取得</button>
+          <button type="button" onClick={() => setView('export')}><FuriganaText text="ログ取得" /></button>
           <button type="button" onClick={() => setView('reset')}>キャッシュクリア</button>
         </div>
-        <div className="research-actions"><button type="button" autoFocus onClick={() => onChange(false)}>閉じる</button></div>
+        <div className="research-actions"><button type="button" autoFocus onClick={() => onChange(false)}><FuriganaText text="閉じる" /></button></div>
       </> : view === 'export' ? <>
-        <p>途中までの記録も保存できます。取得してもプレイ記録は消えません。</p>
-        <p>すべての記録を1つのJSONファイルで保存します。</p>
-        <div className="research-actions"><button type="button" onClick={() => setView('settings')}>キャンセル</button><button type="button" onClick={download}>取得する</button></div>
+        <p><FuriganaText text="途中までの記録も保存できます。取得してもプレイ記録は消えません。" /></p>
+        <p><FuriganaText text="すべての記録を1つのJSONファイルで保存します。" /></p>
+        <div className="research-actions"><button type="button" onClick={() => setView('settings')}>キャンセル</button><button type="button" onClick={download}><FuriganaText text="取得する" /></button></div>
       </> : <>
         <p><FuriganaText text="ステージの進捗・ケーキの解放状態・売上・コンボ・トロフィーをリセットし、初回チュートリアルからやり直します。この操作は元に戻せません。" /></p>
-        <p>収集済みのログ・集計・匿名IDも初期化します。必要なログは先に取得してください。</p>
+        <p><FuriganaText text="収集済みのログ・集計・匿名IDも初期化します。必要なログは先に取得してください。" /></p>
         <div className="research-actions"><button type="button" onClick={() => setView('settings')}>キャンセル</button><button type="button" onClick={resetProgress}><FuriganaText text="クリアしてやり直す" /></button></div>
       </>}
-      {error && <p role="alert">{error}</p>}
-      {open && getResearch().storageError && <p role="alert">{getResearch().storageError}</p>}
+      {error && <p role="alert"><FuriganaText text={error} /></p>}
+      {open && getResearch().storageError && <p role="alert"><FuriganaText text={getResearch().storageError} /></p>}
     </dialog>
   </>
 }

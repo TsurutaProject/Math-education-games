@@ -406,3 +406,17 @@ body, #root {
 .result-trophy-hint > span { display: block; }
 .result-message__content { inset: 6% 8% 25% 12%; gap: 14px; }
 .result-message__summary { gap: 12px; }
+
+/* Text labels keep the original brown badges while allowing visible ruby. */
+.board-label, .order-bubble__message .order-label {
+  background-image: none;
+  background-color: #633b00;
+  border-radius: 999px;
+  color: #fff;
+  display: block;
+  text-align: center;
+  line-height: 1.15;
+  font-size: 26px !important;
+  padding-top: 10px;
+}
+.order-bubble__message .order-label { font-size: 20px !important; padding-top: 7px; }
