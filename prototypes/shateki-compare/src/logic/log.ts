@@ -20,7 +20,14 @@ export interface LogContext {
 }
 
 export type LogPayload =
-  | { type: 'problem_start'; reason: 'first' | 'retry' | 'another_way' | 'next' | 'switch' | 'next_player' }
+  | {
+      type: 'problem_start';
+      reason: 'first' | 'retry' | 'another_way' | 'next' | 'switch' | 'next_player';
+      /** その人がその問題（射撃タイプ別）に何回目の挑戦か。再読み込みすると 1 から数え直す */
+      attemptNo: number;
+      /** 始めたとき、図鑑でその問題の解き方をいくつ見つけていたか */
+      foundBefore: number;
+    }
   | {
       type: 'shot';
       /** 照準の位置（フィールド左上 0,0 〜 右下 1,1） */
@@ -31,6 +38,10 @@ export type LogPayload =
       assist: number;
       shotsLeftBefore: number;
       pointerType: string;
+      /** 挑戦を始めてから、この1発の当たり・外れが決まるまでのミリ秒（1発目なら「最初の操作までの時間」の目安） */
+      sinceStartMs: number;
+      /** 押してから離すまで（狙っていた時間）のミリ秒。A（タップ）は null */
+      aimMs: number | null;
       /** 撃ったあと、残りの弾で届くか */
       reachableAfter: boolean;
       /**
@@ -48,9 +59,14 @@ export type LogPayload =
       shotsLeft: number;
       reachable: boolean;
     }
-  | { type: 'clear'; key: string; expression: string; isNew: boolean; shotsLeft: number; foundCount: number; totalCount: number }
-  | { type: 'out_of_shots'; current: number; goal: number; diff: number }
-  | { type: 'restart'; current: number; shotsLeft: number }
+  /** elapsedMs は挑戦を始めてからのミリ秒（画面が隠れていた時間も含む） */
+  | { type: 'clear'; key: string; expression: string; isNew: boolean; shotsLeft: number; foundCount: number; totalCount: number; elapsedMs: number }
+  /** 弾切れ。そのときの式と、解き方のキー（クリアと同じ形）も残す */
+  | { type: 'out_of_shots'; current: number; goal: number; diff: number; expression: string; key: string; elapsedMs: number }
+  /** 「さいしょから」を押した */
+  | { type: 'restart'; current: number; shotsLeft: number; expression: string; elapsedMs: number }
+  /** 終わる前（クリア・弾切れの前）に、1発以上撃ってから別の問題・つぎの人などに移った（途中でやめた） */
+  | { type: 'attempt_leave'; current: number; shotsLeft: number; expression: string; elapsedMs: number }
   /** 画面が隠れた（タブを切り替えた・閉じたなど）。途中でやめたかを見るため */
   | { type: 'page_hide'; current: number; shotsLeft: number }
   /** 隠れていた画面に戻った */

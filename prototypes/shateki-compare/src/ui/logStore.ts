@@ -103,6 +103,17 @@ export function nextPlayer(): string {
   return player.id;
 }
 
+/** 人ごと・問題ごとの挑戦の回数。この起動の間だけ数える（再読み込みすると 1 から数え直す） */
+const attemptCounts = new Map<string, number>();
+
+/** その人がその問題（key）に挑戦するのが何回目か。呼ぶたびに 1 増える */
+export function nextAttemptNo(playerId: string, key: string): number {
+  const k = `${playerId}:${key}`;
+  const n = (attemptCounts.get(k) ?? 0) + 1;
+  attemptCounts.set(k, n);
+  return n;
+}
+
 export function getLogCount(): number {
   return events.length;
 }

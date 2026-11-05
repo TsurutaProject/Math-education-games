@@ -7,7 +7,7 @@ describe('makeEvent', () => {
   it('遊びのイベントに、時刻・起動の id・通し番号・人・バリエーション・問題が入る', () => {
     const e = makeEvent(
       { sessionId: 's1', seq: 3 },
-      { playerId: 'p1', variant: 'B', shooter: 'gun', stage: 2, problemId: 'std-2-1', attemptId: 'abc', type: 'restart', current: 10, shotsLeft: 1 },
+      { playerId: 'p1', variant: 'B', shooter: 'gun', stage: 2, problemId: 'std-2-1', attemptId: 'abc', type: 'restart', current: 10, shotsLeft: 1, expression: '10', elapsedMs: 5000 },
       now,
     );
     expect(e).toMatchObject({
