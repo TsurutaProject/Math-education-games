@@ -1,12 +1,10 @@
 import type { DragEvent } from 'react'
-import type { CakePieceModel, Fraction, Topping } from '../types/game'
-import { toPercent } from '../utils/fraction'
+import type { CakePieceModel, Topping } from '../types/game'
 import { CakePiecePreview } from './CakePiecePreview'
 import { FuriganaText } from './FuriganaText'
 
 interface TrayProps {
   selectedPieces: CakePieceModel[]
-  total: Fraction
   maxPieces: number
   cakeImageUrl: string
   toppings: Topping[]
@@ -14,7 +12,7 @@ interface TrayProps {
   onDropPiece: (pieceId: string) => void
 }
 
-export function Tray({ selectedPieces, total, maxPieces, cakeImageUrl, toppings, onRemovePiece, onDropPiece }: TrayProps) {
+export function Tray({ selectedPieces, maxPieces, cakeImageUrl, toppings, onRemovePiece, onDropPiece }: TrayProps) {
   const handleDragOver = (event: DragEvent<HTMLElement>): void => {
     event.preventDefault()
     event.dataTransfer.dropEffect = selectedPieces.length >= maxPieces ? 'none' : 'move'
@@ -37,26 +35,18 @@ export function Tray({ selectedPieces, total, maxPieces, cakeImageUrl, toppings,
       onDrop={handleDrop}
     >
       <div className="tray__header">
-        <h2>トレイ</h2>
-        <p>{selectedPieces.length}/{maxPieces} ピース</p>
-      </div>
-      <div className="tray__meter" aria-hidden="true">
-        <span style={{ width: `${Math.min(toPercent(total), 100)}%` }} />
-        <div className="tray__ticks">
-          {Array.from({ length: 11 }, (_, index) => (
-            <i key={index} />
-          ))}
-        </div>
+        <h2 className="asset-label tray-label">トレー</h2>
       </div>
       <div className="tray__pieces">
         {selectedPieces.length === 0 ? (
-          <p className="tray__empty">ケーキのピースを<FuriganaText text="選んで" />ね</p>
+          <p className="tray__empty">ここにケーキを<FuriganaText text="置こう" /></p>
         ) : (
           selectedPieces.map((piece) => (
             <button
               key={piece.id}
               type="button"
               className="tray-piece"
+              aria-label="このピースをまな板に戻す"
               onClick={() => onRemovePiece(piece)}
               style={{ borderColor: piece.color }}
             >

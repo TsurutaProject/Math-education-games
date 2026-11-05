@@ -5,6 +5,80 @@ interface FuriganaTextProps {
 }
 
 const readings: Array<[string, string]> = [
+  ['形式', 'けいしき'],
+  ['不正', 'ふせい'],
+  ['以前', 'いぜん'],
+  ['読み込めません', 'よみこめません'],
+  ['書き出せます', 'かきだせます'],
+  ['書き出して', 'かきだして'],
+  ['失敗', 'しっぱい'],
+  ['画面', 'がめん'],
+  ['前', 'まえ'],
+  ['作り直す', 'つくりなおす'],
+  ['作って', 'つくって'],
+  ['大きい', 'おおきい'],
+  ['合わせる', 'あわせる'],
+  ['短い', 'みじかい'],
+  ['戻す', 'もどす'],
+  ['戻して', 'もどして'],
+  ['戻せません', 'もどせません'],
+  ['切らなくて', 'きらなくて'],
+  ['出せたら', 'だせたら'],
+  ['設定', 'せってい'],
+  ['取得', 'しゅとく'],
+  ['途中', 'とちゅう'],
+  ['記録', 'きろく'],
+  ['保存', 'ほぞん'],
+  ['消えません', 'きえません'],
+  ['進捗', 'しんちょく'],
+  ['状態', 'じょうたい'],
+  ['初回', 'しょかい'],
+  ['元', 'もと'],
+  ['収集', 'しゅうしゅう'],
+  ['集計', 'しゅうけい'],
+  ['匿名', 'とくめい'],
+  ['初期化', 'しょきか'],
+  ['先', 'さき'],
+  ['次から', 'つぎから'],
+  ['音', 'おと'],
+  ['見た目', 'みため'],
+  ['目指そう', 'めざそう'],
+  ['今回', 'こんかい'],
+  ['報酬', 'ほうしゅう'],
+  ['成果', 'せいか'],
+  ['切り分けた', 'きりわけた'],
+  ['不満', 'ふまん'],
+  ['表情', 'ひょうじょう'],
+  ['嬉しそう', 'うれしそう'],
+  ['落ち着いた', 'おちついた'],
+  ['表', 'ひょう'],
+
+  ['結果', 'けっか'],
+  ['置こう', 'おこう'],
+  ['押す', 'おす'],
+  ['戻せます', 'もどせます'],
+  ['切り直す', 'きりなおす'],
+  ['切れている', 'きれている'],
+  ['切れば', 'きれば'],
+  ['現在', 'げんざい'],
+  ['人数', 'にんずう'],
+  ['最高', 'さいこう'],
+  ['一度', 'いちど'],
+  ['挑戦', 'ちょうせん'],
+  ['選択', 'せんたく'],
+  ['済み', 'ずみ'],
+  ['ロック中', 'ろっくちゅう'],
+  ['遊ぶ', 'あそぶ'],
+  ['見られる', 'みられる'],
+  ['横', 'よこ'],
+  ['実際', 'じっさい'],
+  ['増やせる', 'ふやせる'],
+  ['変えず', 'かえず'],
+  ['嬉しい', 'うれしい'],
+  ['下', 'した'],
+
+  ['最高評価', 'さいこうひょうか'],
+  ['条件', 'じょうけん'],
   ['分ケーキ', 'わけーき'],
   ['基本の分け方', 'きほんのわけかた'],
   ['分け方', 'わけかた'],
@@ -35,6 +109,8 @@ const readings: Array<[string, string]> = [
   ['全て', 'すべて'],
   ['お支払い', 'おしはらい'],
   ['やり直せます', 'やりなおせます'],
+  ['やり直す', 'やりなおす'],
+  ['やり直します', 'やりなおします'],
   ['お客さん', 'おきゃくさん'],
   ['ケーキ屋さん', 'けーきやさん'],
   ['接客', 'せっきゃく'],
@@ -232,6 +308,13 @@ const splitReadingSegments = (surface: string): ReadingSegment[] => {
   return segments
 }
 
+const renderGlyphs = (text: string, keyPrefix: string): ReactNode[] =>
+  Array.from(text, (character, index) =>
+    '置選直'.includes(character)
+      ? <span key={`${keyPrefix}-${index}`} className={character === '直' ? 'japanese-glyph japanese-glyph--bold' : 'japanese-glyph'} lang="ja">{character}</span>
+      : character,
+  )
+
 const createReadingNodes = (
   surface: string,
   pronunciation: string,
@@ -254,7 +337,7 @@ const createReadingNodes = (
         readingPosition = literalPosition + normalizedText.length
       }
 
-      return <Fragment key={`${keyPrefix}-text-${index}`}>{segment.text}</Fragment>
+      return <Fragment key={`${keyPrefix}-text-${index}`}>{renderGlyphs(segment.text, `${keyPrefix}-${index}`)}</Fragment>
     }
 
     const nextLiteral = segments[index + 1]
@@ -267,12 +350,12 @@ const createReadingNodes = (
     readingPosition = readingEnd
 
     if (rubyReading === '') {
-      return <Fragment key={`${keyPrefix}-kanji-${index}`}>{segment.text}</Fragment>
+      return <Fragment key={`${keyPrefix}-kanji-${index}`}>{renderGlyphs(segment.text, `${keyPrefix}-${index}`)}</Fragment>
     }
 
     return (
       <ruby key={`${keyPrefix}-ruby-${index}`}>
-        {segment.text}
+        {renderGlyphs(segment.text, `${keyPrefix}-${index}`)}
         <rt>{rubyReading}</rt>
       </ruby>
     )
@@ -289,7 +372,7 @@ export function FuriganaText({ text }: FuriganaTextProps) {
       return
     }
 
-    nodes.push(<Fragment key={`text-${nodes.length}`}>{plainText}</Fragment>)
+    nodes.push(<Fragment key={`text-${nodes.length}`}>{renderGlyphs(plainText, `plain-${nodes.length}`)}</Fragment>)
     plainText = ''
   }
 

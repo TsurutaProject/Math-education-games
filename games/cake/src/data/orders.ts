@@ -6,18 +6,14 @@ export const orders: Order[] = [
   {
     id: 'half',
     customerName: 'おれんじ',
-    age: 8,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 2 },
-    message: '二人で分けたいので、半分ください',
+    message: 'ホールケーキの半分をください',
     difficulty: 1,
   },
   {
     id: 'one-quarter',
     customerName: 'きゅーぶ',
-    age: 7,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 4 },
     message: '少しだけ、4分の1ください',
@@ -26,8 +22,6 @@ export const orders: Order[] = [
   {
     id: 'three-quarters',
     customerName: 'ペンギン',
-    age: 9,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 3, denominator: 4 },
     message: '4つに分けたうち3つ分ほしいです',
@@ -36,8 +30,6 @@ export const orders: Order[] = [
   {
     id: 'one-third',
     customerName: 'おれんじ',
-    age: 32,
-    gender: 'adult',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 3 },
     message: '3分の1だけください',
@@ -46,8 +38,6 @@ export const orders: Order[] = [
   {
     id: 'two-thirds',
     customerName: 'きゅーぶ',
-    age: 10,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 2, denominator: 3 },
     message: '3つに分けたうち2つ分ください',
@@ -56,8 +46,6 @@ export const orders: Order[] = [
   {
     id: 'mix-half',
     customerName: 'ペンギン',
-    age: 10,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 2 },
     message: '1/6と1/12と1/4で半分にできますか',
@@ -71,8 +59,6 @@ export const orders: Order[] = [
   {
     id: 'quarter-pair-half',
     customerName: 'きゅーぶ',
-    age: 8,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 2 },
     message: '4分の1を2つで半分にしてください',
@@ -85,8 +71,6 @@ export const orders: Order[] = [
   {
     id: 'half-quarter-three-quarters',
     customerName: 'おれんじ',
-    age: 9,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 3, denominator: 4 },
     message: '半分と4分の1を合わせてください',
@@ -99,8 +83,6 @@ export const orders: Order[] = [
   {
     id: 'third-pair-two-thirds',
     customerName: 'ペンギン',
-    age: 10,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 2, denominator: 3 },
     message: '3分の1を2つください',
@@ -113,8 +95,6 @@ export const orders: Order[] = [
   {
     id: 'half-third-five-sixths',
     customerName: 'きゅーぶ',
-    age: 11,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 5, denominator: 6 },
     message: '半分と3分の1で6分の5にしてください',
@@ -127,8 +107,6 @@ export const orders: Order[] = [
   {
     id: 'mixed-eleven-twelfths',
     customerName: 'おれんじ',
-    age: 12,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 11, denominator: 12 },
     message: '1/2と1/3と1/12で12分の11をお願いします',
@@ -142,8 +120,6 @@ export const orders: Order[] = [
   {
     id: 'one-sixth',
     customerName: 'きゅーぶ',
-    age: 8,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 6 },
     message: '6分の1だけください',
@@ -152,8 +128,6 @@ export const orders: Order[] = [
   {
     id: 'one-twelfth',
     customerName: 'おれんじ',
-    age: 9,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 12 },
     message: 'いちばん小さい、12分の1をください',
@@ -162,8 +136,6 @@ export const orders: Order[] = [
   {
     id: 'third-sixth-half',
     customerName: 'ペンギン',
-    age: 10,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 2 },
     message: '3分の1と6分の1を合わせて半分にしてください',
@@ -176,8 +148,6 @@ export const orders: Order[] = [
   {
     id: 'third-quarter-seven-twelfths',
     customerName: 'きゅーぶ',
-    age: 11,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 7, denominator: 12 },
     message: '3分の1と4分の1で12分の7にしてください',
@@ -190,8 +160,6 @@ export const orders: Order[] = [
   {
     id: 'quarter-third-sixth-three-quarters',
     customerName: 'おれんじ',
-    age: 12,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 3, denominator: 4 },
     message: '1/4と1/3と1/6を合わせてください',
@@ -205,8 +173,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-half',
     customerName: 'おれんじ',
-    age: 8,
-    gender: 'girl',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 2 },
     message: 'チョコケーキを半分ください',
@@ -215,8 +181,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-one-third',
     customerName: 'きゅーぶ',
-    age: 9,
-    gender: 'girl',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 3 },
     message: 'チョコケーキを3分の1ください',
@@ -225,8 +189,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-one-quarter',
     customerName: 'ペンギン',
-    age: 8,
-    gender: 'girl',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 4 },
     message: 'チョコケーキを4分の1ください',
@@ -235,8 +197,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-three-quarters',
     customerName: 'ペンギン',
-    age: 11,
-    gender: 'boy',
     cakeKind: 'chocolate',
     target: { numerator: 3, denominator: 4 },
     message: 'チョコケーキを4分の3ください',
@@ -245,8 +205,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-two-thirds',
     customerName: 'おれんじ',
-    age: 11,
-    gender: 'girl',
     cakeKind: 'chocolate',
     target: { numerator: 2, denominator: 3 },
     message: 'チョコケーキを3分の2ください',
@@ -255,8 +213,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-five-sixths',
     customerName: 'きゅーぶ',
-    age: 12,
-    gender: 'boy',
     cakeKind: 'chocolate',
     target: { numerator: 5, denominator: 6 },
     message: 'チョコケーキを半分と3分の1ください',
@@ -269,8 +225,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-one-sixth',
     customerName: 'ペンギン',
-    age: 9,
-    gender: 'girl',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 6 },
     message: 'チョコケーキを6分の1ください',
@@ -279,8 +233,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-quarter-pair-half',
     customerName: 'おれんじ',
-    age: 9,
-    gender: 'boy',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 2 },
     message: 'チョコケーキの4分の1を2つください',
@@ -293,8 +245,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-half-sixth-two-thirds',
     customerName: 'きゅーぶ',
-    age: 11,
-    gender: 'girl',
     cakeKind: 'chocolate',
     target: { numerator: 2, denominator: 3 },
     message: '半分と6分の1で3分の2にしてください',
@@ -307,8 +257,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-half-quarter-three-quarters',
     customerName: 'ペンギン',
-    age: 11,
-    gender: 'boy',
     cakeKind: 'chocolate',
     target: { numerator: 3, denominator: 4 },
     message: '半分と4分の1を合わせてください',
@@ -321,8 +269,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-mixed-eleven-twelfths',
     customerName: 'おれんじ',
-    age: 12,
-    gender: 'boy',
     cakeKind: 'chocolate',
     target: { numerator: 11, denominator: 12 },
     message: '1/2と1/3と1/12を合わせてください',
@@ -336,8 +282,6 @@ export const orders: Order[] = [
   {
     id: 'piece-count-half-three',
     customerName: 'おれんじ',
-    age: 10,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 2 },
     message: '半分ください。3ピースだともっと嬉しいです',
@@ -347,8 +291,6 @@ export const orders: Order[] = [
   {
     id: 'piece-count-two-thirds-three',
     customerName: 'きゅーぶ',
-    age: 11,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 2, denominator: 3 },
     message: '3分の2ください。3ピースなら最高です',
@@ -358,8 +300,6 @@ export const orders: Order[] = [
   {
     id: 'piece-count-three-quarters-three',
     customerName: 'ペンギン',
-    age: 12,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 3, denominator: 4 },
     message: '4分の3ください。3ピースで作れますか',
@@ -369,8 +309,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-piece-count-half-three',
     customerName: 'きゅーぶ',
-    age: 10,
-    gender: 'girl',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 2 },
     message: 'チョコケーキを半分ください。3ピースなら最高です',
@@ -380,8 +318,6 @@ export const orders: Order[] = [
   {
     id: 'random-piece-count-half',
     customerName: 'おれんじ',
-    age: 10,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 2 },
     message: '半分ください',
@@ -391,8 +327,6 @@ export const orders: Order[] = [
   {
     id: 'random-piece-count-third',
     customerName: 'きゅーぶ',
-    age: 11,
-    gender: 'boy',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 3 },
     message: '3分の1ください',
@@ -402,8 +336,6 @@ export const orders: Order[] = [
   {
     id: 'random-piece-count-quarter',
     customerName: 'ペンギン',
-    age: 12,
-    gender: 'girl',
     cakeKind: 'shortcake',
     target: { numerator: 1, denominator: 4 },
     message: '4分の1ください',
@@ -413,8 +345,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-random-piece-count-half',
     customerName: 'きゅーぶ',
-    age: 10,
-    gender: 'girl',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 2 },
     message: 'チョコを半分ください',
@@ -424,8 +354,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-random-piece-count-third',
     customerName: 'ペンギン',
-    age: 11,
-    gender: 'boy',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 3 },
     message: 'チョコを3分の1ください',
@@ -435,8 +363,6 @@ export const orders: Order[] = [
   {
     id: 'chocolate-random-piece-count-quarter',
     customerName: 'おれんじ',
-    age: 12,
-    gender: 'boy',
     cakeKind: 'chocolate',
     target: { numerator: 1, denominator: 4 },
     message: 'チョコを4分の1ください',

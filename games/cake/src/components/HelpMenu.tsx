@@ -1,8 +1,9 @@
+import { getResearch } from '../research/recorder'
 import { useState } from 'react'
 import { cakeImages, feedbackImages, toolImages } from '../data/assets'
 import { FuriganaText } from './FuriganaText'
 
-type HelpView = 'guide' | 'hint'
+type HelpView = 'guide' | 'tutorial'
 
 interface HelpMenuProps {
   onOpenTutorial: () => void
@@ -14,13 +15,10 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
   return (
     <>
       <section className="help-menu" aria-label="ヘルプ">
-        <button type="button" onClick={() => setOpenView('guide')}>
+        <button type="button" onClick={() => { getResearch().action('help_open', { view: 'guide' }); setOpenView('guide') }}>
           <FuriganaText text="操作ガイド" />
         </button>
-        <button type="button" onClick={() => setOpenView('hint')}>
-          ヒント
-        </button>
-        <button type="button" onClick={onOpenTutorial}>
+        <button type="button" onClick={() => { getResearch().action('help_open', { view: 'tutorial' }); setOpenView('tutorial') }}>
           チュートリアル
         </button>
       </section>
@@ -32,12 +30,12 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
               type="button"
               className="help-dialog__close"
               aria-label="閉じる"
-              onClick={() => setOpenView(null)}
+              onClick={() => { getResearch().action('help_close', { view: openView }); setOpenView(null) }}
             >
               ×
             </button>
             <h2 id="help-title">
-              <FuriganaText text={openView === 'guide' ? '操作ガイド' : 'ヒント'} />
+              <FuriganaText text={openView === 'guide' ? '操作ガイド' : 'チュートリアル'} />
             </h2>
             {openView === 'guide' ? (
               <div className="help-guide">
@@ -65,12 +63,15 @@ export function HelpMenu({ onOpenTutorial }: HelpMenuProps) {
                     <img src={feedbackImages.happy} alt="" />
                     <div><span>1/2</span><b><FuriganaText text="販売" /></b></div>
                   </div>
-                  <strong>3. <FuriganaText text="販売する" /></strong>
-                  <p><FuriganaText text="合計をたしかめて、お客さんに販売する。" /></p>
+                  <strong>3. <FuriganaText text="提供する" /></strong>
+                  <p><FuriganaText text="合計をたしかめて、お客さんに提供する。" /></p>
                 </article>
               </div>
             ) : (
               <div className="help-dialog__hints">
+                <button type="button" className="button button--primary" onClick={() => { setOpenView(null); onOpenTutorial() }}>
+                  <FuriganaText text="実際に操作して練習する" />
+                </button>
                 <article className="hint-card hint-card--cut">
                   <div className="hint-card__visual" aria-hidden="true">
                     <span className="hint-cake-mini">
