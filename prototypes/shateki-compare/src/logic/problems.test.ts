@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeProblem, createRng, generateProblem, hasDuplicateCard, isEasyTarget, validateProblem } from './generator';
 import { ALL_PROBLEMS, problemsFor } from './problems';
+import type { Problem } from './types';
 
 describe('問題データ（problems.json）', () => {
-  it('standard・risk・lane、それぞれステージ1・2に3問ずつ', () => {
-    for (const set of ['standard', 'risk', 'lane'] as const) {
+  it('standard・risk・lane・rise、それぞれステージ1・2に3問ずつ', () => {
+    for (const set of ['standard', 'risk', 'lane', 'rise'] as const) {
       for (const stage of [1, 2]) expect(problemsFor(set, stage)).toHaveLength(3);
     }
   });
@@ -31,6 +32,14 @@ describe('問題データ（problems.json）', () => {
       const a = analyzeProblem(p);
       expect(a.hasSafePath).toBe(true);
       expect(p.targets.filter(isEasyTarget).length).toBeGreaterThanOrEqual(p.shots);
+    },
+  );
+
+  it.each(problemsFor('rise', 1).concat(problemsFor('rise', 2)).map((p) => [p.id, p] as const))(
+    '%s：札は8枚で、同じ札が2枚ない（E 用。6つ立てて、2枚は起き上がりで出る）',
+    (_id, p) => {
+      expect(p.targets).toHaveLength(8);
+      expect(hasDuplicateCard(p.targets)).toBe(false);
     },
   );
 
@@ -92,9 +101,9 @@ describe('validateProblem', () => {
     expect(errors).toContain('引き算の札が2枚以上ある');
   });
 
-  it('lane は D の流し方で撃てない解き方があると条件を満たさない', () => {
-    // 15 − 10 = 5 は、×2 が残っているあいだは −10 が流れてこない（15 − 10 × 2 になりうる）ので撃てない
-    const errors = validateProblem({
+  it('lane・rise はマイナスにならない札の出し方で撃てない解き方があると条件を満たさない', () => {
+    // 15 − 10 = 5 は、×2 が残っているあいだは −10 が出てこない（15 − 10 × 2 になりうる）ので撃てない
+    const p: Problem = {
       id: 'x',
       set: 'lane',
       stage: 2,
@@ -107,8 +116,9 @@ describe('validateProblem', () => {
         { id: 't4', op: '+', value: 20 },
         { id: 't5', op: '+', value: 30 },
       ],
-    });
-    expect(errors).toContain('D の流し方では撃てない解き方がある');
+    };
+    expect(validateProblem(p)).toContain('マイナスにならない札の出し方では撃てない解き方がある');
+    expect(validateProblem({ ...p, set: 'rise' })).toContain('マイナスにならない札の出し方では撃てない解き方がある');
   });
 });
 
@@ -126,6 +136,8 @@ describe('generateProblem', () => {
     ['risk', 2],
     ['lane', 1],
     ['lane', 2],
+    ['rise', 1],
+    ['rise', 2],
   ] as const)('%s ステージ%i：いろいろなシードで条件を満たす問題ができる', (set, stage) => {
     for (let seed = 1; seed <= 5; seed++) {
       const p = generateProblem(createRng(seed), { set, stage, id: 'x' });

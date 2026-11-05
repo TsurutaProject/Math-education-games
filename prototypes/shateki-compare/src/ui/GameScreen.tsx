@@ -34,6 +34,8 @@ const FEEL: Record<Variant, { countMs: number; countDelayMs: number; celebrateMs
   B: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 600 },
   C: { countMs: 380, countDelayMs: 260, celebrateMs: 2000, outDelayMs: 900 },
   D: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 600 },
+  // E は当てたときの手応え（数え上げ）だけ C と同じ。景品はないので、クリア後の間は B と同じ
+  E: { countMs: 380, countDelayMs: 260, celebrateMs: 900, outDelayMs: 600 },
 };
 
 export function GameScreen({ problem, variant, settings, zukan, startReason, onNext }: Props) {

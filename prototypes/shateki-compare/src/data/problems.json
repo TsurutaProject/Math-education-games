@@ -779,6 +779,300 @@
           "value": 5
         }
       ]
+    },
+    {
+      "id": "rise-1-1",
+      "set": "rise",
+      "stage": 1,
+      "goal": 100,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 35
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 50
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 45
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 30
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 40
+        },
+        {
+          "id": "t7",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t8",
+          "op": "+",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "id": "rise-1-2",
+      "set": "rise",
+      "stage": 1,
+      "goal": 115,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 40
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 50
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 30
+        },
+        {
+          "id": "t7",
+          "op": "+",
+          "value": 35
+        },
+        {
+          "id": "t8",
+          "op": "+",
+          "value": 45
+        }
+      ]
+    },
+    {
+      "id": "rise-1-3",
+      "set": "rise",
+      "stage": 1,
+      "goal": 90,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 40
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 50
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 35
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 30
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t7",
+          "op": "+",
+          "value": 45
+        },
+        {
+          "id": "t8",
+          "op": "+",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "id": "rise-2-1",
+      "set": "rise",
+      "stage": 2,
+      "goal": 25,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 40
+        },
+        {
+          "id": "t2",
+          "op": "-",
+          "value": 5
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 35
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 5
+        },
+        {
+          "id": "t6",
+          "op": "+",
+          "value": 30
+        },
+        {
+          "id": "t7",
+          "op": "*",
+          "value": 2
+        },
+        {
+          "id": "t8",
+          "op": "+",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "id": "rise-2-2",
+      "set": "rise",
+      "stage": 2,
+      "goal": 70,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 35
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 5
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t4",
+          "op": "*",
+          "value": 2
+        },
+        {
+          "id": "t5",
+          "op": "+",
+          "value": 25
+        },
+        {
+          "id": "t6",
+          "op": "-",
+          "value": 5
+        },
+        {
+          "id": "t7",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t8",
+          "op": "+",
+          "value": 40
+        }
+      ]
+    },
+    {
+      "id": "rise-2-3",
+      "set": "rise",
+      "stage": 2,
+      "goal": 80,
+      "shots": 3,
+      "targets": [
+        {
+          "id": "t1",
+          "op": "+",
+          "value": 30
+        },
+        {
+          "id": "t2",
+          "op": "+",
+          "value": 20
+        },
+        {
+          "id": "t3",
+          "op": "+",
+          "value": 25
+        },
+        {
+          "id": "t4",
+          "op": "+",
+          "value": 10
+        },
+        {
+          "id": "t5",
+          "op": "*",
+          "value": 2
+        },
+        {
+          "id": "t6",
+          "op": "-",
+          "value": 5
+        },
+        {
+          "id": "t7",
+          "op": "+",
+          "value": 15
+        },
+        {
+          "id": "t8",
+          "op": "+",
+          "value": 40
+        }
+      ]
     }
   ]
 }
