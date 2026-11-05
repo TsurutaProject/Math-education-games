@@ -230,15 +230,18 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             <button className="btn small" onClick={downloadLog} disabled={logCount === 0}>
               JSONをダウンロード
             </button>
-            <button
-              className="btn small danger"
-              onClick={() => {
-                if (window.confirm(`ログ ${logCount} 件を消去します。よろしいですか？`)) clearLog();
-              }}
-              disabled={logCount === 0}
-            >
-              ログを消去
-            </button>
+            {/* 展示中に誤って消さないよう、展示モードでは出さない（消すのは展示の前に、展示モードを外した画面で） */}
+            {!exhibit && (
+              <button
+                className="btn small danger"
+                onClick={() => {
+                  if (window.confirm(`ログ ${logCount} 件を消去します。よろしいですか？`)) clearLog();
+                }}
+                disabled={logCount === 0}
+              >
+                ログを消去
+              </button>
+            )}
           </div>
         </section>
       </div>
