@@ -32,17 +32,16 @@ JSONの `events` は時系列の操作履歴です。イベント連番・日時
 | timer_pause / timer_resume / measurement_start | 計測の切り替えと理由 |
 | order_start / order_interrupted | 注文内容・要求量・ケーキ・組み合わせ・指定ピース数・途中終了 |
 | hint_open / hint_close / reset | ヒントの開閉、切り直し |
-| cut_attempt / cut_result | 入力種別、ガイド上／ずれ／短すぎ／ケーキなし、切る前後の分数・実際に分割できたか |
-| mode_change / cake_select / piece_to_tray / piece_return | 操作モード・ケーキ選択・ピースの移動 |
+| cut_result | Fractions before/after cutting; whether a piece was split |
 | submit | 提供を試した内容、合計量・ケーキ種類・組み合わせ・ピース数の一致 |
 | recipe_mismatch_confirm | 指定の組み合わせと異なるが販売すると確認した操作（提供試行数に二重計上しない） |
 | sale | 成立した販売、実際の分数構成・組み合わせ達成・コンボ・売上 |
 | combo_state / combo_broken | 現在／最高コンボ、途切れた理由 |
 | trophy_progress | 全トロフィーのID・名称・条件・進捗値・達成状態・獲得数 |
-| help_open / help_close / trophy_list_open / trophy_list_close | ガイドやトロフィー一覧の参照 |
-| device_context / session_start / pagehide / pageshow / export | 表示サイズ・タッチ対応、起動／離脱／復帰／取得 |
+| help_open / help_close | Help guide and tutorial information opened/closed |
+| session_start / pagehide / pageshow / export | Session start, page exit/return, export |
 
-練習中の操作は `data.tutorial=true` として区別し、通常プレイのヒント・切り直し・販売の集計から除外します。カットの失敗を算数の誤答と同一視しないでください。`too_short` には単なるクリックも含まれます。
+練習中の操作は `data.tutorial=true` として区別し、通常プレイのヒント・切り直し・販売の集計から除外します。
 
 ステージCSVは1ステージ挑戦につき1行、注文CSVは1出題につき1行です。`attempts` は提供試行回数。組み合わせ指定がない注文は `recipeRequired=false` で、組み合わせ失敗の分析から除外します。数量一致でも、指定の組み合わせを達成していない販売を区別できます。JSONでは各提供試行も確認できます。
 
@@ -57,3 +56,5 @@ JSONの `events` は時系列の操作履歴です。イベント連番・日時
 ## ゲームのリセット
 
 ⚙️ → キャッシュクリア → 確認 →「クリアしてやり直す」でゲームの保存進捗を消して再読み込みします。研究ログ・集計・匿名IDも初期化します。必要なJSONはクリアする前に取得してください。リセット後のJSONには以前のプレイ内容は含まれず、新しい起動以降の記録だけが入ります。
+
+Cut attempts/input type, mode and cake selection, piece movement, trophy list usage, and device context are no longer recorded. Existing historical events are preserved.

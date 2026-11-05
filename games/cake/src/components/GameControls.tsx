@@ -1,3 +1,4 @@
+import { FuriganaText } from './FuriganaText'
 import type { InteractionMode } from '../types/game'
 import { toolImages } from '../data/assets'
 
@@ -15,7 +16,10 @@ export function GameControls({ interactionMode, onChangeInteractionMode }: GameC
             className={`mode-button--${mode}${interactionMode === mode ? ' is-active' : ''}`}
             onClick={() => onChangeInteractionMode(mode)}>
             <img src={toolImages[mode]} alt="" />
-            <span>{mode === 'cut' ? '切る' : '移す'}</span>
+            <span><FuriganaText text={mode === 'cut' ? '切る' : '移す'} /></span>
+            {interactionMode === mode && (
+              <span className="mode-selection-status">✓ <FuriganaText text="選択中" /></span>
+            )}
           </button>
         ))}
       </div>

@@ -1,3 +1,4 @@
+import { FuriganaText } from './FuriganaText'
 import { useEffect, useRef, useState } from 'react'
 import { getResearch } from '../research/recorder'
 
@@ -49,9 +50,9 @@ export function LogExport({ open, onChange }: { open: boolean; onChange: (open: 
         <p>すべての記録を1つのJSONファイルで保存します。</p>
         <div className="research-actions"><button type="button" onClick={() => setView('settings')}>キャンセル</button><button type="button" onClick={download}>取得する</button></div>
       </> : <>
-        <p>ステージの進捗・ケーキの解放状態・売上・コンボ・トロフィーをリセットし、初回チュートリアルからやり直します。この操作は元に戻せません。</p>
+        <p><FuriganaText text="ステージの進捗・ケーキの解放状態・売上・コンボ・トロフィーをリセットし、初回チュートリアルからやり直します。この操作は元に戻せません。" /></p>
         <p>収集済みのログ・集計・匿名IDも初期化します。必要なログは先に取得してください。</p>
-        <div className="research-actions"><button type="button" onClick={() => setView('settings')}>キャンセル</button><button type="button" onClick={resetProgress}>クリアしてやり直す</button></div>
+        <div className="research-actions"><button type="button" onClick={() => setView('settings')}>キャンセル</button><button type="button" onClick={resetProgress}><FuriganaText text="クリアしてやり直す" /></button></div>
       </>}
       {error && <p role="alert">{error}</p>}
       {open && getResearch().storageError && <p role="alert">{getResearch().storageError}</p>}

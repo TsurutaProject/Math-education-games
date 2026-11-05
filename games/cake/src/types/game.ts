@@ -45,8 +45,6 @@ export interface CakeDefinition {
 export interface Order {
   id: string
   customerName: CustomerKind
-  age: number
-  gender: 'girl' | 'boy' | 'adult'
   cakeKind: CakeKind
   target: Fraction
   message: string

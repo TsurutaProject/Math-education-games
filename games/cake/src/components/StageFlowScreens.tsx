@@ -96,7 +96,7 @@ export function StageSelectScreen({
                 className={`stage-select-card${isUnlocked ? ' is-unlocked' : ' is-locked'}${isCompleted ? ' is-completed' : ''}`}
               >
                 <div className="stage-select-card__topline">
-                  <span>{isCompleted ? 'クリア済み' : isUnlocked ? '挑戦できる' : 'ロック中'}</span>
+                  <span><FuriganaText text={isCompleted ? 'クリア済み' : isUnlocked ? '挑戦できる' : 'ロック中'} /></span>
                 </div>
                 <h2><FuriganaText text={`ステージ${index + 1}「${stage.title}」`} /></h2>
                 <small><FuriganaText text={stage.goal} /></small>
@@ -137,24 +137,24 @@ export function StageResultModal({
         <p className="stage-result-modal__goal"><FuriganaText text={stage.goal} /></p>
         <dl className="stage-result-stats">
           <div>
-            <dt>販売した人数</dt>
+            <dt><FuriganaText text="販売した人数" /></dt>
             <dd>{summary.servedCount} / {stage.targetServes}</dd>
           </div>
           <div>
-            <dt>獲得売上</dt>
-            <dd>{summary.earnedMoney.toLocaleString()}円</dd>
+            <dt><FuriganaText text="獲得売上" /></dt>
+            <dd>{summary.earnedMoney.toLocaleString()}<FuriganaText text="円" /></dd>
           </div>
           <div>
-            <dt>最高コンボ</dt>
+            <dt><FuriganaText text="最高コンボ" /></dt>
             <dd>{summary.bestCombo} COMBO</dd>
           </div>
         </dl>
-        {summary.unlockedNextStage ? <p className="stage-result-modal__unlock">次のステージが解放されました！</p> : null}
+        {summary.unlockedNextStage ? <p className="stage-result-modal__unlock"><FuriganaText text="次のステージが解放されました！" /></p> : null}
         <div className="stage-result-modal__actions">
-          <button type="button" className="button button--secondary" onClick={onReplay}>もう一度</button>
-          <button type="button" className="button button--secondary" onClick={onSelectStage}>ステージ選択</button>
+          <button type="button" className="button button--secondary" onClick={onReplay}><FuriganaText text="もう一度" /></button>
+          <button type="button" className="button button--secondary" onClick={onSelectStage}><FuriganaText text="ステージ選択" /></button>
           <button type="button" className="button button--primary" onClick={onNextStage}>
-            {isFinalStage ? 'チャプター結果へ' : '次のステージ'}
+            <FuriganaText text={isFinalStage ? 'チャプター結果へ' : '次のステージ'} />
           </button>
         </div>
       </section>
@@ -173,8 +173,8 @@ export function ChapterResultModal({ stages, onSelectStage, onRestart }: Chapter
           {stages.map((stage, index) => <span key={stage.id}>ステージ {index + 1} クリア</span>)}
         </div>
         <div className="flow-panel__actions">
-          <button type="button" className="button button--secondary" onClick={onSelectStage}>ステージ選択</button>
-          <button type="button" className="button button--primary" onClick={onRestart}>最初から遊ぶ</button>
+          <button type="button" className="button button--secondary" onClick={onSelectStage}><FuriganaText text="ステージ選択" /></button>
+          <button type="button" className="button button--primary" onClick={onRestart}><FuriganaText text="最初から遊ぶ" /></button>
         </div>
       </section>
     </main>

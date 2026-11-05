@@ -435,7 +435,6 @@ function App() {
 
   useEffect(() => {
     const research = getResearch()
-    research.snapshot('device_context', { viewportWidth: window.parent.innerWidth, viewportHeight: window.parent.innerHeight, touch: navigator.maxTouchPoints > 0 })
     research.snapshot('progress_baseline', { completedStages: readCompletedStageIds(), stageServes: readStageServes() })
     const interval = window.setInterval(() => research.save(), 5000)
     const exit = () => { research.setRunning(false, 'pagehide'); research.event('pagehide') }
@@ -476,12 +475,6 @@ function App() {
       // Cake unlocks remain available for this session when browser storage is unavailable.
     }
   }, [unlockedCakeIds])
-
-  const lastSoundResult = useRef(result)
-  useEffect(() => {
-    if (lastSoundResult.current !== result && result.kind === 'try-again') playSound('retry')
-    lastSoundResult.current = result
-  }, [result, playSound])
 
   useEffect(() => {
     const audio = bgmAudioRef.current
@@ -533,6 +526,7 @@ function App() {
       return
     }
 
+    playSound('trophy')
     const unlockedAt = Date.now()
 
     setTrophyToasts((currentToasts) => [
@@ -702,6 +696,7 @@ function App() {
       return
     }
 
+    playSound('clear')
     getResearch().clear()
     stageCompletionRef.current = true
     const nextStageIndex = activeStageIndex + 1
@@ -802,6 +797,9 @@ function App() {
     const nextBatch = cutBatch + 1
     const nextBoardPieces = cutCakePieces(boardPieces, cutAngles, activeToppings, nextBatch, activeCake)
     const hasCutPieces = nextBoardPieces.length > 1
+    const hasNewCut = nextBoardPieces.length > boardPieces.length ||
+      nextBoardPieces.some((piece, index) => piece.pendingCutAngles.length > (boardPieces[index]?.pendingCutAngles.length ?? 0))
+    if (hasNewCut) playSound('cut')
     getResearch().action('cut_result', { cuts, cutAngles, before: boardPieces.map(p => p.fraction), after: nextBoardPieces.map(p => p.fraction), split: nextBoardPieces.length > boardPieces.length })
 
     setCutBatch(nextBatch)
@@ -825,7 +823,6 @@ function App() {
       return
     }
 
-    getResearch().action('mode_change', { mode })
     setInteractionMode(mode)
     if (mode === 'cut' && guidedTutorialStep === null) {
       setCurrentCuts(defaultCuts)
@@ -864,7 +861,6 @@ function App() {
     }
 
     setActiveCakeId(cakeId)
-    getResearch().action('cake_select', { cakeId })
     resetCakeBoard(cakeId)
   }
 
@@ -930,6 +926,7 @@ function App() {
     }
 
     if (selectedPieces.length >= maxTrayPieces) {
+      playSound('retry')
       setResult({
         kind: 'try-again',
         title: 'トレイは3ピースまでです',
@@ -938,7 +935,6 @@ function App() {
       return
     }
 
-    getResearch().action('piece_to_tray', { pieceId: piece.id, fraction: piece.fraction })
     playSound('move')
     setBoardPieces((currentPieces) =>
       currentPieces.filter((currentPiece) => currentPiece.id !== piece.id),
@@ -963,7 +959,6 @@ function App() {
       return
     }
 
-    getResearch().action('piece_return', { pieceId: piece.id, fraction: piece.fraction })
     setResult(idleResult)
     setSelectedPieces((currentPieces) =>
       currentPieces.filter((currentPiece) => currentPiece.id !== piece.id),
@@ -1004,6 +999,7 @@ function App() {
     }
 
     if (activeOrder.cakeKind !== activeCake.id) {
+      playSound('failure')
       setResult({
         kind: 'try-again',
         title: 'ケーキを確認してね',
@@ -1016,6 +1012,7 @@ function App() {
     }
 
     if (selectedPieces.length === 0) {
+      playSound('failure')
       setResult({
         kind: 'try-again',
         title: 'トレイが空だよ',
@@ -1239,6 +1236,7 @@ function App() {
       return
     }
 
+    playSound('failure')
     const comparison = compareFractions(total, activeOrder.target)
     setResult(
       comparison < 0
@@ -1367,7 +1365,7 @@ function App() {
         </section>
         <section className="play-area" aria-label="まな板">
           <div className="workbench-heading"><h2 className="asset-label board-label">まな板</h2>
-            <button type="button" data-se="none" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ 切り直す</button>
+            <button type="button" data-se="none" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ <FuriganaText text="切り直す" /></button>
           </div>
           {showCakeSelector ? <CakeSelector
             cakes={visibleCakes}
@@ -1389,7 +1387,6 @@ function App() {
             interactionMode={interactionMode}
             currentCuts={currentCuts}
             showCuttingGuide={guidedTutorialStep !== 'topping'}
-            onCutAttempt={(outcome, pointerType) => getResearch().action('cut_attempt', { outcome, pointerType })}
             onCutCake={handleCutCake}
             onMovePieceToTray={handleMovePieceToTray}
             onCarryPieceChange={handleCarryPieceChange}
@@ -1415,7 +1412,7 @@ function App() {
           <button type="button" data-se="none" className={canServeCurrentTray ? 'button serve-button is-ready' : 'button serve-button'} disabled={selectedPieces.length === 0} onClick={() => handleServe()}>
             <FuriganaText text="提供する" />
           </button>
-          <p className="tray-return-help">ピースを押すと、まな板に戻せます。</p>
+          <p className="tray-return-help"><FuriganaText text="ピースを押すと、まな板に戻せます。" /></p>
           <div className="workbench-score">
             <TrophyShelf trophies={trophies} unlockedTrophyIds={unlockedTrophyIds} progress={trophyProgress} />
           <dl className="score-board" aria-label="スコア">
@@ -1445,7 +1442,7 @@ function App() {
         >
           <div className="stage-card__header">
             <small><FuriganaText text="クリア条件" /></small>
-            <span>{isStageGoalComplete ? '達成済み' : `販売した人数：${stageProgressValue} / ${stageProgressTarget}人`}</span>
+            <span><FuriganaText text={isStageGoalComplete ? '達成済み' : `販売した人数：${stageProgressValue} / ${stageProgressTarget}人`} /></span>
           </div>
           <strong><FuriganaText text={activeStage.goal} /></strong>
           <div className="stage-card__meter" aria-hidden="true">

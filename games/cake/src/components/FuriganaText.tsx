@@ -5,6 +5,30 @@ interface FuriganaTextProps {
 }
 
 const readings: Array<[string, string]> = [
+  ['結果', 'けっか'],
+  ['置こう', 'おこう'],
+  ['押す', 'おす'],
+  ['戻せます', 'もどせます'],
+  ['切り直す', 'きりなおす'],
+  ['切れている', 'きれている'],
+  ['切れば', 'きれば'],
+  ['現在', 'げんざい'],
+  ['人数', 'にんずう'],
+  ['最高', 'さいこう'],
+  ['一度', 'いちど'],
+  ['挑戦', 'ちょうせん'],
+  ['選択', 'せんたく'],
+  ['済み', 'ずみ'],
+  ['ロック中', 'ろっくちゅう'],
+  ['遊ぶ', 'あそぶ'],
+  ['見られる', 'みられる'],
+  ['横', 'よこ'],
+  ['実際', 'じっさい'],
+  ['増やせる', 'ふやせる'],
+  ['変えず', 'かえず'],
+  ['嬉しい', 'うれしい'],
+  ['下', 'した'],
+
   ['最高評価', 'さいこうひょうか'],
   ['条件', 'じょうけん'],
   ['分ケーキ', 'わけーき'],
@@ -37,6 +61,8 @@ const readings: Array<[string, string]> = [
   ['全て', 'すべて'],
   ['お支払い', 'おしはらい'],
   ['やり直せます', 'やりなおせます'],
+  ['やり直す', 'やりなおす'],
+  ['やり直します', 'やりなおします'],
   ['お客さん', 'おきゃくさん'],
   ['ケーキ屋さん', 'けーきやさん'],
   ['接客', 'せっきゃく'],
@@ -274,7 +300,11 @@ const createReadingNodes = (
 
     return (
       <ruby key={`${keyPrefix}-ruby-${index}`}>
-        {segment.text}
+        {Array.from(segment.text, (character, characterIndex) =>
+          '置選直'.includes(character)
+            ? <span key={characterIndex} className={character === '直' ? 'japanese-glyph japanese-glyph--bold' : 'japanese-glyph'} lang="ja">{character}</span>
+            : character,
+        )}
         <rt>{rubyReading}</rt>
       </ruby>
     )

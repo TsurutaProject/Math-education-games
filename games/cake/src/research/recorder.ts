@@ -53,7 +53,10 @@ export class ResearchRecorder {
     try {
       const saved = storage.getItem(LOG_KEY)
       if (saved) {
-        const parsed = JSON.parse(saved) as Log
+        // Migrate existing logs as well as newly generated orders.
+        const parsed = JSON.parse(saved, (key, value) =>
+          key === 'age' || key === 'gender' ? undefined : value,
+        ) as Log
         if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.events) || !Array.isArray(parsed.stages) || !Array.isArray(parsed.orders)) throw Error('形式が不正です')
         this.log = parsed
         this.log.orders.filter(o => o.status === 'unfinished').forEach(o => { o.status = 'interrupted'; o.endedAt = iso() })

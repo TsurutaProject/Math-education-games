@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'KeinannPOP';
-  src: url('../data/ケーキアセット/けいなんポップ体/けいなんポップ体.ttf') format('truetype');
+  src: url('../data/cake-assets/keinann-pop/keinann-pop.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -42,4 +42,14 @@ button {
 .game-shell * {
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Use Japanese system glyphs for 置, 選 and 直 instead of display font variants. */
+.japanese-glyph { font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', 'Noto Sans JP', sans-serif; }
+
+/* Match the heavy display lettering while retaining the Japanese form of 直. */
+.japanese-glyph--bold {
+  font-weight: 900;
+  font-synthesis: weight;
+  -webkit-text-stroke: 0.025em currentColor;
 }
