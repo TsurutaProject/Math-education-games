@@ -143,6 +143,7 @@ export function App() {
                       ? 'D・E は的が1段なのでカタパルトは使いません'
                       : undefined
                   }
+                  onClick={() => changeShooter(sh)}
                 >
                   {SHOOTER_LABEL[sh]}
                 </button>
