@@ -7,6 +7,7 @@
 
 | フォルダ | 中身 | 状態 |
 | --- | --- | --- |
+| [apps/platform](apps/platform) | プラットフォーム本体（ゲームを選ぶホーム画面・共通デザイン・共通ログ） | 動く（ゲームへの導線あり） |
 | [prototypes/shateki-compare](prototypes/shateki-compare) | 算数×射的ゲームの比較用プロトタイプ（A/B/C × コルク銃/パチンコ/カタパルト） | 遊び比べ中 |
 | [games/cake](games/cake) | ケーキの切り分け・組み合わせで分数の量と足し算を学ぶゲーム | MVP（自動テスト未実装・CI はビルドのみ） |
 
@@ -14,7 +15,7 @@
 
 ```
 Math-education-games/
-├─ apps/          プラットフォーム本体（ゲームを選ぶ画面・共通の設定やログ）※これから
+├─ apps/          プラットフォーム本体（ゲームを選ぶ画面・共通の設定やログ）。いまは apps/platform
 ├─ games/         本番のゲーム。1ゲーム = 1フォルダ（例：games/shateki, games/cake）
 ├─ packages/      複数のゲームで使う部品 ※2つめのゲームができたときに切り出す
 ├─ prototypes/    遊び比べ・検証用の試作。本番に直接はつなげない
@@ -24,6 +25,36 @@ Math-education-games/
 - 当面は **各フォルダが独立したアプリ** です（それぞれに `package.json` があり、そのフォルダの中で `npm install` する）。
   ゲームが2つそろい、共通にできる部品が見えてきた段階で、`packages/` への切り出しと npm workspaces の導入を検討します。
 - ゲームの追加方法は [games/README.md](games/README.md) を見てください。
+
+## プラットフォームを動かす
+
+Node.js 20 以上が必要です。
+
+```bash
+cd apps/platform
+npm install
+npm run dev
+```
+
+ホーム画面（ゲーム選択）が開きます。ただし、この起動方法では各ゲームは別アプリなので、カードを押してもゲームは開きません。
+詳しい使い方（画面の URL、ログの形式、`.env.local` の書き方など）は [apps/platform/README.md](apps/platform/README.md) にあります。
+
+### ゲームも含めて全部つなげて動かす
+
+公開するときと同じ形（プラットフォームと各ゲームを同じ場所に並べた形）で確認したいときは、リポジトリのルートで次を実行します。
+
+```bash
+./scripts/build-all.sh                          # 実行権限がないときは: bash scripts/build-all.sh
+python3 -m http.server 8765 --directory dist    # http://localhost:8765/ を開く
+```
+
+`dist/` に次の形でまとまります（`dist/` は git には入りません）。
+
+```
+/          ← apps/platform（ホーム）
+/cake/     ← games/cake
+/shateki/  ← prototypes/shateki-compare
+```
 
 ## 射的プロトタイプを動かす
 

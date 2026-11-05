@@ -39,7 +39,7 @@ export function CakeSelector({
                 <p><FuriganaText text={cake.description} /></p>
               </div>
               {isUnlocked ? (
-                <button type="button" onClick={() => onSelectCake(cake.id)}>
+                <button type="button" aria-pressed={cake.id === activeCakeId} onClick={() => onSelectCake(cake.id)}>
                   <FuriganaText text={cake.id === activeCakeId ? '選択中' : '選ぶ'} />
                 </button>
               ) : (

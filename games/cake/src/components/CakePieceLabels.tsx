@@ -13,6 +13,8 @@ export function CakePieceLabels({ pieces }: CakePieceLabelsProps) {
   return (
     <g className="cake-piece-labels" aria-hidden="true">
       {pieces.map((piece) => {
+        if (piece.fraction.numerator === piece.fraction.denominator) return null
+
         const middleAngle = (piece.startAngle + piece.endAngle) / 2
         const labelPoint = polarToCartesian(center, center, radius * 0.58, middleAngle)
 

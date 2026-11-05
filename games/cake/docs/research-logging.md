@@ -1,0 +1,60 @@
+# ケーキゲームのプレイログ（schemaVersion: 1）
+
+## 取得方法
+
+音ON/OFFの左にある「⚙️」→「ログ取得」→「取得する」。キャンセルではダウンロードしません。操作履歴とステージ別・注文別の集計を、1つのJSONファイルで取得します。画面での形式選択はありません。未クリアでも、チュートリアルの途中でも取得できます。ダウンロードしても記録は消えません。
+
+ブラウザー内で自動記録し、サーバーへ送信しません。localStorageの `cake-game:research-v1` に操作ごとと5秒ごとに保存します。通常の画面終了・タブ非表示時にも時間を保存します。強制終了では最後の保存以降（通常最大約5秒）の時間が残らない場合があります。ブラウザーのサイトデータを消すとログも消えるため、先に取得してください。URL（ホスト・ポート）やブラウザーを変えると別の保存先になります。
+
+研究用の匿名IDは同じ保存先で継続します。氏名・住所などは記録しません。匿名IDは本人確認ではありません。同じブラウザープロファイルを別の参加者に渡すと同じIDになるため、参加者ごとにブラウザープロファイルを分けてください。現状は同じ保存先のゲームを1タブで使用する想定です。
+
+保存が利用不可・容量超過の場合もプレイは続行し、メモリー上のログを書き出せます。ログ取得画面で保存失敗を表示します。この場合、画面を閉じると未保存分が失われます。破損した保存ログは上書きせず保持します。
+
+## 時間の定義
+
+- ステージ1の初回は、最初のチュートリアルを完了するか「あとで」（途中のスキップも含む）を選んでから計測します。チュートリアル内の練習販売は通常の販売数に含めません。
+- ステージ2以降、または初回チュートリアルを済ませたステージ1は入場時から計測します。
+- 後から起動する操作練習チュートリアルは計測を開始・リセットせず、その時間を除外します。
+- ステージ一覧・タイトル・結果画面、タブ非表示、販売フィードバック表示中、ログ取得の確認中は除外します。ヒント、操作ガイド、トロフィー一覧を読む時間、画面を表示したまま考えている時間は含みます。
+- 同じ未クリアステージへの再入場・再読み込みでは時間を累積します。クリアした瞬間の `clearSeconds` を固定し、クリア後の再プレイは `replay=true` の別行です。
+- 未クリア行は `status=unfinished`、`clearSeconds` は空欄です。`activeSeconds` が途中までの時間です。ゼロ秒クリアとは扱いません。
+- 既に進めたセーブから記録を始めた場合は `baselineServes` に記録開始前の販売人数が入ります。その行の時間はステージ最初からの所要時間ではありません。`progress_baseline` に開始時の保存状態も残します。
+- 日時はUTCのISO形式、詳細の時間はミリ秒、CSVの時間は秒。経過時間は時計の時刻変更に影響されない `performance.now()` を使用します。
+
+## 記録項目
+
+JSONの `events` は時系列の操作履歴です。イベント連番・日時・起動ごとの `sessionId`・ステージの `stageRunId`・注文ごとの `orderRunId` で関連付けます。同じ問題IDの注文でも出題ごとに別IDになります。再読込では途中の注文を `interrupted` として残し、新しい注文として再開します。
+
+| イベント | 内容 |
+| --- | --- |
+| stage_enter / stage_leave / stage_clear | 入退場・開始済み進捗・クリアまでの時間 |
+| tutorial_start / tutorial_advance / tutorial_end | 初回／手動の区別、完了／あとで／スキップ |
+| timer_pause / timer_resume / measurement_start | 計測の切り替えと理由 |
+| order_start / order_interrupted | 注文内容・要求量・ケーキ・組み合わせ・指定ピース数・途中終了 |
+| hint_open / hint_close / reset | ヒントの開閉、切り直し |
+| cut_result | Fractions before/after cutting; whether a piece was split |
+| submit | 提供を試した内容、合計量・ケーキ種類・組み合わせ・ピース数の一致 |
+| recipe_mismatch_confirm | 指定の組み合わせと異なるが販売すると確認した操作（提供試行数に二重計上しない） |
+| sale | 成立した販売、実際の分数構成・組み合わせ達成・コンボ・売上 |
+| combo_state / combo_broken | 現在／最高コンボ、途切れた理由 |
+| trophy_progress | 全トロフィーのID・名称・条件・進捗値・達成状態・獲得数 |
+| help_open / help_close | Help guide and tutorial information opened/closed |
+| session_start / pagehide / pageshow / export | Session start, page exit/return, export |
+
+練習中の操作は `data.tutorial=true` として区別し、通常プレイのヒント・切り直し・販売の集計から除外します。
+
+ステージCSVは1ステージ挑戦につき1行、注文CSVは1出題につき1行です。`attempts` は提供試行回数。組み合わせ指定がない注文は `recipeRequired=false` で、組み合わせ失敗の分析から除外します。数量一致でも、指定の組み合わせを達成していない販売を区別できます。JSONでは各提供試行も確認できます。
+
+`hints` はステージ別／注文別の開いた回数、`totalHints` は通常プレイ全体の累計です。注文CSVの `status` は `sold`（販売済み）、`unfinished`（取得時点で途中）、`interrupted`（一覧へ戻った・再読込など）。未完了者を分析から除外せず、完了者のクリア時間と分けて扱えます。
+
+## 検証
+
+`npm run test:research` / `npm run build` / `npm run lint`
+
+時間・中断・再開・初回／手動チュートリアル・ヒント集計・組み合わせ確認・トロフィー・途中取得・保存失敗・CSV出力を自動テストします。
+
+## ゲームのリセット
+
+⚙️ → キャッシュクリア → 確認 →「クリアしてやり直す」でゲームの保存進捗を消して再読み込みします。研究ログ・集計・匿名IDも初期化します。必要なJSONはクリアする前に取得してください。リセット後のJSONには以前のプレイ内容は含まれず、新しい起動以降の記録だけが入ります。
+
+Cut attempts/input type, mode and cake selection, piece movement, trophy list usage, and device context are no longer recorded. Existing historical events are preserved.

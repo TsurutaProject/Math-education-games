@@ -27,6 +27,11 @@ export interface Launch {
   pull: number;
 }
 
+/** 向きを変えずに −180〜180 度へ正規化する。 */
+export function normalizeAngle(deg: number): number {
+  return ((deg + 180) % 360 + 360) % 360 - 180;
+}
+
 export function clampAngle(deg: number): number {
   return Math.max(-MAX_ANGLE_DEG, Math.min(MAX_ANGLE_DEG, deg));
 }
@@ -35,12 +40,13 @@ export function clampAngle(deg: number): number {
  * 引っ張った向き（押した点 → 今の指の位置）から、飛ばす向きを決める。
  * 引いた向きと反対に飛ぶ。短すぎるときは null（撃たない）。
  */
-export function launchFromPull(dx: number, dy: number): Launch | null {
+/** unrestricted はパチンコ用。既定の角度制限はカタパルトのために維持する。 */
+export function launchFromPull(dx: number, dy: number, unrestricted = false): Launch | null {
   const len = Math.hypot(dx, dy);
   if (len < MIN_PULL) return null;
   // 飛ぶ向き = 引いた向きの反対。真上を 0 度にした角度
   const deg = (Math.atan2(-dx, dy) * 180) / Math.PI;
-  return { angleDeg: clampAngle(deg), pull: Math.min(len, MAX_PULL) };
+  return { angleDeg: unrestricted ? normalizeAngle(deg) : clampAngle(deg), pull: Math.min(len, MAX_PULL) };
 }
 
 export function directionOf(angleDeg: number): { x: number; y: number } {

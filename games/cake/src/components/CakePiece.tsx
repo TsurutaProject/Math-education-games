@@ -1,4 +1,4 @@
-import type { PointerEvent } from 'react'
+import { useEffect, useRef, type PointerEvent } from 'react'
 import type { CakePieceModel } from '../types/game'
 import { describeCakeSlice } from '../utils/cakeGeometry'
 
@@ -27,6 +27,8 @@ export function CakePiece({
   onMoveToTray,
   onCarryPieceChange,
 }: CakePieceProps) {
+  const cancelCarry = useRef<(() => void) | null>(null)
+  useEffect(() => () => cancelCarry.current?.(), [])
   const middleAngle = (piece.startAngle + piece.endAngle) / 2
   const isWholePiece = piece.endAngle - piece.startAngle >= 359.999
   const offsetAngle = ((middleAngle - 90) * Math.PI) / 180
@@ -39,34 +41,56 @@ export function CakePiece({
       return
     }
 
+    if (!event.isPrimary || event.button !== 0) return
+    cancelCarry.current?.()
+    const pointerId = event.pointerId
     event.preventDefault()
     window.getSelection()?.removeAllRanges()
     onCarryPieceChange(piece, { x: event.clientX, y: event.clientY })
 
+    const cleanup = (): void => {
+      document.removeEventListener('pointermove', handleDocumentPointerMove)
+      document.removeEventListener('pointerup', handleDocumentPointerUp)
+      document.removeEventListener('pointercancel', handleDocumentPointerCancel)
+      window.removeEventListener('blur', cancel)
+      document.removeEventListener('visibilitychange', visibilityChange)
+      cancelCarry.current = null
+      onCarryPieceChange(piece, null)
+    }
+    const cancel = (): void => cleanup()
+    const visibilityChange = (): void => { if (document.hidden) cancel() }
     const handleDocumentPointerMove = (event: globalThis.PointerEvent): void => {
+      if (event.pointerId !== pointerId) return
+      if (event.buttons === 0) { cancel(); return }
       onCarryPieceChange(piece, { x: event.clientX, y: event.clientY })
     }
-
     const handleDocumentPointerUp = (event: globalThis.PointerEvent): void => {
-      document.removeEventListener('pointermove', handleDocumentPointerMove)
-      document.removeEventListener('pointercancel', handleDocumentPointerCancel)
-      onCarryPieceChange(piece, null)
+      if (event.pointerId !== pointerId) return
+      cleanup()
       const droppedElement = document.elementFromPoint(event.clientX, event.clientY)
-
-      if (droppedElement?.closest('.tray') !== null) {
+      // A missing element means the pointer is outside the game viewport.
+      if (droppedElement === null) return
+      const tray = document.querySelector('.tray')
+      const bounds = tray?.getBoundingClientRect()
+      const margin = 64 // Design pixels; scales with the game viewport.
+      const nearTray = bounds !== undefined &&
+        event.clientX >= bounds.left - margin && event.clientX <= bounds.right + margin &&
+        event.clientY >= bounds.top - margin && event.clientY <= bounds.bottom + margin
+      const overTray = droppedElement.closest('.tray') !== null
+      // Do not treat adjacent controls (e.g. Serve) as drop targets.
+      if (overTray || (nearTray && droppedElement.closest('button') === null)) {
         onMoveToTray(piece)
       }
     }
-
-    const handleDocumentPointerCancel = (): void => {
-      document.removeEventListener('pointermove', handleDocumentPointerMove)
-      document.removeEventListener('pointerup', handleDocumentPointerUp)
-      onCarryPieceChange(piece, null)
+    const handleDocumentPointerCancel = (event: globalThis.PointerEvent): void => {
+      if (event.pointerId === pointerId) cancel()
     }
-
+    cancelCarry.current = cancel
     document.addEventListener('pointermove', handleDocumentPointerMove)
-    document.addEventListener('pointerup', handleDocumentPointerUp, { once: true })
-    document.addEventListener('pointercancel', handleDocumentPointerCancel, { once: true })
+    document.addEventListener('pointerup', handleDocumentPointerUp)
+    document.addEventListener('pointercancel', handleDocumentPointerCancel)
+    window.addEventListener('blur', cancel)
+    document.addEventListener('visibilitychange', visibilityChange)
   }
 
   if (isWholePiece) {

@@ -10,7 +10,6 @@ import {
   LAUNCHER,
   launchBall,
   launchFromPull,
-  MAX_ANGLE_DEG,
   MAX_PULL,
   stepBall,
 } from './sling';
@@ -28,8 +27,8 @@ describe('launchFromPull', () => {
   it('短すぎる引っ張りは撃たない', () => {
     expect(launchFromPull(5, 10)).toBeNull();
   });
-  it('上に引いても下には飛ばず、横向きの上限で止まる', () => {
-    expect(Math.abs(launchFromPull(-50, -100)!.angleDeg)).toBe(MAX_ANGLE_DEG);
+  it('上に引くと下向きにも飛ぶ', () => {
+    expect(launchFromPull(-100, -100, true)!.angleDeg).toBeCloseTo(135);
   });
   it('引っ張りの長さには上限がある', () => {
     expect(launchFromPull(0, 1000)!.pull).toBe(MAX_PULL);
@@ -37,6 +36,12 @@ describe('launchFromPull', () => {
 });
 
 describe('advanceBall', () => {
+  it('下端では反射せず画面外へ出る', () => {
+    const result = advanceBall(launchBall(180, 1000), 1, true);
+    expect(result.exited).toBe(true);
+    expect(result.ball.vy).toBeGreaterThan(0);
+    expect(result.ball.bounces).toBe(0);
+  });
   it('まっすぐ上に進み、上から出たら exited', () => {
     let b = launchBall(0, 1000);
     let exited = false;

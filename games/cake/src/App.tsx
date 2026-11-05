@@ -1,3 +1,6 @@
+import { getResearch } from './research/recorder'
+import { LogExport } from './components/LogExport'
+import { useSoundEffects } from './hooks/useSoundEffects'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CakeBoard } from './components/CakeBoard'
 import { CakeSelector } from './components/CakeSelector'
@@ -47,6 +50,7 @@ import {
 } from './utils/fraction'
 import './styles/global.css'
 import './styles/game.css'
+import './styles/workbench.css'
 
 const maxTrayPieces = 3
 const visibleCustomerCount = 5
@@ -71,6 +75,7 @@ const compactPieceBonusReward = 80
 const recipeBonusReward = 180
 const defaultCuts = 12
 const tutorialStorageKey = 'fraction-cake-guided-tutorial-seen-v3'
+const stageServesStorageKey = 'cake-game:stage-serves'
 const completedStagesStorageKey = 'cake-game:completed-stages'
 const maxUnlockedStageStorageKey = 'cake-game:max-unlocked-stage'
 const unlockedCakeIdsStorageKey = 'cake-game:unlocked-cakes'
@@ -93,6 +98,20 @@ const readCompletedStageIds = (): string[] => {
       : []
   } catch {
     return []
+  }
+}
+
+const readStageServes = (): Record<string, number> => {
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(stageServesStorageKey) ?? '{}')
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    return Object.fromEntries(stages.map((stage) => {
+      const count = (parsed as Record<string, unknown>)[stage.id]
+      return [stage.id, typeof count === 'number' && Number.isInteger(count) && count >= 0
+        ? Math.min(count, stage.targetServes) : 0]
+    }))
+  } catch {
+    return {}
   }
 }
 
@@ -304,10 +323,12 @@ const getStageCakes = (stageIndex: number): typeof cakes =>
   stageIndex < 2 ? cakes.filter((cake) => cake.id === 'shortcake') : cakes
 
 function App() {
+  const [logExportOpen, setLogExportOpen] = useState(false)
   const [screen, setScreen] = useState<GameScreen>('title')
   const [guidedTutorialStep, setGuidedTutorialStep] = useState<GuidedTutorialStep | null>(null)
   const [activeStageIndex, setActiveStageIndex] = useState(0)
   const [stageServedCount, setStageServedCount] = useState(0)
+  const [stageServes, setStageServes] = useState<Record<string, number>>(readStageServes)
   const [servedCount, setServedCount] = useState(0)
   const [activeOrderId, setActiveOrderId] = useState(initialStageOrders[0].id)
   const [activeCakeId, setActiveCakeId] = useState<CakeKind>('shortcake')
@@ -345,10 +366,10 @@ function App() {
   const [maxUnlockedStage, setMaxUnlockedStage] = useState(readMaxUnlockedStage)
   const [stageResultSummary, setStageResultSummary] = useState<StageResultSummary | null>(null)
   const [isSoundEnabled, setIsSoundEnabled] = useState(false)
+  const playSound = useSoundEffects(isSoundEnabled)
   const stageCompletionRef = useRef(false)
   const tutorialSnapshotRef = useRef<TutorialSnapshot | null>(null)
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null)
-  const [hasExplainedCombo, setHasExplainedCombo] = useState(false)
   const [hasExplainedTrophies, setHasExplainedTrophies] = useState(false)
 
   const activeStage = stages[activeStageIndex] ?? stages[0]
@@ -390,6 +411,46 @@ function App() {
     distinctCutDenominators: usedCutDenominators.length,
   }
   const unlockedTrophyIds = getUnlockedTrophyIds(trophyProgress)
+
+  useEffect(() => { getResearch().snapshot('combo_state', { current: combo, best: bestCombo }) }, [combo, bestCombo])
+
+  const researchProgress = JSON.stringify(trophyProgress)
+  useEffect(() => {
+    const research = getResearch()
+    research.trophies(JSON.parse(researchProgress) as TrophyProgress, trophies)
+  }, [researchProgress])
+
+  useEffect(() => {
+    const research = getResearch()
+    const sync = () => {
+      research.setRunning(screen === 'playing' && guidedTutorialStep === null && !document.hidden && !logExportOpen && result.kind === 'idle',
+        document.hidden ? 'hidden' : logExportOpen ? 'export_dialog' : guidedTutorialStep !== null ? 'tutorial' : result.kind !== 'idle' ? 'feedback' : screen)
+      if (screen === 'playing' && guidedTutorialStep === null && result.kind === 'idle') research.ensureOrder(activeOrder)
+    }
+    sync()
+    document.addEventListener('visibilitychange', sync)
+    window.addEventListener('pageshow', sync)
+    return () => { document.removeEventListener('visibilitychange', sync); window.removeEventListener('pageshow', sync) }
+  }, [screen, guidedTutorialStep, activeOrder, logExportOpen, result.kind])
+
+  useEffect(() => {
+    const research = getResearch()
+    research.snapshot('progress_baseline', { completedStages: readCompletedStageIds(), stageServes: readStageServes() })
+    const interval = window.setInterval(() => research.save(), 5000)
+    const exit = () => { research.setRunning(false, 'pagehide'); research.event('pagehide') }
+    const resume = () => research.event('pageshow')
+    window.addEventListener('pagehide', exit)
+    window.addEventListener('pageshow', resume)
+    return () => { clearInterval(interval); window.removeEventListener('pagehide', exit); window.removeEventListener('pageshow', resume); research.save() }
+  }, [])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(stageServesStorageKey, JSON.stringify(stageServes))
+    } catch {
+      // Keep session progress even when browser storage is unavailable.
+    }
+  }, [stageServes])
 
   useEffect(() => {
     try {
@@ -465,6 +526,7 @@ function App() {
       return
     }
 
+    playSound('trophy')
     const unlockedAt = Date.now()
 
     setTrophyToasts((currentToasts) => [
@@ -496,6 +558,7 @@ function App() {
 
   const skipGuidedTutorial = (): void => {
     const tutorialSnapshot = tutorialSnapshotRef.current
+    getResearch().tutorialEnd(guidedTutorialStep === 'intro' ? 'later' : 'skip', tutorialSnapshot === null)
 
     if (tutorialSnapshot !== null) {
       restoreTutorialSnapshot(tutorialSnapshot)
@@ -511,6 +574,7 @@ function App() {
       return
     }
 
+    getResearch().tutorialStart()
     tutorialSnapshotRef.current = {
       activeStageIndex,
       stageServedCount,
@@ -556,10 +620,17 @@ function App() {
     selectedPieces.length > 0 &&
     areFractionsEqual(total, activeOrder.target)
   const isFinalStage = activeStageIndex === stages.length - 1
-  const stageProgressValue = stageServedCount
+  const stageProgressValue = completedStageIds.includes(activeStage.id)
+    ? activeStage.targetServes : stageServedCount
   const stageProgressTarget = activeStage.targetServes
   const stageProgressRatio = Math.min(stageProgressValue / stageProgressTarget, 1)
-  const isStageGoalComplete = stageProgressValue >= stageProgressTarget
+  const goalCakeId = stages[activeStageIndex + 1]?.requiredUnlockedCakeId
+  const needsCakeUnlock = goalCakeId !== undefined && !stageAvailableCakeIds.includes(goalCakeId)
+  const isStageGoalComplete = stageProgressValue >= stageProgressTarget && !needsCakeUnlock
+  const showCakeSelector = tutorialExampleOrder === undefined && (
+    new Set(stageOrders.map((order) => order.cakeKind)).size > 1 ||
+    (goalCakeId !== undefined && activeStage.requiredUnlockedCakeId === undefined)
+  )
 
   const resetBoardState = (cakeId: CakeKind): void => {
     const cake = getCakeById(cakeId)
@@ -580,11 +651,13 @@ function App() {
     const showTutorial = stageIndex === 0 && shouldShowTutorial()
     const firstOrderId = showTutorial
       ? 'half'
-      : selectNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, 0)
+      : selectNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, combo)
 
-    stageCompletionRef.current = false
+    getResearch().enter(stage, stageServes[stage.id] ?? 0, completedStageIds.includes(stage.id), showTutorial)
+    stageCompletionRef.current = completedStageIds.includes(stage.id)
     setActiveStageIndex(stageIndex)
-    setStageServedCount(0)
+    setStageServedCount(completedStageIds.includes(stage.id)
+      ? stage.targetServes : (stageServes[stage.id] ?? 0))
     setActiveOrderId(firstOrderId)
     setActiveCakeId('shortcake')
     if (
@@ -604,12 +677,10 @@ function App() {
     setCutMarkAngles([])
     setCarriedPiece(null)
     setResult(idleResult)
-    setCombo(0)
     setStageEarned(0)
     setStageBestCombo(0)
     setCurrentCutDenominators([])
     setTrophyToasts([])
-    setHasExplainedCombo(false)
     setHasExplainedTrophies(false)
     setStageResultSummary(null)
     setGuidedTutorialStep(showTutorial ? 'intro' : null)
@@ -625,6 +696,8 @@ function App() {
       return
     }
 
+    playSound('clear')
+    getResearch().clear()
     stageCompletionRef.current = true
     const nextStageIndex = activeStageIndex + 1
     const unlockedNextStage = nextStageIndex < stages.length && maxUnlockedStage < nextStageIndex
@@ -649,6 +722,8 @@ function App() {
       return
     }
 
+    getResearch().action('reset')
+    playSound('reset')
     resetBoardState(activeCake.id)
     setResult(idleResult)
   }
@@ -679,6 +754,7 @@ function App() {
   }
 
   const advanceGuidedTutorial = (): void => {
+    getResearch().event('tutorial_advance', { step: guidedTutorialStep })
     if (guidedTutorialStep === 'intro') {
       setGuidedTutorialStep('order')
       return
@@ -701,6 +777,7 @@ function App() {
 
     if (guidedTutorialStep === 'trophy') {
       const tutorialSnapshot = tutorialSnapshotRef.current
+      getResearch().tutorialEnd('complete', tutorialSnapshot === null)
 
       if (tutorialSnapshot !== null) {
         restoreTutorialSnapshot(tutorialSnapshot)
@@ -720,6 +797,10 @@ function App() {
     const nextBatch = cutBatch + 1
     const nextBoardPieces = cutCakePieces(boardPieces, cutAngles, activeToppings, nextBatch, activeCake)
     const hasCutPieces = nextBoardPieces.length > 1
+    const hasNewCut = nextBoardPieces.length > boardPieces.length ||
+      nextBoardPieces.some((piece, index) => piece.pendingCutAngles.length > (boardPieces[index]?.pendingCutAngles.length ?? 0))
+    if (hasNewCut) playSound('cut')
+    getResearch().action('cut_result', { cuts, cutAngles, before: boardPieces.map(p => p.fraction), after: nextBoardPieces.map(p => p.fraction), split: nextBoardPieces.length > boardPieces.length })
 
     setCutBatch(nextBatch)
     setCutMarkAngles((currentAngles) => mergeCutMarkAngles(currentAngles, cutAngles))
@@ -845,6 +926,7 @@ function App() {
     }
 
     if (selectedPieces.length >= maxTrayPieces) {
+      playSound('retry')
       setResult({
         kind: 'try-again',
         title: 'トレイは3ピースまでです',
@@ -853,6 +935,7 @@ function App() {
       return
     }
 
+    playSound('move')
     setBoardPieces((currentPieces) =>
       currentPieces.filter((currentPiece) => currentPiece.id !== piece.id),
     )
@@ -901,7 +984,22 @@ function App() {
       return
     }
 
+    const quantityCorrect = areFractionsEqual(total, activeOrder.target)
+    getResearch().action(allowRecipeMismatch ? 'recipe_mismatch_confirm' : 'submit', {
+      cakeKind: activeCake.id, target: activeOrder.target, total,
+      pieces: selectedPieces.map(p => ({ fraction: p.fraction, cutToppingIds: p.cutToppingIds })),
+      quantityCorrect, cakeCorrect: activeOrder.cakeKind === activeCake.id,
+      recipeRequired: activeOrder.recipePieces !== undefined,
+      recipeMatched: activeOrder.recipePieces === undefined ? null : matchesRecipe(selectedPieces, activeOrder.recipePieces),
+      pieceCountMatched: activeOrder.perfectPieceCount === undefined ? null : selectedPieces.length === activeOrder.perfectPieceCount,
+      comboBefore: combo,
+    })
+    if (guidedTutorialStep === null && combo > 0 && (activeOrder.cakeKind !== activeCake.id || (selectedPieces.length > 0 && !quantityCorrect))) {
+      getResearch().event('combo_broken', { comboBefore: combo, reason: activeOrder.cakeKind !== activeCake.id ? 'wrong_cake' : 'wrong_quantity' })
+    }
+
     if (activeOrder.cakeKind !== activeCake.id) {
+      playSound('failure')
       setResult({
         kind: 'try-again',
         title: 'ケーキを確認してね',
@@ -914,6 +1012,7 @@ function App() {
     }
 
     if (selectedPieces.length === 0) {
+      playSound('failure')
       setResult({
         kind: 'try-again',
         title: 'トレイが空だよ',
@@ -943,6 +1042,8 @@ function App() {
         })
         return
       }
+
+      playSound('button')
 
       if (guidedTutorialStep === 'serve') {
         const nextOrderId = selectNextOrderId(
@@ -1052,14 +1153,13 @@ function App() {
         resultHighlights.push(`${activeOrder.perfectPieceCount}ピースで最高評価！`)
       }
 
-      if (!hasExplainedCombo) {
-        resultHighlights.push('コンボ開始！続けて成功すると売上ボーナスが増えるよ。')
-        setHasExplainedCombo(true)
+      if (nextCombo === 1) {
+        resultHighlights.push('コンボ開始！')
       }
 
       if (!hasExplainedTrophies && newlyUnlockedTrophies.length > 0) {
         resultHighlights.push(
-          `トロフィーを${newlyUnlockedTrophies.length}個獲得！左の「一覧」で見られるよ。`,
+          `トロフィー ${newlyUnlockedTrophies.length}個獲得！`,
         )
         setHasExplainedTrophies(true)
       }
@@ -1068,6 +1168,7 @@ function App() {
         showTrophyToasts(newlyUnlockedTrophies)
       }
 
+      getResearch().sold({ combo: nextCombo, recipeMatched, pieceCountMatched, earnedMoney, recipeRequired: activeOrder.recipePieces !== undefined, pieces: selectedPieces.map(p => p.fraction), stageServes: nextStageServedCount })
       setCombo(nextCombo)
       setBestCombo((currentBestCombo) => Math.max(currentBestCombo, nextCombo))
       setMoney((currentMoney) => currentMoney + earnedMoney)
@@ -1085,6 +1186,10 @@ function App() {
       setServedFractionKeys(nextServedFractionKeys)
       setUsedCutDenominators(nextUsedCutDenominators)
       setStageServedCount(Math.min(nextStageServedCount, activeStage.targetServes))
+      setStageServes((current) => ({
+        ...current,
+        [activeStage.id]: Math.min(nextStageServedCount, activeStage.targetServes),
+      }))
       setActiveOrderId(nextOrderId)
       setToppingLayoutIndex((currentIndex) =>
         getNextToppingLayoutIndex(activeCake.id, currentIndex),
@@ -1110,6 +1215,7 @@ function App() {
           earnedMoney,
           combo: nextCombo,
           highlights: resultHighlights,
+          trophyHint: newlyUnlockedTrophies.length > 0,
           primaryLabel: '次へ',
         })
         return
@@ -1124,11 +1230,13 @@ function App() {
         earnedMoney,
         combo: nextCombo,
         highlights: resultHighlights,
+          trophyHint: newlyUnlockedTrophies.length > 0,
         primaryLabel: '次へ',
       })
       return
     }
 
+    playSound('failure')
     const comparison = compareFractions(total, activeOrder.target)
     setResult(
       comparison < 0
@@ -1149,6 +1257,7 @@ function App() {
   }
 
   const showStageSelect = (): void => {
+    getResearch().leave('stage_select')
     setGuidedTutorialStep(null)
     setResult(idleResult)
     setCarriedPiece(null)
@@ -1157,6 +1266,7 @@ function App() {
   }
 
   const continuePlayingStage = (): void => {
+    getResearch().enter(activeStage, stageServedCount, true, false)
     setStageResultSummary(null)
     setResult(idleResult)
     setScreen('playing')
@@ -1176,6 +1286,7 @@ function App() {
 
   const soundControl = (
     <>
+      <LogExport open={logExportOpen} onChange={setLogExportOpen} />
       <audio ref={bgmAudioRef} src={audioAssets.cakeBgm} loop preload="auto" />
       <button
         type="button"
@@ -1184,7 +1295,7 @@ function App() {
         aria-pressed={isSoundEnabled}
       >
         <span aria-hidden="true">♪</span>
-        {isSoundEnabled ? '音 ON' : '音 OFF'}
+        <span><FuriganaText text={isSoundEnabled ? '音 ON' : '音 OFF'} /></span>
       </button>
     </>
   )
@@ -1238,46 +1349,32 @@ function App() {
       {soundControl}
       <main className={mainClassName}>
       <header className="game-header">
-        <div>
-          <div className="game-title-row">
-            <h1><FuriganaText text="分ケーキ" /></h1>
-            <span className="stage-eyebrow">
-              <FuriganaText text={`ステージ${activeStageIndex + 1}「${activeStage.title}」`} />
-            </span>
-            <button
-              type="button"
-              className="button button--secondary stage-select-return"
-              onClick={showStageSelect}
-            >
-              ステージ一覧
-            </button>
-          </div>
+        <span className="game-logo"><FuriganaText text="分ケーキ" /></span>
+        <div className="stage-heading"><span>ステージ {activeStageIndex + 1}</span>
+          <h1><FuriganaText text={activeStage.title} /></h1>
         </div>
       </header>
-
+      <nav className="workbench-navigation" aria-label="ゲームメニュー">
+        <button type="button" className="button stage-select-return" onClick={showStageSelect}><FuriganaText text="← ステージ一覧" /></button>
+        <HelpMenu onOpenTutorial={openGuidedTutorial} />
+      </nav>
       <div className="game-layout">
-        <div className="left-panel">
-          <CustomerQueue
-            orders={visibleQueueOrders}
-            activeOrderId={activeOrder.id}
-          />
-          <TrophyShelf
-            trophies={trophies}
-            unlockedTrophyIds={unlockedTrophyIds}
-            progress={trophyProgress}
-          />
-        </div>
-
-        <section className="play-area">
-          <OrderBubble order={activeOrder} cake={getCakeById(activeOrder.cakeKind)} />
-          <CakeSelector
+        <section className="order-area" aria-label="お客さんの注文">
+          <CustomerQueue orders={visibleQueueOrders.slice(0, 1)} activeOrderId={activeOrder.id} />
+          <OrderBubble order={activeOrder} cake={getCakeById(activeOrder.cakeKind)} onHintToggle={open => getResearch().action(open ? 'hint_open' : 'hint_close')} />
+        </section>
+        <section className="play-area" aria-label="まな板">
+          <div className="workbench-heading"><h2 className="asset-label board-label"><FuriganaText text="まな板" /></h2>
+            <button type="button" data-se="none" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ <FuriganaText text="切り直す" /></button>
+          </div>
+          {showCakeSelector ? <CakeSelector
             cakes={visibleCakes}
             activeCakeId={activeCake.id}
             unlockedCakeIds={stageAvailableCakeIds}
             money={money}
             onSelectCake={handleSelectCake}
             onBuyCake={handleBuyCake}
-          />
+          /> : null}
           <CakeBoard
             key={`${activeOrder.id}-${activeCake.id}-${toppingLayoutIndex}`}
             pieces={boardPieces}
@@ -1294,10 +1391,30 @@ function App() {
             onMovePieceToTray={handleMovePieceToTray}
             onCarryPieceChange={handleCarryPieceChange}
           />
+          <GameControls interactionMode={interactionMode} onChangeInteractionMode={handleChangeInteractionMode} />
         </section>
-
         <aside className="side-panel">
-          <HelpMenu onOpenTutorial={openGuidedTutorial} />
+          {screen === 'playing' ? (
+            <ResultMessage
+              result={result}
+              onDismiss={() => setResult(idleResult)}
+              onConfirm={() => handleServe(true)}
+            />
+          ) : null}
+          <Tray
+            selectedPieces={selectedPieces}
+            maxPieces={maxTrayPieces}
+            cakeImageUrl={activeCake.imageUrl}
+            toppings={activeToppings}
+            onRemovePiece={handleReturnPieceToBoard}
+            onDropPiece={handleMovePieceToTrayById}
+          />
+          <button type="button" data-se="none" className={canServeCurrentTray ? 'button serve-button is-ready' : 'button serve-button'} disabled={selectedPieces.length === 0} onClick={() => handleServe()}>
+            <FuriganaText text="提供する" />
+          </button>
+          <p className="tray-return-help"><FuriganaText text="ピースを押すと、まな板に戻せます。" /></p>
+          <div className="workbench-score">
+            <TrophyShelf trophies={trophies} unlockedTrophyIds={unlockedTrophyIds} progress={trophyProgress} />
           <dl className="score-board" aria-label="スコア">
             <div className="score-card score-card--sales">
               <dt><FuriganaText text="売上" /></dt>
@@ -1316,39 +1433,16 @@ function App() {
               </span>
             </div>
           </dl>
-          {screen === 'playing' ? (
-            <ResultMessage
-              result={result}
-              onDismiss={() => setResult(idleResult)}
-              onConfirm={() => handleServe(true)}
-            />
-          ) : null}
-          <Tray
-            selectedPieces={selectedPieces}
-            total={total}
-            maxPieces={maxTrayPieces}
-            cakeImageUrl={activeCake.imageUrl}
-            toppings={activeToppings}
-            onRemovePiece={handleReturnPieceToBoard}
-            onDropPiece={handleMovePieceToTrayById}
-          />
-          <GameControls
-            interactionMode={interactionMode}
-            canServe={canServeCurrentTray}
-            onChangeInteractionMode={handleChangeInteractionMode}
-            onServe={handleServe}
-            onClear={clearTray}
-          />
+          </div>
         </aside>
-      </div>
       <aside className="status-dock" aria-label="現在の表">
         <section
           className={isStageGoalComplete ? 'stage-card is-complete' : 'stage-card'}
           aria-label="ステージ目標"
         >
           <div className="stage-card__header">
-            <small><FuriganaText text="今の目標" /></small>
-            <span>{isStageGoalComplete ? '達成！' : `${stageProgressValue}/${stageProgressTarget}`}</span>
+            <small><FuriganaText text="クリア条件" /></small>
+            <span><FuriganaText text={isStageGoalComplete ? '達成済み' : `販売した人数：${stageProgressValue} / ${stageProgressTarget}人`} /></span>
           </div>
           <strong><FuriganaText text={activeStage.goal} /></strong>
           <div className="stage-card__meter" aria-hidden="true">
@@ -1356,6 +1450,7 @@ function App() {
           </div>
         </section>
       </aside>
+      </div>
       {carriedPiece !== null ? (
         <>
           <img
