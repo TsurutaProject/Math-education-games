@@ -90,6 +90,39 @@ export function isDeckSet(set: ProblemSet): boolean {
   return set === 'lane' || set === 'rise';
 }
 
+/** ステージ 3 で使う掛け算・割り算の数 */
+export const TIMES_VALUES = [2, 3, 5] as const;
+export const DIVIDE_VALUES = [2, 5] as const;
+
+/**
+ * ステージ（単元）ごとの決まり（#52）。1：足し算、2：引き算が入る、3：掛け算・割り算（前のステージの + − も使ってよい）。
+ * ÷ の札は1枚まで、+ − の札はどれも ÷ の数で割り切れる数にする。どの順に撃っても、項（+ − の数に × ÷ をかけたもの）が
+ * いつも割り切れるので、途中の数が小数にならない（D・E の見えている札を倒さない流し方でも同じ）。
+ */
+function unitErrors(problem: Problem, a: ProblemAnalysis): string[] {
+  const errors: string[] = [];
+  const ops = new Set(problem.targets.map((t) => t.op));
+  if (problem.stage === 1 && [...ops].some((op) => op !== '+')) errors.push('ステージ1に足し算以外がある');
+  if (problem.stage === 2) {
+    if ([...ops].some((op) => op !== '+' && op !== '-')) errors.push('ステージ2に + − 以外がある');
+    if (!ops.has('-')) errors.push('ステージ2に引き算の札がない');
+    if (!a.usesOps.has('-')) errors.push('引き算を使う解き方がない');
+  }
+  if (problem.stage === 3) {
+    if (!ops.has('*') || !ops.has('/')) errors.push('ステージ3に × と ÷ がそろっていない');
+    if (problem.targets.some((t) => t.op === '*' && !(TIMES_VALUES as readonly number[]).includes(t.value))) errors.push('×2・×3・×5 以外の掛け算がある');
+    if (problem.targets.some((t) => t.op === '/' && !(DIVIDE_VALUES as readonly number[]).includes(t.value))) errors.push('÷2・÷5 以外の割り算がある');
+    if (!a.usesOps.has('*')) errors.push('掛け算を使う解き方がない');
+    if (!a.usesOps.has('/')) errors.push('割り算を使う解き方がない');
+  }
+  const divides = problem.targets.filter((t) => t.op === '/');
+  if (divides.length > 1) errors.push('割り算の札が2枚以上ある');
+  if (problem.targets.some((t) => (t.op === '+' || t.op === '-') && divides.some((d) => t.value % d.value !== 0))) {
+    errors.push('÷ の数で割り切れない + − の札がある');
+  }
+  return errors;
+}
+
 /** 問題が条件を満たしているか。満たさない理由を返す（空なら OK）。 */
 export function validateProblem(problem: Problem): string[] {
   const errors: string[] = [];
@@ -106,13 +139,7 @@ export function validateProblem(problem: Problem): string[] {
   if (a.keys.length > MAX_SOLUTIONS) errors.push(`解き方が ${a.keys.length} 種類で多すぎる`);
   if (a.hasOneShot) errors.push('1発で終わる解き方がある');
   if (!a.allNonNegative) errors.push('マイナスを通らないと実現できない解き方がある');
-  const ops = new Set(problem.targets.map((t) => t.op));
-  if (problem.stage === 1 && [...ops].some((op) => op !== '+')) errors.push('ステージ1に足し算以外がある');
-  if (problem.stage === 2) {
-    if (!ops.has('+') || !ops.has('-') || !ops.has('*')) errors.push('ステージ2に + − ×2 がそろっていない');
-    if (problem.targets.some((t) => t.op === '*' && t.value !== 2)) errors.push('×2 以外の掛け算がある');
-    if (!a.usesOps.has('*')) errors.push('×2 を使う解き方がない');
-  }
+  errors.push(...unitErrors(problem, a));
   if (problem.set === 'risk') {
     if (problem.targets.some((t) => t.size !== sizeFor(t.op, t.value))) errors.push('的の大きさがルールと違う');
     if (problem.targets.some((t) => t.moving && t.size === 'L')) errors.push('大きい的が動いている');
@@ -140,10 +167,10 @@ function makeTargets(specs: Array<[Op, number]>): Target[] {
 function withRisk(rng: () => number, targets: Target[]): Target[] {
   const sized = targets.map((t) => ({ ...t, size: sizeFor(t.op, t.value), moving: false }));
   const small = sized.filter((t) => t.size === 'S');
-  // 小さい的のうち、×2 と いちばん大きい数は動かす
+  // 小さい的のうち、× ÷ と いちばん大きい数は動かす
   const maxValue = Math.max(...small.filter((t) => t.op === '+').map((t) => t.value), 0);
   for (const t of small) {
-    if (t.op === '*' || t.value === maxValue) t.moving = true;
+    if (t.op === '*' || t.op === '/' || (t.op === '+' && t.value === maxValue)) t.moving = true;
   }
   if (!sized.some((t) => t.moving) && small.length > 0) pick(rng, small).moving = true;
   return sized;
@@ -161,6 +188,55 @@ function randomPathValue(rng: () => number, targets: Target[], shots: number, fi
   return valueOf(calc);
 }
 
+/** ステージ 3 の + − の数。÷ の数で割り切れる数だけ使う（÷2 なら偶数、÷5 なら 5 の倍数） */
+function plusValues(divide: number): number[] {
+  return divide === 2 ? [4, 6, 8, 10, 12, 16, 20, 24] : [5, 10, 15, 20, 25, 30, 35, 40];
+}
+function minusValues(divide: number): number[] {
+  return divide === 2 ? [2, 4, 6] : [5, 10];
+}
+
+/** ステージ 2（+ −）・3（× ÷）の的。D・E は同じ札を入れず、− は1枚まで（validateProblem と同じ決まり） */
+function unitTargets(rng: () => number, set: ProblemSet, stage: number): Target[] {
+  const plus = (v: number): [Op, number] => ['+', v];
+  if (stage === 2) {
+    if (set === 'standard') {
+      return makeTargets(shuffle(rng, [
+        ...Array.from({ length: 4 }, () => plus(pick(rng, [5, 10, 15, 20, 25, 30]))),
+        ...Array.from({ length: 2 }, () => ['-', pick(rng, [5, 10, 15])] as [Op, number]),
+      ]));
+    }
+    if (set === 'risk') {
+      return withRisk(rng, makeTargets(shuffle(rng, [
+        ...Array.from({ length: 3 }, () => plus(pick(rng, [5, 10]))),
+        plus(15),
+        plus(pick(rng, [20, 25, 30])),
+        ['-', pick(rng, [5, 10])] as [Op, number],
+      ])));
+    }
+    const count = set === 'lane' ? 5 : 7;
+    return makeTargets(shuffle(rng, [
+      ...pickDistinct(rng, [5, 10, 15, 20, 25, 30, 35, 40, 45], count).map(plus),
+      ['-', pick(rng, [5, 10, 15])] as [Op, number],
+    ]));
+  }
+  const divide = pick(rng, DIVIDE_VALUES);
+  const times: [Op, number] = ['*', pick(rng, TIMES_VALUES)];
+  const div: [Op, number] = ['/', divide];
+  const values = plusValues(divide);
+  if (set === 'standard') {
+    const minus: Array<[Op, number]> = rng() < 0.5 ? [['-', pick(rng, minusValues(divide))]] : [];
+    return makeTargets(shuffle(rng, [...Array.from({ length: 3 }, () => plus(pick(rng, values.slice(0, 6)))), times, div, ...minus]));
+  }
+  if (set === 'risk') {
+    const small = values.filter((v) => v <= 10);
+    const big = values.filter((v) => v >= 20);
+    return withRisk(rng, makeTargets(shuffle(rng, [...Array.from({ length: 3 }, () => plus(pick(rng, small))), plus(pick(rng, big)), times, div])));
+  }
+  const count = set === 'lane' ? 4 : 6;
+  return makeTargets(shuffle(rng, [...pickDistinct(rng, values, count).map(plus), times, div]));
+}
+
 export interface GenerateSpec {
   set: ProblemSet;
   stage: number;
@@ -174,58 +250,28 @@ export function generateProblem(rng: () => number, spec: GenerateSpec, tries = 5
   for (let i = 0; i < tries; i++) {
     let targets: Target[];
     let goal: number | null;
-    if (spec.set === 'lane' && spec.stage === 1) {
+    if (spec.stage >= 2) {
+      targets = unitTargets(rng, spec.set, spec.stage);
+      goal = randomPathValue(rng, targets, shots, spec.set === 'risk' ? isEasyTarget : undefined);
+    } else if (spec.set === 'lane') {
       const values = pickDistinct(rng, [5, 10, 15, 20, 25, 30, 35, 40], 6);
       targets = makeTargets(values.map((v) => ['+', v] as [Op, number]));
       goal = randomPathValue(rng, targets, shots);
-    } else if (spec.set === 'lane') {
-      const specs: Array<[Op, number]> = [
-        ...pickDistinct(rng, [5, 10, 15, 20, 25, 30], 5).map((v) => ['+', v] as [Op, number]),
-        ['-', pick(rng, [5, 10])],
-        ['*', 2],
-      ];
-      targets = makeTargets(shuffle(rng, specs));
-      goal = randomPathValue(rng, targets, shots);
-    } else if (spec.set === 'rise' && spec.stage === 1) {
+    } else if (spec.set === 'rise') {
       // 6つ立てて、残りの2枚は起き上がりで出てくる。8枚でも山札が毎回同じにならないよう、数は 5〜50 から選ぶ
       const values = pickDistinct(rng, [5, 10, 15, 20, 25, 30, 35, 40, 45, 50], 8);
       targets = makeTargets(values.map((v) => ['+', v] as [Op, number]));
       goal = randomPathValue(rng, targets, shots);
-    } else if (spec.set === 'rise') {
-      const specs: Array<[Op, number]> = [
-        ...pickDistinct(rng, [5, 10, 15, 20, 25, 30, 35, 40], 6).map((v) => ['+', v] as [Op, number]),
-        ['-', pick(rng, [5, 10])],
-        ['*', 2],
-      ];
-      targets = makeTargets(shuffle(rng, specs));
-      goal = randomPathValue(rng, targets, shots);
-    } else if (spec.set === 'standard' && spec.stage === 1) {
+    } else if (spec.set === 'standard') {
       const n = pick(rng, [5, 6]);
       targets = makeTargets(Array.from({ length: n }, () => ['+', pick(rng, [5, 10, 15, 20, 25, 30])] as [Op, number]));
       goal = randomPathValue(rng, targets, shots);
-    } else if (spec.set === 'standard') {
-      const specs: Array<[Op, number]> = [
-        ...Array.from({ length: 4 }, () => ['+', pick(rng, [5, 10, 15, 20, 25, 30])] as [Op, number]),
-        ['-', pick(rng, [5, 10])],
-        ['*', 2],
-      ];
-      targets = makeTargets(shuffle(rng, specs));
-      goal = randomPathValue(rng, targets, shots);
-    } else if (spec.stage === 1) {
+    } else {
       const specs: Array<[Op, number]> = [
         ...Array.from({ length: 3 }, () => ['+', pick(rng, [5, 10])] as [Op, number]),
         ['+', 15],
         ['+', pick(rng, [20, 25])],
         ['+', pick(rng, [25, 30])],
-      ];
-      targets = withRisk(rng, makeTargets(shuffle(rng, specs)));
-      goal = randomPathValue(rng, targets, shots, isEasyTarget);
-    } else {
-      const specs: Array<[Op, number]> = [
-        ...Array.from({ length: 3 }, () => ['+', pick(rng, [5, 10])] as [Op, number]),
-        ['-', 5],
-        ['+', pick(rng, [15, 20, 25])],
-        ['*', 2],
       ];
       targets = withRisk(rng, makeTargets(shuffle(rng, specs)));
       goal = randomPathValue(rng, targets, shots, isEasyTarget);

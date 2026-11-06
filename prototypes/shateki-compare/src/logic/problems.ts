@@ -1,13 +1,12 @@
 import data from '../data/problems.json';
-import type { Problem, ProblemSet, Variant } from './types';
+import type { Problem, ProblemSet } from './types';
+
+export { setForVariant } from './course';
 
 export const ALL_PROBLEMS: Problem[] = (data as { problems: Problem[] }).problems;
 
-export function setForVariant(variant: Variant): ProblemSet {
-  if (variant === 'C') return 'risk';
-  if (variant === 'D') return 'lane';
-  if (variant === 'E') return 'rise';
-  return 'standard';
+export function problemById(id: string): Problem | undefined {
+  return ALL_PROBLEMS.find((p) => p.id === id);
 }
 
 export function problemsFor(set: ProblemSet, stage: number): Problem[] {
