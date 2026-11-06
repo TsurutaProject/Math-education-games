@@ -3,8 +3,9 @@ import { BALL_R, guidePath, LAUNCHER, MAX_PULL } from '../logic/sling';
 
 /** 引っ張ったとき、画面上でゴムがのびる見た目の倍率（実際の引っ張りより短く描く） */
 const VISUAL_PULL = 0.32;
-const PRONG_DX = 38;
-const PRONG_Y = LAUNCHER.y - 6;
+/** ゴムの付け根＝パチンコの画像の腕の先の真ん中（画像の左右の端から 6、上から 6 の所） */
+const PRONG_DX = 32;
+const PRONG_Y = LAUNCHER.y - 2;
 
 interface Props {
   /** 引っ張っている向きと長さ（押した点 → 今の指） */
@@ -50,9 +51,9 @@ export function SlingLayer({ pull, angleDeg, guideLength, bounce, flying, loaded
           ) : <circle cx={end.x} cy={end.y} r={7} className="sling-guide-end" />)}
         </>
       )}
-      {/* うしろのゴム */}
-      <line x1={right.x} y1={right.y} x2={pouch.x} y2={pouch.y} className="sling-band" />
       <Artwork name="sling" x={LAUNCHER.x - 38} y={LAUNCHER.y - 8} width={76} height={76 * 1577 / 1404} />
+      {/* ゴムは2本とも画像より手前。右（うしろ）のゴム → 球 → 左（手前）のゴムの順に重ねる */}
+      <line x1={right.x} y1={right.y} x2={pouch.x} y2={pouch.y} className="sling-band" />
       {loaded && <Artwork name="sling-ball" x={pouch.x - BALL_R} y={pouch.y - BALL_R} width={BALL_R * 2} height={BALL_R * 2} />}
       {/* 手前のゴム */}
       <line x1={left.x} y1={left.y} x2={pouch.x} y2={pouch.y} className="sling-band" />
