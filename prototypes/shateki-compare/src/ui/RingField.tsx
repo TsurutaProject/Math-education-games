@@ -32,11 +32,18 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
   const [feedback, setFeedback] = useState<{ id: number; text: string; kind: 'hit' | 'miss' | 'note'; x: number; y: number } | null>(null);
   const svg = useRef<SVGSVGElement>(null);
   const feedbackSeq = useRef(0);
+  /** 入ったときに画面を揺らす（ほかの射撃タイプと同じ手応え） */
+  const [shaking, setShaking] = useState(0);
   const flight = useRef<{ shot: RingThrow; plan: RingPlan; start: number; pointerType: string; aimMs: number } | null>(null);
   const props = useRef({ onShot, active, usedIds });
   props.current = { onShot, active, usedIds };
   const pegs = useMemo(() => ringPegs(problem), [problem]);
   const solids = useMemo(() => pegs.map((p) => ({ ...p, available: !usedIds.includes(p.id) })), [pegs, usedIds]);
+  useEffect(() => {
+    if (!shaking) return;
+    const timer = setTimeout(() => setShaking(0), 300);
+    return () => clearTimeout(timer);
+  }, [shaking]);
   // この試案では棒を固定し、奥行きと輪の通過位置を比較できるようにする。
   useEffect(() => {
     let frame = 0;
@@ -55,7 +62,8 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
           const signOf = (p: typeof pegs[number]) => projectRing({ ...p, y: p.y - 3, z: PEG_HEIGHT + PEG_RADIUS });
           if (hitPeg) {
             const sign = signOf(hitPeg);
-            setFeedback({ id, text: targetLabel(hitPeg.op, hitPeg.value), kind: 'hit', x: sign.x, y: sign.y - 12 });
+            // 大きい数字（56px）が上に上がっても切れないよう、奥の棒でも上の端から 80 は空ける
+            setFeedback({ id, text: targetLabel(hitPeg.op, hitPeg.value), kind: 'hit', x: sign.x, y: Math.max(80, sign.y - 12) });
           } else if (repeatPeg) {
             const sign = signOf(repeatPeg);
             setFeedback({ id, text: 'おなじ ぼうは 1かいだけ', kind: 'note', x: Math.max(170, Math.min(830, sign.x)), y: sign.y - 12 });
@@ -63,7 +71,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
             const at = projectRing(f.plan.landing);
             setFeedback({ id, text: 'おしい！', kind: 'miss', x: at.x, y: at.y - 16 });
           }
-          if (f.plan.hit) { sfxHit(variant === 'C'); setSettled((old) => ({ ...old, [f.plan.hit!]: f.plan.landing })); } else sfxThud();
+          if (f.plan.hit) { sfxHit(); setShaking((s) => s + 1); setSettled((old) => ({ ...old, [f.plan.hit!]: f.plan.landing })); } else sfxThud();
           props.current.onShot({ aim: screen, targetId: f.plan.hit, assist: 1, pointerType: f.pointerType, aimMs: f.aimMs,
             launch: { angleDeg: Math.round(Math.atan2(f.shot.x, f.shot.y - RING_FROM.y) * 1800 / Math.PI) / 10, pull: Math.round(f.shot.pull), flightMs: Math.round(f.shot.duration * f.plan.endTime * 1000), landing: projectRing(f.plan.landing) } });
         }
@@ -103,7 +111,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
       {done && <path d={ringPath(restingRing, 66, Math.PI, Math.PI * 2)} fill="none" stroke="var(--accent)" strokeWidth={8 * bottom.scale} />}
     </g>;
   };
-  return <div className="field ring-field"><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"
+  return <div className={`field ring-field ${shaking ? 'shake' : ''}`}><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"
     onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(null); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
     onPointerMove={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); if (p) setAim({ ...aim, x: p.x, y: p.y }); }}
     onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.ringTime) : null; setAim(null); if (shot && active) { sfxRingThrow(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
@@ -125,6 +133,6 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     {!flight.current && (!flying || flying.t >= flying.plan.endTime) && shotsLeft > 0 && active && <Ring center={RING_FROM} />}
     <line x1={from.x + 22} y1="478" x2={from.x} y2={from.y + 8} stroke="var(--stand)" strokeWidth="12" strokeLinecap="round" />
     <AmmoLayer x={770} y={437} shots={problem.shots} shotsLeft={shotsLeft} kind="ring" />
-    {feedback && <text key={feedback.id} x={feedback.x} y={feedback.y} className={`pop pop-${feedback.kind} ${feedback.kind === 'hit' && variant === 'C' ? 'pop-big' : ''}`}>{feedback.text}</text>}
+    {feedback && <text key={feedback.id} x={feedback.x} y={feedback.y} className={`pop pop-${feedback.kind} ${feedback.kind === 'note' ? '' : 'pop-big'}`}>{feedback.text}</text>}
   </svg></div>;
 }

@@ -34,7 +34,7 @@ export function LaneLayer({ problem, lane, geo, speed, clock, y }: Props) {
           // 周回ごとに作り直す（札が入れ替わったら新しい的として描く）
           return (
             <g key={`${i}-${s.lap}`} transform={`translate(${slotX(i, clock, geo, speed)} ${y})`}>
-              <TargetMark op={t.op} value={t.value} r={UNIFORM_RADIUS} className={s.down ? 'lane-hit' : ''} />
+              <TargetMark op={t.op} value={t.value} r={UNIFORM_RADIUS} className={s.down ? 'down' : ''} />
             </g>
           );
         })}
