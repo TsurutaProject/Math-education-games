@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_PROBLEMS } from './problems';
-import { aimRing, PEG_HEIGHT, PEG_RADIUS, projectRing, RING_FROM, RING_INNER, RING_TUBE, ringContactAt, ringPegs, ringPlanPoint, ringPoint, traceRing, type RingThrow } from './ring';
+import { aimRing, encircledPeg, PEG_HEIGHT, PEG_RADIUS, projectRing, RING_FROM, RING_INNER, RING_TUBE, ringContactAt, ringPegs, ringPlanPoint, ringPoint, traceRing, type RingThrow } from './ring';
 const shot: RingThrow = { x: 0, y: 900, duration: 1, pull: 100 };
 // 的の中央の高さを下降する時刻。前後も含めて本体へ接触しないかはtraceRingが判定する。
 const tMiddle = ((1040 - RING_FROM.z) + Math.sqrt((1040 - RING_FROM.z) ** 2 + 4 * 1040 * (RING_FROM.z - PEG_HEIGHT))) / 2080;
@@ -35,16 +35,32 @@ describe('輪投げの3次元接触', () => {
     // 自動的に棒の中心へ吸着しない。
     expect(Math.hypot(plan.landing.x - 150, plan.landing.y - 480)).toBeGreaterThan(1);
   });
-  it('穴の中に軸が見えても札の幅が輪に接触した場合は成功にしない', () => {
+  it('札に当たってはじかれても、落ちたときに棒を囲んでいれば成功する', () => {
     const aim = aimAt(150, 480);
     const pegs = [{ id: 'edge', x: 150 + RING_INNER - 12, y: 480 }];
     const plan = traceRing(aim, pegs);
-    expect(plan.hit).toBeNull();
     expect(plan.contacts.some((c) => c.kind === 'sign')).toBe(true);
+    expect(plan.hit).toBe('edge');
+    expect(encircledPeg(plan.landing, pegs)?.id).toBe('edge');
+  });
+  it('入ったかどうかは、落ちた場所で棒を囲んでいるかだけで決まる', () => {
+    const pegs = [{ id: 'p', x: 0, y: 480 }];
+    let hits = 0;
+    let misses = 0;
+    for (let x = -120; x <= 120; x += 15) {
+      for (let y = 380; y <= 580; y += 25) {
+        const plan = traceRing(aimAt(x, y), pegs);
+        expect(plan.hit, `${x},${y}`).toBe(encircledPeg(plan.landing, pegs)?.id ?? null);
+        if (plan.hit) hits++; else misses++;
+      }
+    }
+    expect(hits).toBeGreaterThan(0);
+    expect(misses).toBeGreaterThan(0);
   });
   it('すでに入った的にも衝突するが、同じ演算を再度加算しない', () => {
     const plan = traceRing(aimAt(150, 480), [{ id: 'old', x: 150, y: 480, available: false }]);
     expect(plan.hit).toBeNull();
+    expect(plan.repeat).toBe('old');
     const edge = traceRing(aimAt(150, 480), [{ id: 'old', x: 200, y: 480, available: false }]);
     expect(edge.contacts.some((c) => c.id === 'old' && c.kind === 'sign')).toBe(true);
   });

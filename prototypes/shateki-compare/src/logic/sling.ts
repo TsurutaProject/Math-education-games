@@ -40,7 +40,7 @@ export function clampAngle(deg: number): number {
  * 引っ張った向き（押した点 → 今の指の位置）から、飛ばす向きを決める。
  * 引いた向きと反対に飛ぶ。短すぎるときは null（撃たない）。
  */
-/** unrestricted はパチンコ用。既定の角度制限はカタパルトのために維持する。 */
+/** unrestricted はパチンコ用。既定では角度を制限する（前のカタパルトで使っていた）。 */
 export function launchFromPull(dx: number, dy: number, unrestricted = false): Launch | null {
   const len = Math.hypot(dx, dy);
   if (len < MIN_PULL) return null;

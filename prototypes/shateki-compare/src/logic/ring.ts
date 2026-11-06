@@ -37,6 +37,8 @@ export interface RingPlan {
   frames: { t: number; point: Point3 }[];
   contacts: RingContact[];
   hit: string | null;
+  /** もう入っている棒を囲んで落ちたとき、その棒。hit は null（同じ演算を2回足さない） */
+  repeat: string | null;
   endTime: number;
   landing: Point3;
 }
@@ -45,6 +47,11 @@ const GRAVITY = 2080;
 const ARC_VELOCITY = 1040 - RING_FROM.z;
 const RING_SAMPLES = Array.from({ length: 96 }, (_, i) => ({ x: Math.cos(i * Math.PI * 2 / 96) * RING_RADIUS, y: Math.sin(i * Math.PI * 2 / 96) * RING_RADIUS }));
 const distance2 = (a: Point3, b: RingPeg) => Math.hypot(a.x - b.x, a.y - b.y);
+
+/** 床に落ちた輪が囲んでいる棒。輪の内側に棒がすっぽり入っていれば囲んでいる。 */
+export function encircledPeg<T extends RingPeg>(landing: Point3, pegs: ReadonlyArray<T>): T | undefined {
+  return pegs.find((peg) => distance2(landing, peg) + POLE_RADIUS < RING_INNER);
+}
 
 export function aimRing(dx: number, dy: number, duration = 1): RingThrow | null {
   const pull = Math.hypot(dx, dy);
@@ -96,36 +103,28 @@ export function ringContactAt(center: Point3, pegs: ReadonlyArray<RingPeg>): Omi
   return null;
 }
 
-/** 予測も実投もこの1回の空間シミュレーションを再生する。表示フレーム数に依存しない。 */
+/**
+ * 予測も実投もこの1回の空間シミュレーションを再生する。表示フレーム数に依存しない。
+ * 入ったかどうかは、床に落ちたときに輪が棒を囲んでいるかだけで決める。途中で札や棒に当たっても外れにしない。
+ */
 export function traceRing(shot: RingThrow, pegs: ReadonlyArray<RingPeg>): RingPlan {
   let point = { ...RING_FROM };
   let velocity = { x: (shot.x - point.x) * DRAG / (1 - Math.exp(-DRAG)), y: (shot.y - point.y) * DRAG / (1 - Math.exp(-DRAG)), z: ARC_VELOCITY };
   let t = 0;
   let floorBounces = 0;
   let hit: string | null = null;
+  let repeat: string | null = null;
   const frames = [{ t: 0, point: { ...point } }];
   const contacts: RingContact[] = [];
-  const threading = new Map<string, boolean>();
   while (t < 2.5) {
     // 1ステップの移動を最大1単位に抑え、厚み6の札・太さ8の輪のすり抜けを防ぐ。
     const dt = Math.min(1 / 360, 1 / (Math.hypot(velocity.x, velocity.y, velocity.z) + GRAVITY / 360));
-    const previous = { ...point };
     const damping = Math.exp(-DRAG * dt);
     point = { x: point.x + velocity.x * (1 - damping) / DRAG, y: point.y + velocity.y * (1 - damping) / DRAG, z: point.z + velocity.z * dt - GRAVITY * dt * dt / 2 };
     velocity = { x: velocity.x * damping, y: velocity.y * damping, z: velocity.z - GRAVITY * dt };
     t += dt;
-    if (velocity.z < 0) {
-      for (const peg of pegs) {
-        if (previous.z - RING_TUBE > PEG_HEIGHT + PEG_RADIUS && point.z - RING_TUBE <= PEG_HEIGHT + PEG_RADIUS && distance2(point, peg) + POLE_RADIUS < RING_INNER) threading.set(peg.id, false);
-        if (threading.has(peg.id)) {
-          if (distance2(point, peg) + POLE_RADIUS >= RING_INNER) threading.delete(peg.id);
-          else if (point.z + RING_TUBE < PEG_HEIGHT - PEG_RADIUS) threading.set(peg.id, true);
-        }
-      }
-    }
     const contact = ringContactAt(point, pegs);
     if (contact) {
-      if (contact.id) threading.delete(contact.id);
       const { normal } = contact;
       const dot = velocity.x * normal.x + velocity.y * normal.y + velocity.z * normal.z;
       if (dot < 0) {
@@ -137,8 +136,12 @@ export function traceRing(shot: RingThrow, pegs: ReadonlyArray<RingPeg>): RingPl
     if (point.z <= RING_TUBE && velocity.z < 0) {
       point.z = RING_TUBE;
       contacts.push({ t, point: { ...point }, normal: { x: 0, y: 0, z: 1 }, kind: 'floor', id: null });
-      const caught = pegs.find((peg) => threading.get(peg.id) && distance2(point, peg) + POLE_RADIUS < RING_INNER);
-      if (caught) { hit = caught.available === false ? null : caught.id; break; }
+      const caught = encircledPeg(point, pegs);
+      if (caught) {
+        if (caught.available === false) repeat = caught.id;
+        else hit = caught.id;
+        break;
+      }
       if (++floorBounces >= 2 || Math.abs(velocity.z) < 50) break;
       velocity.z *= -.18;
       velocity.x *= .55;
@@ -148,7 +151,7 @@ export function traceRing(shot: RingThrow, pegs: ReadonlyArray<RingPeg>): RingPl
     if (t - frames[frames.length - 1].t >= 1 / 120 || contact) frames.push({ t, point: { ...point } });
   }
   frames.push({ t, point: { ...point } });
-  return { frames, contacts, hit, endTime: t, landing: { ...point } };
+  return { frames, contacts, hit, repeat, endTime: t, landing: { ...point } };
 }
 
 export function ringPlanPoint(plan: RingPlan, t: number): Point3 {

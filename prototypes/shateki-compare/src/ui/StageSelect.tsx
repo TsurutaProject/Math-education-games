@@ -14,6 +14,11 @@ export function stageNodes(variant: Variant) {
   return stagesFor(set).flatMap((stage) => problemsFor(set, stage).map((problem, index) => ({ stage, index, problem })));
 }
 
+/** マップの番号（例「2-5」）。ステージ（＝バリエーション）の順番と、その中の何問目か。画面の上とログで使う。 */
+export function mapLabel(variant: Variant, problemId: string): string {
+  return `${VARIANTS.indexOf(variant) + 1}-${stageNodes(variant).findIndex((n) => n.problem.id === problemId) + 1}`;
+}
+
 interface Props {
   variant: Variant;
   stage: number;

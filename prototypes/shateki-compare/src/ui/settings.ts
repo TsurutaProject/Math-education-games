@@ -9,10 +9,10 @@ export interface Settings {
   slingGuide: number;
   /** パチンコの弾が左右の壁ではね返るか */
   slingBounce: boolean;
-  /** カタパルトの弾がいちばん遠くまで飛ぶのにかかる時間（秒） */
-  catapultTime: number;
-  /** カタパルトの着地点（と山なりの道すじ）を引っ張っている間に見せるか */
-  catapultShowLanding: boolean;
+  /** 輪投げの輪が飛んでいる時間（秒） */
+  ringTime: number;
+  /** 輪投げの落ちる場所（と山なりの道すじ）を引っ張っている間に見せるか */
+  ringShowLanding: boolean;
   /** B の当たり判定補正の強さ（0 = なし、1 = 標準、2 = 強い） */
   assistStrength: number;
   /** C でも補正を使うか */
@@ -47,8 +47,8 @@ export const DEFAULT_SETTINGS: Settings = {
   slingSpeed: 800,
   slingGuide: 600,
   slingBounce: true,
-  catapultTime: 0.8,
-  catapultShowLanding: true,
+  ringTime: 0.8,
+  ringShowLanding: true,
   assistStrength: 1,
   assistInC: true,
   swayAmplitude: 0,
@@ -72,18 +72,38 @@ export function loadSettings(): Settings {
   let s = { ...DEFAULT_SETTINGS };
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) s = { ...s, ...JSON.parse(raw) };
+    if (raw) s = { ...s, ...upgradeSaved(JSON.parse(raw)) };
   } catch {
     // 保存できない環境でも既定値で動く
   }
   // URL の ?shooter= が保存した設定より優先
-  const fromUrl = new URLSearchParams(location.search).get('shooter');
-  if (isShooter(fromUrl)) s.shooter = fromUrl;
+  const fromUrl = shooterFromParam(new URLSearchParams(location.search).get('shooter'));
+  if (fromUrl) s.shooter = fromUrl;
   return s;
 }
 
 export function isShooter(v: unknown): v is Shooter {
-  return v === 'gun' || v === 'sling' || v === 'catapult';
+  return v === 'gun' || v === 'sling' || v === 'ring';
+}
+
+/** URL・保存した設定の射撃タイプを読む。前の名前の catapult は ring として読む。 */
+export function shooterFromParam(v: unknown): Shooter | null {
+  if (v === 'catapult') return 'ring';
+  return isShooter(v) ? v : null;
+}
+
+/** 前の形で保存した設定を今の形にする（catapult → ring、catapultTime → ringTime など）。 */
+export function upgradeSaved(saved: Record<string, unknown>): Partial<Settings> {
+  const { catapultTime, catapultShowLanding, ...rest } = saved;
+  const out: Record<string, unknown> = { ...rest };
+  if (catapultTime !== undefined && out.ringTime === undefined) out.ringTime = catapultTime;
+  if (catapultShowLanding !== undefined && out.ringShowLanding === undefined) out.ringShowLanding = catapultShowLanding;
+  if ('shooter' in out) {
+    const shooter = shooterFromParam(out.shooter);
+    if (shooter) out.shooter = shooter;
+    else delete out.shooter;
+  }
+  return out as Partial<Settings>;
 }
 
 export function saveSettings(s: Settings): void {
@@ -129,28 +149,28 @@ export function writeUrlParams(v: Variant, shooter: Shooter): void {
 export const SHOOTER_LABEL: Record<Shooter, string> = {
   gun: 'コルク銃',
   sling: 'パチンコ',
-  catapult: 'カタパルト',
+  ring: '輪投げ',
 };
 
-export const SHOOTERS: Shooter[] = ['gun', 'sling', 'catapult'];
+export const SHOOTERS: Shooter[] = ['gun', 'sling', 'ring'];
 
 /** 提灯の下に出す操作の説明。空白も数えて10文字以内。 */
 export const INSTRUCTION: Record<'tap' | Shooter, string> = {
   tap: 'まとを タップ',
   gun: 'ねらって はなす',
   sling: 'ひっぱって はなす',
-  catapult: 'ひっぱって なげる',
+  ring: 'ひっぱって なげる',
 };
 
-/** そのバリエーションで選べる射撃タイプか。D・E は的が1段なので、奥と手前の2段が前提のカタパルトは使わない。 */
+/** そのバリエーションで選べる射撃タイプか。D・E は的が流れる・起き上がる仕組みなので、棒が動かない輪投げは使わない。 */
 export function shooterAllowed(v: Variant, sh: Shooter): boolean {
   if (v === 'A') return false;
-  return !((v === 'D' || v === 'E') && sh === 'catapult');
+  return !((v === 'D' || v === 'E') && sh === 'ring');
 }
 
 /**
  * 実際に使う射撃タイプ。ログ・図鑑の区別にも使う。A はタップなので射撃タイプなし。
- * D・E でカタパルトが選ばれていたら、コルク銃にする。
+ * D・E で輪投げが選ばれていたら、コルク銃にする。
  */
 export function shooterOf(v: Variant, s: Settings): 'tap' | Shooter {
   if (v === 'A') return 'tap';

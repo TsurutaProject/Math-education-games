@@ -47,6 +47,7 @@ const start = (attemptId: string, reason: 'first' | 'retry', attemptNo: number, 
   reason,
   attemptNo,
   foundBefore: 0,
+  mapNo: '2-1',
 });
 
 describe('summarizeAttempts（挑戦ごとのまとめ）', () => {
@@ -83,6 +84,7 @@ describe('summarizeAttempts（挑戦ごとのまとめ）', () => {
       goal: 40,
       startReason: 'first',
       attemptNo: 1,
+      mapNo: '2-1',
       result: 'restart',
       expression: '10',
       key: null,

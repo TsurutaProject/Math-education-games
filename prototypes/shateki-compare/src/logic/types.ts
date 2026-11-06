@@ -43,6 +43,7 @@ export type Variant = 'A' | 'B' | 'C' | 'D' | 'E';
 /**
  * B・C の射撃タイプ。
  * gun = 照準を合わせて撃つ（コルク銃）、sling = 引っ張って飛ばす（パチンコ）、
- * catapult = 引く長さで飛ぶ距離が決まり、山なりに飛ぶ（カタパルト）。
+ * ring = 引っ張って輪を投げ、棒を囲んで落ちたら入り（輪投げ）。
+ * 前は ring を catapult と呼んでいた。古い URL・保存した設定の catapult は ring として読む。
  */
-export type Shooter = 'gun' | 'sling' | 'catapult';
+export type Shooter = 'gun' | 'sling' | 'ring';

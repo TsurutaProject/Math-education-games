@@ -27,6 +27,8 @@ export type LogPayload =
       attemptNo: number;
       /** 始めたとき、図鑑でその問題の解き方をいくつ見つけていたか */
       foundBefore: number;
+      /** マップの番号（例 "2-5"）。ステージ（＝バリエーション）の順番と、その中の何問目か。#42 より前のログにはない */
+      mapNo: string;
     }
   | {
       type: 'shot';
@@ -45,8 +47,8 @@ export type LogPayload =
       /** 撃ったあと、残りの弾で届くか */
       reachableAfter: boolean;
       /**
-       * パチンコ・カタパルトのときだけ：飛ばした角度（真上が0、右が+）、引っ張った長さ、飛んでいた時間。
-       * パチンコは壁ではね返った回数、カタパルトは着地点（フィールド 0〜1）も入る。
+       * パチンコ・輪投げのときだけ：飛ばした角度（真上が0、右が+）、引っ張った長さ、飛んでいた時間。
+       * パチンコは壁ではね返った回数、輪投げは落ちた場所（フィールド 0〜1）も入る。
        */
       launch?: { angleDeg: number; pull: number; flightMs: number; bounces?: number; landing?: { x: number; y: number } };
     }

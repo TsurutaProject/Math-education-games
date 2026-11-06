@@ -9,7 +9,7 @@ import { targetLabel } from '../logic/ops';
 import type { Problem, Variant } from '../logic/types';
 import type { ShotInfo } from './Field';
 import { INSTRUCTION, type Settings } from './settings';
-import { sfxCatapult, sfxHit, sfxThud, unlockAudio } from './sound';
+import { sfxHit, sfxRingThrow, sfxThud, unlockAudio } from './sound';
 
 interface Props {
   problem: Problem; variant: Variant; settings: Settings; usedIds: string[];
@@ -29,8 +29,9 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
   const [aim, setAim] = useState<{ sx: number; sy: number; x: number; y: number; pointer: number; downAt: number } | null>(null);
   const [flying, setFlying] = useState<{ plan: RingPlan; t: number } | null>(null);
   const [settled, setSettled] = useState<Record<string, Point3>>({});
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState<{ id: number; text: string; kind: 'hit' | 'miss' | 'note'; x: number; y: number } | null>(null);
   const svg = useRef<SVGSVGElement>(null);
+  const feedbackSeq = useRef(0);
   const flight = useRef<{ shot: RingThrow; plan: RingPlan; start: number; pointerType: string; aimMs: number } | null>(null);
   const props = useRef({ onShot, active, usedIds });
   props.current = { onShot, active, usedIds };
@@ -47,11 +48,24 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
         if (t >= f.plan.endTime) {
           flight.current = null;
           const hitPeg = pegs.find((p) => p.id === f.plan.hit);
+          const repeatPeg = pegs.find((p) => p.id === f.plan.repeat);
           const screen = projectRing(hitPeg ?? f.plan.landing);
-          setFeedback(f.plan.hit ? '入った！' : 'おしい！');
+          // 入ったら札の上に足した数、同じ棒なら札の上に一言、外れたら落ちた場所に「おしい！」
+          const id = (feedbackSeq.current += 1);
+          const signOf = (p: typeof pegs[number]) => projectRing({ ...p, y: p.y - 3, z: PEG_HEIGHT + PEG_RADIUS });
+          if (hitPeg) {
+            const sign = signOf(hitPeg);
+            setFeedback({ id, text: targetLabel(hitPeg.op, hitPeg.value), kind: 'hit', x: sign.x, y: sign.y - 12 });
+          } else if (repeatPeg) {
+            const sign = signOf(repeatPeg);
+            setFeedback({ id, text: 'おなじ ぼうは 1かいだけ', kind: 'note', x: Math.max(170, Math.min(830, sign.x)), y: sign.y - 12 });
+          } else {
+            const at = projectRing(f.plan.landing);
+            setFeedback({ id, text: 'おしい！', kind: 'miss', x: at.x, y: at.y - 16 });
+          }
           if (f.plan.hit) { sfxHit(variant === 'C'); setSettled((old) => ({ ...old, [f.plan.hit!]: f.plan.landing })); } else sfxThud();
           props.current.onShot({ aim: screen, targetId: f.plan.hit, assist: 1, pointerType: f.pointerType, aimMs: f.aimMs,
-            launch: { angleDeg: Math.atan2(f.shot.x, f.shot.y - RING_FROM.y) * 180 / Math.PI, pull: f.shot.pull, flightMs: Math.round(f.shot.duration * f.plan.endTime * 1000), landing: projectRing(f.plan.landing) } });
+            launch: { angleDeg: Math.round(Math.atan2(f.shot.x, f.shot.y - RING_FROM.y) * 1800 / Math.PI) / 10, pull: Math.round(f.shot.pull), flightMs: Math.round(f.shot.duration * f.plan.endTime * 1000), landing: projectRing(f.plan.landing) } });
         }
       }
       frame = requestAnimationFrame(tick);
@@ -63,7 +77,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     const matrix = e.currentTarget.getScreenCTM();
     return matrix ? new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse()) : null;
   };
-  const preview = useMemo(() => aim ? aimRing(aim.x - aim.sx, aim.y - aim.sy, settings.catapultTime) : null, [aim, settings.catapultTime]);
+  const preview = useMemo(() => aim ? aimRing(aim.x - aim.sx, aim.y - aim.sy, settings.ringTime) : null, [aim, settings.ringTime]);
   // 予測は的・棒のない空間で計算する。実投ではsolidsとの衝突を判定する。
   const previewPlan = useMemo(() => preview ? traceRing(preview, []) : null, [preview]);
   const from = projectRing(RING_FROM);
@@ -90,16 +104,16 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     </g>;
   };
   return <div className="field ring-field"><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"
-    onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(''); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
+    onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(null); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
     onPointerMove={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); if (p) setAim({ ...aim, x: p.x, y: p.y }); }}
-    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.catapultTime) : null; setAim(null); if (shot && active) { sfxCatapult(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
+    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.ringTime) : null; setAim(null); if (shot && active) { sfxRingThrow(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
     onPointerCancel={() => setAim(null)} onLostPointerCapture={() => setAim(null)}>
     <rect width="1000" height="480" fill="var(--booth)" />
-    <FestivalDecor instruction={INSTRUCTION.catapult} instructionX={215} />
+    <FestivalDecor instruction={INSTRUCTION.ring} instructionX={215} />
     <polygon points={floor.map((p) => { const q = projectRing(p); return `${q.x},${q.y}`; }).join(' ')} fill="var(--ring-floor, var(--booth))" />
     {[-450, -150, 150, 450].map((x) => <path key={x} d={floorLine({ x, y: -120, z: 0 }, { x, y: 1120, z: 0 })} className="ring-grid" />)}
     {[100, 480, 860, 1120].map((y) => <path key={y} d={floorLine({ x: -540, y, z: 0 }, { x: 540, y, z: 0 })} className="ring-grid" />)}
-    {previewPlan && settings.catapultShowLanding && <g className="ring-preview" pointerEvents="none">
+    {previewPlan && settings.ringShowLanding && <g className="ring-preview" pointerEvents="none">
       <path d={previewPlan.frames.map((f, i) => { const p = projectRing(f.point); return `${i ? 'L' : 'M'}${p.x},${p.y}`; }).join(' ')} className="ring-guide" />
       <g className="ring-landing"><Ring center={previewPlan.landing} dashed /></g>
     </g>}
@@ -111,6 +125,6 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     {!flight.current && (!flying || flying.t >= flying.plan.endTime) && shotsLeft > 0 && active && <Ring center={RING_FROM} />}
     <line x1={from.x + 22} y1="478" x2={from.x} y2={from.y + 8} stroke="var(--stand)" strokeWidth="12" strokeLinecap="round" />
     <AmmoLayer x={770} y={437} shots={problem.shots} shotsLeft={shotsLeft} kind="ring" />
-    {feedback && <text x="500" y="42" textAnchor="middle" className="pop pop-hit">{feedback}</text>}
+    {feedback && <text key={feedback.id} x={feedback.x} y={feedback.y} className={`pop pop-${feedback.kind} ${feedback.kind === 'hit' && variant === 'C' ? 'pop-big' : ''}`}>{feedback.text}</text>}
   </svg></div>;
 }

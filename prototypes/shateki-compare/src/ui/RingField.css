@@ -1,3 +1,5 @@
 /* 輪投げ：既存の配色を使い、透視投影はロジックと共通化する。 */
 .ring-grid { fill: none; stroke: var(--shelf); stroke-width: 1.5; opacity: .25; }
 .ring-guide { fill: none; stroke: var(--panel); stroke-width: 4; stroke-dasharray: 2 10; stroke-linecap: round; }
+/* 同じ棒に2回入ったときの一言。12文字を読めるよう、ほかの一言（0.7秒）より長く出す。 */
+.pop.pop-note { fill: var(--ink); font-size: 24px; animation-duration: 2.2s; }

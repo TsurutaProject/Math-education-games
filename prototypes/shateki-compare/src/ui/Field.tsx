@@ -38,18 +38,16 @@ import {
   type RiseContext,
   type RiseState,
 } from '../logic/rise';
-import { aimCatapult, CATAPULT, flightDuration, type CatapultShot } from '../logic/catapult';
 import { normalizeAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
 import type { Problem, Variant } from '../logic/types';
 import { INSTRUCTION, shooterOf, type Settings } from './settings';
-import { CatapultLayer } from './CatapultLayer';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
 import { AmmoLayer } from './AmmoLayer';
 import { LaneLayer } from './LaneLayer';
 import { RiseLayer } from './RiseLayer';
 import { SlingLayer } from './SlingLayer';
 import { TargetMark } from './TargetMark';
-import { sfxCatapult, sfxHit, sfxMiss, sfxRise, sfxShot, sfxSling, sfxThud, unlockAudio } from './sound';
+import { sfxHit, sfxMiss, sfxRise, sfxShot, sfxSling, unlockAudio } from './sound';
 
 export interface ShotInfo {
   /** 照準の位置（フィールド単位） */
@@ -60,7 +58,7 @@ export interface ShotInfo {
   pointerType: string;
   /** 押してから離すまで（狙っていた時間）のミリ秒。A（タップ）は null */
   aimMs: number | null;
-  /** パチンコ・カタパルトのときだけ（landing はフィールド単位） */
+  /** パチンコ・輪投げのときだけ（landing はフィールド単位。輪投げだけ） */
   launch?: { angleDeg: number; pull: number; flightMs: number; bounces?: number; landing?: { x: number; y: number } };
 }
 
@@ -87,8 +85,6 @@ interface Effect {
   y: number;
   text: string;
   kind: 'hit' | 'miss';
-  /** カタパルト：着地点に土ぼこりを出す */
-  dust: boolean;
   /** コルクが飛ぶ線を出すか（パチンコは弾そのものが見えているので出さない） */
   trail: boolean;
 }
@@ -116,19 +112,7 @@ interface SlingFlight {
   trail: Array<{ x: number; y: number }>;
 }
 
-interface CatapultFlight {
-  kind: 'catapult';
-  shot: CatapultShot;
-  /** 飛びはじめた時刻（ゲームの時計。ヒットストップ中は進まない） */
-  startClock: number;
-  /** 飛んでいる時間（秒） */
-  duration: number;
-  startedAt: number;
-  pointerType: string;
-  assist: number;
-}
-
-type Flight = SlingFlight | CatapultFlight;
+type Flight = SlingFlight;
 
 /** A でタップを少し大目に拾う（指の太さ分） */
 const TAP_TOLERANCE = 1.15;
@@ -136,12 +120,10 @@ const TAP_TOLERANCE = 1.15;
 const COOLDOWN_MS: Record<Variant, number> = { A: 200, B: 250, C: 550, D: 250, E: 550 };
 /** タッチのとき、指で隠れないように照準を指より上に出す（フィールド単位） */
 const TOUCH_AIM_OFFSET = 90;
-/** パチンコ・カタパルトの揺れ：照準の揺れ幅 1 あたり何度ぶれるか */
+/** パチンコの揺れ：照準の揺れ幅 1 あたり何度ぶれるか */
 const SLING_SWAY_DEG = 0.2;
 /** 下端へ消えたあと、外れを表示するまでの間（秒）。 */
 const BOTTOM_MISS_DELAY = 0.1;
-/** カタパルトの揺れ：照準の揺れ幅 1 あたり、飛ぶ距離がどれだけぶれるか */
-const CATAPULT_SWAY_DEPTH = 0.8;
 /** コルクが飛び出す位置（画面の下の真ん中） */
 const MUZZLE = GUN_MUZZLE;
 const SLING_WALL_WIDTH = 12;
@@ -156,9 +138,8 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const aimMode = variant !== 'A';
   const shooter = shooterOf(variant, settings);
   const slingMode = shooter === 'sling';
-  const catapultMode = shooter === 'catapult';
-  /** 引っ張って撃つ（パチンコ・カタパルト） */
-  const pullMode = slingMode || catapultMode;
+  /** 引っ張って撃つ（パチンコ。輪投げは RingField） */
+  const pullMode = slingMode;
   const laneY = slingMode ? LANE_Y : 210;
   const placed = useMemo(
     () => layoutTargets(problem, { riskMode, sizeScale: settings.cSizeScale, singleRow: slingMode }),
@@ -172,7 +153,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const effectSeq = useRef(0);
   /** 倒れた的は当たった場所で止める */
   const downAt = useRef(new Map<string, { x: number; y: number }>());
-  /** パチンコ・カタパルト：飛んでいる弾（1発ずつ） */
+  /** パチンコ：飛んでいる弾（1発ずつ） */
   const flight = useRef<Flight | null>(null);
   const pendingMiss = useRef<{
     at: number;
@@ -183,7 +164,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   } | null>(null);
   /**
    * いま撃った1発の「押してから離すまで」のミリ秒（ログ用）。離したときに決まる。
-   * パチンコ・カタパルトは当たり・外れが決まるまで次を撃てないので、そのときまで変わらない
+   * パチンコは当たり・外れが決まるまで次を撃てないので、そのときまで変わらない
    */
   const aimMsOfShot = useRef<number | null>(null);
   /** 毎フレーム呼ぶ処理（最新の props を使うため、描画のたびに入れ替える） */
@@ -338,7 +319,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     effectSeq.current += 1;
     setEffects((list) => [
       ...list,
-      { id: effectSeq.current, tx: to.x, ty: to.y, x, y, text, kind, trail: !pullMode, dust: catapultMode },
+      { id: effectSeq.current, tx: to.x, ty: to.y, x, y, text, kind, trail: !pullMode },
     ]);
   };
 
@@ -380,14 +361,12 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       }
     } else {
       addEffect(point, point.x, point.y, 'スカッ', 'miss');
-      if (catapultMode) sfxThud();
-      else sfxMiss();
+      sfxMiss();
     }
     onShot({ aim: point, targetId, assist, pointerType, aimMs: aimMsOfShot.current, launch });
   };
 
   // パチンコ：弾を進めて、的に当たるか外に出たら1発ぶんを確定する
-  // カタパルト：飛んでいる時間がたったら、着地点で当たりを決める（手前の的は飛び越える）
   onFrame.current = (dt: number) => {
     if (lane.current) lane.current = stepLane(lane.current, clockRef.current, laneCtx);
     if (rise.current) {
@@ -406,19 +385,6 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     }
     const f = flight.current;
     if (!f) return;
-    if (f.kind === 'catapult') {
-      if (clockRef.current - f.startClock < f.duration) return;
-      flight.current = null;
-      const { landing } = f.shot;
-      const hit = hitTest(landing, circlesAt(clockRef.current), f.assist);
-      fire(landing, hit, f.assist, f.pointerType, {
-        angleDeg: Math.round(f.shot.angleDeg * 10) / 10,
-        pull: Math.round(f.shot.pull),
-        flightMs: Math.round(performance.now() - f.startedAt),
-        landing: { x: Math.round(landing.x), y: Math.round(landing.y) },
-      });
-      return;
-    }
     const r = stepBall(f.ball, dt, circlesAt(clockRef.current), { bounce: settings.slingBounce, multiplier: f.assist });
     f.trail = [...f.trail.slice(-5), { x: f.ball.x, y: f.ball.y }];
     f.ball = r.ball;
@@ -449,12 +415,6 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     if (!l) return null;
     const jitter = swayOffset(clockRef.current, settings.swayAmplitude).dx * SLING_SWAY_DEG;
     return { ...l, angleDeg: normalizeAngle(l.angleDeg + jitter) };
-  };
-
-  /** カタパルトのねらい（引っ張りの向きと長さ + 揺れ）。引っ張りが短いときは null */
-  const catapultShotOf = (a: Aim): CatapultShot | null => {
-    const { dx, dy } = swayOffset(clockRef.current, settings.swayAmplitude);
-    return aimCatapult(a.x - a.sx, a.y - a.sy, { angle: dx * SLING_SWAY_DEG, depth: dy * CATAPULT_SWAY_DEPTH });
   };
 
   /** 照準の最終位置（指の位置 + タッチのずれ + 揺れ） */
@@ -518,21 +478,6 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       };
       return;
     }
-    if (catapultMode) {
-      const shot = catapultShotOf(aim);
-      if (!shot) return;
-      sfxCatapult();
-      flight.current = {
-        kind: 'catapult',
-        shot,
-        startClock: clockRef.current,
-        duration: flightDuration(shot.depth, settings.catapultTime),
-        startedAt: performance.now(),
-        pointerType: aim.pointerType,
-        assist: assistNow(),
-      };
-      return;
-    }
     const point = reticleOf(aim);
     // 照準がフィールドの外にあるときに離したら、撃たない（弾も減らない）
     if (!isInsideField(point)) return;
@@ -553,10 +498,8 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const reticleAt = aim && !pullMode ? reticleOf(aim) : null;
   const reticle = reticleAt && isInsideField(reticleAt) ? reticleAt : null;
   const slingLaunch = aim && slingMode ? slingLaunchOf(aim) : null;
-  const catapultShot = aim && catapultMode ? catapultShotOf(aim) : null;
   const f = flight.current;
   const sf = f?.kind === 'sling' ? f : null;
-  const cf = f?.kind === 'catapult' ? f : null;
   const rowYs = laneMode ? [laneY] : riseMode ? [RISE_Y] : [...new Set(placed.map((p) => p.y))];
   // E の「いれかえる」：撃てるとき・起き上がりきった的があるときだけ押せる
   const canSwap = !!rise.current && active && !f && rise.current.slots.some((s) => isHittable(s, clock));
@@ -617,7 +560,6 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
                 <animateMotion dur="0.12s" fill="freeze" path={`M${MUZZLE.x},${MUZZLE.y} L${ef.tx},${ef.ty}`} />
               </g>
             )}
-            {ef.dust && <ellipse cx={ef.tx} cy={ef.ty} rx={34} ry={14} className="cat-dust" />}
             <text x={ef.x} y={ef.y} className={`pop pop-${ef.kind} ${heavyFeel ? 'pop-big' : ''}`}>
               {ef.text}
             </text>
@@ -656,15 +598,6 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
             guideLength={settings.slingGuide}
             bounce={settings.slingBounce}
             flying={sf ? { x: sf.ball.x, y: sf.ball.y, trail: sf.trail } : null}
-            loaded={!f && shotsLeft > 0 && active}
-          />
-        )}
-        {catapultMode && (
-          <CatapultLayer
-            pull={aim ? { dx: aim.x - aim.sx, dy: aim.y - aim.sy } : null}
-            shot={catapultShot}
-            showLanding={settings.catapultShowLanding}
-            flying={cf ? { from: CATAPULT, to: cf.shot.landing, t: (clock - cf.startClock) / cf.duration } : null}
             loaded={!f && shotsLeft > 0 && active}
           />
         )}
