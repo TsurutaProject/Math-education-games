@@ -35,7 +35,8 @@ export function App() {
   const [playerId, setPlayerId] = useState(currentPlayerId);
   // ログに最後に残した設定（設定パネルを閉じたとき、変わっていれば残す）
   const loggedSettings = useRef(JSON.stringify(settings));
-  const [selectingStage, setSelectingStage] = useState(() => !exhibit);
+  // はじめはマップから。展示モードでもマップを出す（いまどこまで進んでいるかがわかるように。#52）
+  const [selectingStage, setSelectingStage] = useState(true);
   // 図鑑はこのセッションの間だけ（再読み込みで消える）
   const zukan = useRef<Zukan>(new Map());
   // 問題を作り直すたびに増やして GameScreen を新しくする
@@ -88,13 +89,14 @@ export function App() {
     setShowSettings(false);
   };
 
-  /** つぎの人へ：新しい人の id にして、図鑑を空にし、ステージ 1 の 1 問めから始める */
+  /** つぎの人へ：新しい人の id にして、図鑑を空にし、マップ（ステージ 1）にもどる */
   const startNextPlayer = () => {
     closeSettings();
     setPlayerId(nextPlayer());
     zukan.current = new Map();
     setRef(FIRST_REF);
     restartWith('next_player');
+    setSelectingStage(true);
   };
 
   /** つぎの問題へ。コースの最後の問題のあとはマップにもどる */
@@ -124,7 +126,7 @@ export function App() {
         <div className="where">
           {selectingStage ? 'ステージセレクト' : `ステージ ${mapNo(ref)}`}
         </div>
-        {!exhibit && !selectingStage && <button className="btn small" onClick={() => setSelectingStage(true)}>マップへ</button>}
+        {!selectingStage && <button className="btn small" onClick={() => setSelectingStage(true)}>マップへ</button>}
         {!exhibit && <button className="gear" onClick={() => setShowSettings(true)} aria-label="設定">
           ⚙️
         </button>}

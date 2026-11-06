@@ -72,12 +72,12 @@ export function SettingsPanel({ current, settings, onShooter, onProblem, onSetti
             <button
               className="btn small"
               onClick={() => {
-                if (window.confirm('つぎの人に替えます。図鑑を空にして、ステージ1の1問めにもどります。よろしいですか？')) onNextPlayer();
+                if (window.confirm('つぎの人に替えます。図鑑を空にして、マップ（ステージ1）にもどります。よろしいですか？')) onNextPlayer();
               }}
             >
               つぎの人へ
             </button>
-            <span className="row-note">新しい人として記録します（図鑑を空にして、最初の問題から）</span>
+            <span className="row-note">新しい人として記録します（図鑑を空にして、マップから）</span>
           </div>
         </section>
 
