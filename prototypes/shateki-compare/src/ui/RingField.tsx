@@ -24,12 +24,12 @@ function Ring({ center, dashed = false, start = 0, end = Math.PI * 2 }: { center
   return <path d={ringPath(center, (RING_INNER + RING_OUTER) / 2, start, end)} fill="none" stroke="var(--accent)" strokeWidth={(RING_OUTER - RING_INNER) * projectRing(center).scale} strokeDasharray={dashed ? '6 6' : undefined} />;
 }
 export function RingField({ problem, variant, settings, usedIds, shotsLeft, active, onShot }: Props) {
-  const [aim, setAim] = useState<{ sx: number; sy: number; x: number; y: number; pointer: number } | null>(null);
+  const [aim, setAim] = useState<{ sx: number; sy: number; x: number; y: number; pointer: number; downAt: number } | null>(null);
   const [flying, setFlying] = useState<{ plan: RingPlan; t: number } | null>(null);
   const [settled, setSettled] = useState<Record<string, Point3>>({});
   const [feedback, setFeedback] = useState('');
   const svg = useRef<SVGSVGElement>(null);
-  const flight = useRef<{ shot: RingThrow; plan: RingPlan; start: number; pointerType: string } | null>(null);
+  const flight = useRef<{ shot: RingThrow; plan: RingPlan; start: number; pointerType: string; aimMs: number } | null>(null);
   const props = useRef({ onShot, active, usedIds });
   props.current = { onShot, active, usedIds };
   const pegs = useMemo(() => ringPegs(problem), [problem]);
@@ -48,7 +48,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
           const screen = projectRing(hitPeg ?? f.plan.landing);
           setFeedback(f.plan.hit ? '入った！' : 'おしい！');
           if (f.plan.hit) { sfxHit(variant === 'C'); setSettled((old) => ({ ...old, [f.plan.hit!]: f.plan.landing })); } else sfxThud();
-          props.current.onShot({ aim: screen, targetId: f.plan.hit, assist: 1, pointerType: f.pointerType,
+          props.current.onShot({ aim: screen, targetId: f.plan.hit, assist: 1, pointerType: f.pointerType, aimMs: f.aimMs,
             launch: { angleDeg: Math.atan2(f.shot.x, f.shot.y - RING_FROM.y) * 180 / Math.PI, pull: f.shot.pull, flightMs: Math.round(f.shot.duration * f.plan.endTime * 1000), landing: projectRing(f.plan.landing) } });
         }
       }
@@ -88,9 +88,9 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     </g>;
   };
   return <div className="field ring-field"><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"
-    onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(''); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId }); }}
+    onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(''); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
     onPointerMove={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); if (p) setAim({ ...aim, x: p.x, y: p.y }); }}
-    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.catapultTime) : null; setAim(null); if (shot && active) { sfxCatapult(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType }; } }}
+    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.catapultTime) : null; setAim(null); if (shot && active) { sfxCatapult(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
     onPointerCancel={() => setAim(null)} onLostPointerCapture={() => setAim(null)}>
     <rect width="1000" height="480" fill="var(--booth)" />
     <polygon points={floor.map((p) => { const q = projectRing(p); return `${q.x},${q.y}`; }).join(' ')} fill="var(--ring-floor, var(--booth))" />
