@@ -2,7 +2,7 @@ import { Artwork } from './Artwork';
 import './StageSelect.css';
 import { useEffect, useRef, useState } from 'react';
 import { COURSE, mapNo, UNIT_LABEL, type CourseStage, type NodeRef } from '../logic/course';
-import { foundCount } from '../logic/progress';
+import { nodeStatus, type NodeStatus } from '../logic/progress';
 import type { Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
@@ -21,14 +21,24 @@ interface Props {
   /** いま遊んでいる（最後に遊んだ）問題 */
   current: NodeRef;
   zukan: Zukan;
+  /** その人が1発以上撃った問題の id（挑戦済みを出すため） */
+  played: ReadonlySet<string>;
   onSelect: (ref: NodeRef) => void;
 }
+
+/** 問題の丸の上に出す進み具合（#44）。まだ遊んでいない問題には何も出さない */
+const STATUS_TEXT: Record<NodeStatus, string> = {
+  none: '',
+  tried: '挑戦済み',
+  cleared: 'クリア',
+  complete: '★ クリア',
+};
 
 /** 問題の丸の位置。3つずつ横に並べる */
 const ROW_GAP = 210;
 const position = (i: number) => ({ x: 170 + (i % 3) * 330, y: 110 + Math.floor(i / 3) * ROW_GAP });
 
-function WorldMap({ world, current, zukan, onSelect, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }) => boolean }) {
+function WorldMap({ world, current, zukan, played, onSelect, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }) => boolean }) {
   const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
   const [shot, setShot] = useState<number | null>(null);
   const svg = useRef<SVGSVGElement>(null);
@@ -82,15 +92,15 @@ function WorldMap({ world, current, zukan, onSelect, onShoot }: Props & { world:
           {nodes.map((node, i) => {
             const p = position(i);
             const label = mapNo({ stage: world.stage, index: i });
-            const done = foundCount(zukan, node) > 0;
+            const status = nodeStatus(zukan, node, played.has(node.problemId));
             const isCurrent = current.stage === world.stage && current.index === i;
-            return <g key={node.problemId} transform={`translate(${p.x} ${p.y})`} className={`stage-node ${isCurrent ? 'current' : ''} ${done ? 'cleared' : ''}`} role="button" tabIndex={shot === null ? 0 : -1}
-              aria-label={`${label} ${PLAY_LABEL[node.variant]}${done ? ' クリア済み' : ''}`} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(i); } }}>
+            return <g key={node.problemId} transform={`translate(${p.x} ${p.y})`} className={`stage-node ${isCurrent ? 'current' : ''} status-${status}`} role="button" tabIndex={shot === null ? 0 : -1}
+              aria-label={`${label} ${PLAY_LABEL[node.variant]} ${STATUS_TEXT[status]}`.trim()} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(i); } }}>
               <rect x="-6" y="32" width="12" height="42" rx="3" fill="var(--stand)" />
               <circle r="48" className="stage-target" />
               <Artwork name="target-red" x={-48} y={-48} width={96} height={96} />
               <text textAnchor="middle" y="9" className="stage-node-number">{label}</text>
-              <text textAnchor="middle" y="-64" className="stage-node-state">{shot === i ? 'スタート！' : done ? '★ クリア' : isCurrent ? 'いま ここ' : i === 0 ? 'START' : i === nodes.length - 1 ? 'GOAL' : ''}</text>
+              <text textAnchor="middle" y="-64" className="stage-node-state">{shot === i ? 'スタート！' : STATUS_TEXT[status]}</text>
               <text textAnchor="middle" y="114" className="stage-node-play">{PLAY_LABEL[node.variant]}</text>
             </g>;
           })}

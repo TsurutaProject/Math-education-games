@@ -31,6 +31,8 @@ interface Props {
   /** 遊んでいる人の id（ログ用） */
   playerId: string;
   startReason: StartReason;
+  /** 1発撃ったとき（マップの「挑戦済み」用） */
+  onPlayed: () => void;
   onNext: () => void;
 }
 
@@ -43,7 +45,7 @@ const FEEL: Record<Variant, { celebrateMs: number; outDelayMs: number }> = {
   E: { celebrateMs: 900, outDelayMs: 600 },
 };
 
-export function GameScreen({ problem, variant, mapNo, settings, zukan, playerId, startReason, onNext }: Props) {
+export function GameScreen({ problem, variant, mapNo, settings, zukan, playerId, startReason, onPlayed, onNext }: Props) {
   const [game, setGame] = useState<GameState>(() => newGame(problem));
   const [phase, setPhase] = useState<Phase>('playing');
   const [round, setRound] = useState(0);
@@ -162,6 +164,7 @@ export function GameScreen({ problem, variant, mapNo, settings, zukan, playerId,
     if (phase !== 'playing') return;
     const next = shoot(problem, game, info.targetId);
     if (next === game) return;
+    onPlayed();
     const reachable = canReach(problem, next.calc, next.usedIds, next.shotsLeft);
     const target = info.targetId ? problem.targets.find((t) => t.id === info.targetId) : undefined;
     log({

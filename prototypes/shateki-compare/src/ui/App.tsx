@@ -39,6 +39,8 @@ export function App() {
   const [selectingStage, setSelectingStage] = useState(true);
   // 図鑑はこのセッションの間だけ（再読み込みで消える）
   const zukan = useRef<Zukan>(new Map());
+  // その人が1発以上撃った問題（マップの「挑戦済み」用）。図鑑と同じく、つぎの人へで空にする
+  const played = useRef(new Set<string>());
   // 問題を作り直すたびに増やして GameScreen を新しくする
   const [session, setSession] = useState({ n: 0, reason: 'first' as StartReason });
 
@@ -94,6 +96,7 @@ export function App() {
     closeSettings();
     setPlayerId(nextPlayer());
     zukan.current = new Map();
+    played.current = new Set();
     setRef(FIRST_REF);
     restartWith('next_player');
     setSelectingStage(true);
@@ -131,7 +134,7 @@ export function App() {
           ⚙️
         </button>}
       </header>
-      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} onSelect={(to) => {
+      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} played={played.current} onSelect={(to) => {
         setRef(to); restartWith('select'); setSelectingStage(false);
       }} /> : <GameScreen
         key={`${session.n}-${mapNo(ref)}-${shooterOf(variant, settings)}`}
@@ -142,6 +145,7 @@ export function App() {
         zukan={zukan.current}
         playerId={playerId}
         startReason={session.reason}
+        onPlayed={() => played.current.add(problem.id)}
         onNext={next}
       />}
       {showSettings && (
