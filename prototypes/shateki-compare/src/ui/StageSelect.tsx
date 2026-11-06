@@ -6,7 +6,7 @@ import { nodeStatus, type NodeStatus } from '../logic/progress';
 import type { Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
-import { sfxShot, unlockAudio } from './sound';
+import { sfxMiss, sfxShot, unlockAudio } from './sound';
 
 /** マップの問題の下に出す、遊び方の名前（子ども向け） */
 export const PLAY_LABEL: Record<Variant, string> = {
@@ -38,9 +38,11 @@ const STATUS_TEXT: Record<NodeStatus, string> = {
 const ROW_GAP = 210;
 const position = (i: number) => ({ x: 170 + (i % 3) * 330, y: 110 + Math.floor(i / 3) * ROW_GAP });
 
-function WorldMap({ world, current, zukan, played, onSelect, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }) => boolean }) {
+function WorldMap({ world, current, zukan, played, onSelect, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }, miss?: boolean) => boolean }) {
   const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
   const [shot, setShot] = useState<number | null>(null);
+  /** 外れたところに出す「スカッ」（#44）。id を変えて、続けて外しても出し直す */
+  const [missAt, setMissAt] = useState<{ id: number; x: number; y: number } | null>(null);
   const svg = useRef<SVGSVGElement>(null);
   const pointer = useRef<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -60,6 +62,18 @@ function WorldMap({ world, current, zukan, played, onSelect, onShoot }: Props & 
     setShot(i);
     setAim(null);
     timer.current = setTimeout(() => onSelect({ stage: world.stage, index: i }), 280);
+  };
+  /** 的のないところを撃った：コルクを飛ばして「スカッ」を出す。問題は選ばない */
+  const miss = (p: { x: number; y: number }) => {
+    if (timer.current || shot !== null) return;
+    const matrix = svg.current?.getScreenCTM();
+    if (!matrix) return;
+    const screen = new DOMPoint(p.x, p.y).matrixTransform(matrix);
+    if (!onShoot({ x: screen.x, y: screen.y }, true)) return;
+    unlockAudio();
+    sfxShot();
+    sfxMiss();
+    setMissAt((m) => ({ id: (m?.id ?? 0) + 1, ...p }));
   };
   const point = (event: React.PointerEvent<SVGSVGElement>) => {
     const matrix = svg.current?.getScreenCTM();
@@ -84,6 +98,7 @@ function WorldMap({ world, current, zukan, played, onSelect, onShoot }: Props & 
             if (!p) return;
             const hit = nodes.findIndex((_, i) => Math.hypot(position(i).x - p.x, position(i).y - p.y) <= 48);
             if (hit >= 0) select(hit);
+            else miss(p);
           }} onPointerCancel={cancel} onLostPointerCapture={cancel}>
           <rect width="1000" height={height} fill="var(--booth)" />
           {Array.from({ length: rows }, (_, row) => (
@@ -104,6 +119,7 @@ function WorldMap({ world, current, zukan, played, onSelect, onShoot }: Props & 
               <text textAnchor="middle" y="114" className="stage-node-play">{PLAY_LABEL[node.variant]}</text>
             </g>;
           })}
+          {missAt && <text key={missAt.id} x={missAt.x} y={missAt.y} className="pop pop-miss" pointerEvents="none">スカッ</text>}
           {aim && <g className="reticle" transform={`translate(${aim.x} ${aim.y})`} pointerEvents="none"><circle r="24" /><line x1={-35} x2={35} y1={0} y2={0} /><line x1={0} x2={0} y1={-35} y2={35} /><circle r="3" className="dot" /></g>}
         </svg>
       </div>
@@ -115,15 +131,24 @@ export function StageSelect(props: Props) {
   const [world, setWorld] = useState(() => Math.max(0, COURSE.findIndex((s) => s.stage === props.current.stage)));
   const pages = useRef<HTMLDivElement>(null);
   const fixedLayer = useRef<SVGSVGElement>(null);
-  const [shot, setShot] = useState<{ x: number; y: number } | null>(null);
+  const [shot, setShot] = useState<{ id: number; x: number; y: number } | null>(null);
   const shotStarted = useRef(false);
-  const onShoot = (screen: { x: number; y: number }) => {
+  const missTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (missTimer.current) clearTimeout(missTimer.current); }, []);
+  /** コルクを飛ばす。外れ（miss）なら、少したってからまた撃てるようにする */
+  const onShoot = (screen: { x: number; y: number }, miss = false) => {
     if (shotStarted.current) return false;
     const matrix = fixedLayer.current?.getScreenCTM();
     if (!matrix) return false;
     const target = new DOMPoint(screen.x, screen.y).matrixTransform(matrix.inverse());
     shotStarted.current = true;
-    setShot({ x: target.x, y: target.y });
+    setShot((s) => ({ id: (s?.id ?? 0) + 1, x: target.x, y: target.y }));
+    if (miss) {
+      missTimer.current = setTimeout(() => {
+        shotStarted.current = false;
+        setShot(null);
+      }, 450);
+    }
     return true;
   };
   // 開いたときは、いまの問題があるステージのページを出す
@@ -165,7 +190,7 @@ export function StageSelect(props: Props) {
       </div>
         <svg ref={fixedLayer} className="stage-fixed-layer" viewBox="0 0 1000 480" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
           <GunLayer />
-          {shot && <g><Artwork name="cork" x={-7} y={-9} width={14} height={18} /><animateMotion dur="0.25s" fill="freeze" path={`M${GUN_MUZZLE.x} ${GUN_MUZZLE.y} L${shot.x} ${shot.y}`} /></g>}
+          {shot && <g key={shot.id}><Artwork name="cork" x={-7} y={-9} width={14} height={18} /><animateMotion dur="0.25s" fill="freeze" path={`M${GUN_MUZZLE.x} ${GUN_MUZZLE.y} L${shot.x} ${shot.y}`} /></g>}
         </svg>
       </div>
 
