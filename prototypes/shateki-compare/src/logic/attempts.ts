@@ -29,6 +29,10 @@ export interface AttemptRow {
   foundBefore: number | null;
   /** マップの番号（例 "2-5"）。#42 より前のログ・始まりのイベントがない挑戦は null */
   mapNo: string | null;
+  /** 単元（add / sub / muldiv）。版 3 より前のログ・始まりのイベントがない挑戦は null */
+  unit: string | null;
+  /** intro（はじめの、単元を伝える問題）/ main。版 3 より前のログ・始まりのイベントがない挑戦は null */
+  role: string | null;
   /**
    * 結果。clear = クリア、out = 弾切れ、restart = 「さいしょから」、leave = 途中で別の問題・つぎの人に移った、
    * unfinished = 終わりの記録がない（画面を閉じた・ダウンロードした時点で遊んでいる途中など）
@@ -45,6 +49,8 @@ export interface AttemptRow {
   hits: number;
   /** 始めてから1発目の当たり・外れが決まるまでのミリ秒（撃っていなければ null） */
   firstShotMs: number | null;
+  /** 始めてから1発目を押し始めるまでのミリ秒（撃っていない・版 3 より前のログは null） */
+  firstPressMs: number | null;
   /** 始めてから終わりまでのミリ秒（終わりの記録がなければ null） */
   elapsedMs: number | null;
   /** 挑戦の途中で画面が隠れた回数 */
@@ -86,6 +92,8 @@ export function summarizeAttempts(
         attemptNo: null,
         foundBefore: null,
         mapNo: null,
+        unit: null,
+        role: null,
         result: 'unfinished',
         expression: '0',
         key: null,
@@ -93,6 +101,7 @@ export function summarizeAttempts(
         shots: 0,
         hits: 0,
         firstShotMs: null,
+        firstPressMs: null,
         elapsedMs: null,
         pageHides: 0,
       };
@@ -106,10 +115,15 @@ export function summarizeAttempts(
         row.attemptNo = e.attemptNo ?? null;
         row.foundBefore = e.foundBefore ?? null;
         row.mapNo = e.mapNo ?? null;
+        row.unit = e.unit ?? null;
+        row.role = e.role ?? null;
         break;
       case 'shot':
         row.shots += 1;
-        if (row.firstShotMs === null && e.sinceStartMs !== undefined) row.firstShotMs = e.sinceStartMs;
+        if (row.shots === 1) {
+          if (e.sinceStartMs !== undefined) row.firstShotMs = e.sinceStartMs;
+          if (e.pressMs !== undefined) row.firstPressMs = e.pressMs;
+        }
         break;
       case 'value_change':
         row.hits += 1;

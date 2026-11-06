@@ -24,6 +24,8 @@ interface Props {
   /** その人が1発以上撃った問題の id（挑戦済みを出すため） */
   played: ReadonlySet<string>;
   onSelect: (ref: NodeRef) => void;
+  /** 的のないところを撃った（ログ用） */
+  onMiss: () => void;
 }
 
 /** 問題の丸の上に出す進み具合（#44）。まだ遊んでいない問題には何も出さない */
@@ -38,7 +40,7 @@ const STATUS_TEXT: Record<NodeStatus, string> = {
 const ROW_GAP = 210;
 const position = (i: number) => ({ x: 170 + (i % 3) * 330, y: 110 + Math.floor(i / 3) * ROW_GAP });
 
-function WorldMap({ world, current, zukan, played, onSelect, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }, miss?: boolean) => boolean }) {
+function WorldMap({ world, current, zukan, played, onSelect, onMiss, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }, miss?: boolean) => boolean }) {
   const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
   const [shot, setShot] = useState<number | null>(null);
   /** 外れたところに出す「スカッ」（#44）。id を変えて、続けて外しても出し直す */
@@ -73,6 +75,7 @@ function WorldMap({ world, current, zukan, played, onSelect, onShoot }: Props & 
     unlockAudio();
     sfxShot();
     sfxMiss();
+    onMiss();
     setMissAt((m) => ({ id: (m?.id ?? 0) + 1, ...p }));
   };
   const point = (event: React.PointerEvent<SVGSVGElement>) => {

@@ -1,4 +1,4 @@
-import type { CourseNode } from './course';
+import { allNodes, mapNo, type CourseNode, type NodeRef } from './course';
 import { problemById } from './problems';
 import { distinctSolutions } from './solver';
 import type { Zukan } from './zukan';
@@ -43,4 +43,20 @@ export function nodeStatus(zukan: Zukan, node: CourseNode, played: boolean): Nod
   const found = foundCount(zukan, node);
   if (found > 0) return found >= totalCount(node.problemId) ? 'complete' : 'cleared';
   return played ? 'tried' : 'none';
+}
+
+/**
+ * マップで問題を選んだときのログの中身（#56）。説明の問題を飛ばしたか・どんな順で選んだかを見るため。
+ * 「クリア」は解き方を1つ以上見つけた問題（マップの緑・山吹色の「クリア」と同じ）。
+ */
+export function selectionInfo(zukan: Zukan, selected: NodeRef): { clearedMapNos: string[]; firstUnclearedMapNo: string | null; skippedMapNos: string[] } {
+  const list = allNodes();
+  const cleared = (n: (typeof list)[number]) => foundCount(zukan, n.node) > 0;
+  const at = list.findIndex((n) => n.stage === selected.stage && n.index === selected.index);
+  const firstUncleared = list.find((n) => !cleared(n));
+  return {
+    clearedMapNos: list.filter(cleared).map(mapNo),
+    firstUnclearedMapNo: firstUncleared ? mapNo(firstUncleared) : null,
+    skippedMapNos: list.slice(0, Math.max(0, at)).filter((n) => !cleared(n)).map(mapNo),
+  };
 }

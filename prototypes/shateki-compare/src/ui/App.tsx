@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { LogPayload } from '../logic/log';
-import { FIRST_REF, mapNo, nextRef, nodeAt, type NodeRef } from '../logic/course';
+import type { LogPayload, SessionPayload } from '../logic/log';
+import { courseStage, FIRST_REF, mapNo, nextRef, nodeAt, type NodeRef } from '../logic/course';
+import { selectionInfo } from '../logic/progress';
 import { problemById } from '../logic/problems';
 import type { Shooter } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
@@ -22,6 +23,7 @@ import {
 import { setBgmSettings, setSoundEnabled, unlockAudio } from './sound';
 
 type StartReason = Extract<LogPayload, { type: 'problem_start' }>['reason'];
+type MapOpenReason = Extract<SessionPayload, { type: 'map_open' }>['reason'];
 
 export function App() {
   const [exhibit] = useState(exhibitFromUrl);
@@ -37,6 +39,24 @@ export function App() {
   const loggedSettings = useRef(JSON.stringify(settings));
   // はじめはマップから。展示モードでもマップを出す（いまどこまで進んでいるかがわかるように。#52）
   const [selectingStage, setSelectingStage] = useState(true);
+  // マップを開いたときのログ（#56）。開くたびに mapOpenSeq を増やし、1回だけ残す（StrictMode で2回呼ばれても）
+  const [mapOpenSeq, setMapOpenSeq] = useState(0);
+  const mapReason = useRef<MapOpenReason>('start');
+  const loggedMapOpen = useRef(-1);
+  const mapOpenedAt = useRef(performance.now());
+  const mapMisses = useRef(0);
+  const openMap = (reason: MapOpenReason) => {
+    mapReason.current = reason;
+    setMapOpenSeq((n) => n + 1);
+    setSelectingStage(true);
+  };
+  useEffect(() => {
+    if (!selectingStage || loggedMapOpen.current === mapOpenSeq) return;
+    loggedMapOpen.current = mapOpenSeq;
+    mapOpenedAt.current = performance.now();
+    mapMisses.current = 0;
+    logSessionEvent({ type: 'map_open', reason: mapReason.current });
+  }, [selectingStage, mapOpenSeq]);
   // 図鑑はこのセッションの間だけ（再読み込みで消える）
   const zukan = useRef<Zukan>(new Map());
   // その人が1発以上撃った問題（マップの「挑戦済み」用）。図鑑と同じく、つぎの人へで空にする
@@ -99,14 +119,14 @@ export function App() {
     played.current = new Set();
     setRef(FIRST_REF);
     restartWith('next_player');
-    setSelectingStage(true);
+    openMap('next_player');
   };
 
   /** つぎの問題へ。コースの最後の問題のあとはマップにもどる */
   const next = () => {
     const to = nextRef(ref);
     if (!to) {
-      setSelectingStage(true);
+      openMap('course_end');
       return;
     }
     setRef(to);
@@ -129,18 +149,31 @@ export function App() {
         <div className="where">
           {selectingStage ? 'ステージセレクト' : `ステージ ${mapNo(ref)}`}
         </div>
-        {!selectingStage && <button className="btn small" onClick={() => setSelectingStage(true)}>マップへ</button>}
+        {!selectingStage && <button className="btn small" onClick={() => openMap('button')}>マップへ</button>}
         {!exhibit && <button className="gear" onClick={() => setShowSettings(true)} aria-label="設定">
           ⚙️
         </button>}
       </header>
-      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} played={played.current} onSelect={(to) => {
+      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} played={played.current} onMiss={() => { mapMisses.current += 1; }} onSelect={(to) => {
+        const picked = nodeAt(to)!;
+        logSessionEvent({
+          type: 'map_select',
+          mapNo: mapNo(to),
+          variant: picked.variant,
+          unit: courseStage(to.stage)!.unit,
+          role: picked.role,
+          ...selectionInfo(zukan.current, to),
+          mapMs: Math.round(performance.now() - mapOpenedAt.current),
+          misses: mapMisses.current,
+        });
         setRef(to); restartWith('select'); setSelectingStage(false);
       }} /> : <GameScreen
         key={`${session.n}-${mapNo(ref)}-${shooterOf(variant, settings)}`}
         problem={problem}
         variant={variant}
         mapNo={mapNo(ref)}
+        unit={courseStage(ref.stage)!.unit}
+        role={node.role}
         settings={settings}
         zukan={zukan.current}
         playerId={playerId}
