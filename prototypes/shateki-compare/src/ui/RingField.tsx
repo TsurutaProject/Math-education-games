@@ -65,7 +65,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
           }
           if (f.plan.hit) { sfxHit(variant === 'C'); setSettled((old) => ({ ...old, [f.plan.hit!]: f.plan.landing })); } else sfxThud();
           props.current.onShot({ aim: screen, targetId: f.plan.hit, assist: 1, pointerType: f.pointerType, aimMs: f.aimMs,
-            launch: { angleDeg: Math.atan2(f.shot.x, f.shot.y - RING_FROM.y) * 180 / Math.PI, pull: f.shot.pull, flightMs: Math.round(f.shot.duration * f.plan.endTime * 1000), landing: projectRing(f.plan.landing) } });
+            launch: { angleDeg: Math.round(Math.atan2(f.shot.x, f.shot.y - RING_FROM.y) * 1800 / Math.PI) / 10, pull: Math.round(f.shot.pull), flightMs: Math.round(f.shot.duration * f.plan.endTime * 1000), landing: projectRing(f.plan.landing) } });
         }
       }
       frame = requestAnimationFrame(tick);

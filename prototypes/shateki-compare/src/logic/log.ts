@@ -27,6 +27,8 @@ export type LogPayload =
       attemptNo: number;
       /** 始めたとき、図鑑でその問題の解き方をいくつ見つけていたか */
       foundBefore: number;
+      /** マップの番号（例 "2-5"）。ステージ（＝バリエーション）の順番と、その中の何問目か。#42 より前のログにはない */
+      mapNo: string;
     }
   | {
       type: 'shot';

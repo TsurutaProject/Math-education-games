@@ -27,6 +27,8 @@ export interface AttemptRow {
   attemptNo: number | null;
   /** 始めたとき、図鑑でその問題の解き方をいくつ見つけていたか */
   foundBefore: number | null;
+  /** マップの番号（例 "2-5"）。#42 より前のログ・始まりのイベントがない挑戦は null */
+  mapNo: string | null;
   /**
    * 結果。clear = クリア、out = 弾切れ、restart = 「さいしょから」、leave = 途中で別の問題・つぎの人に移った、
    * unfinished = 終わりの記録がない（画面を閉じた・ダウンロードした時点で遊んでいる途中など）
@@ -83,6 +85,7 @@ export function summarizeAttempts(
         startReason: null,
         attemptNo: null,
         foundBefore: null,
+        mapNo: null,
         result: 'unfinished',
         expression: '0',
         key: null,
@@ -102,6 +105,7 @@ export function summarizeAttempts(
         row.startReason = e.reason;
         row.attemptNo = e.attemptNo ?? null;
         row.foundBefore = e.foundBefore ?? null;
+        row.mapNo = e.mapNo ?? null;
         break;
       case 'shot':
         row.shots += 1;

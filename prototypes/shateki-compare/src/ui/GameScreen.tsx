@@ -15,6 +15,7 @@ import { PrizeShelf, prizeFor } from './PrizeShelf';
 import { logEvent, nextAttemptNo } from './logStore';
 import { CelebrateOverlay, OutOverlay, SolutionCards, ZukanScreen } from './Overlays';
 import { shooterOf, type Settings } from './settings';
+import { mapLabel } from './StageSelect';
 import { sfxClear, sfxOut } from './sound';
 import { FIELD_H, FIELD_W } from '../logic/hit';
 
@@ -81,6 +82,7 @@ export function GameScreen({ problem, variant, settings, zukan, playerId, startR
     reason,
     attemptNo: nextAttemptNo(playerId, zid),
     foundBefore: foundEntries(zukan, zid).length,
+    mapNo: mapLabel(variant, problem.id),
   });
 
   // 問題の開始（最初の1回）

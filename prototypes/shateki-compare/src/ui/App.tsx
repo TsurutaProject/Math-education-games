@@ -4,7 +4,7 @@ import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GameScreen } from './GameScreen';
-import { StageSelect, stageNodes } from './StageSelect';
+import { mapLabel, StageSelect } from './StageSelect';
 import { currentPlayerId, getLogLevel, logSessionEvent, nextPlayer, subscribeLog } from './logStore';
 import { SettingsPanel } from './SettingsPanel';
 import {
@@ -14,7 +14,6 @@ import {
   saveSettings,
   shooterAllowed,
   shooterOf,
-  VARIANTS,
   variantFromUrl,
   writeUrlParams,
   type Settings,
@@ -131,7 +130,7 @@ export function App() {
           </span>
         )}
         <div className="where">
-          {selectingStage ? 'ステージセレクト' : `ステージ ${VARIANTS.indexOf(variant) + 1}-${stageNodes(variant).findIndex((n) => n.stage === stage && n.index === Math.min(index, problems.length - 1)) + 1}`}
+          {selectingStage ? 'ステージセレクト' : `ステージ ${mapLabel(variant, problem.id)}`}
         </div>
         {!exhibit && !selectingStage && <button className="btn small" onClick={() => setSelectingStage(true)}>マップへ</button>}
         {!exhibit && <button className="gear" onClick={() => setShowSettings(true)} aria-label="設定">
