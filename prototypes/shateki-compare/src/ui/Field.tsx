@@ -347,7 +347,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       const t = problem.targets.find((x) => x.id === targetId)!;
       const pos = positionOf(targetId, clockRef.current);
       const r = radiusOf(targetId);
-      // D の的は倒れたまま流れていく。E は倒れて、別の場所に新しい的が起き上がる。それ以外は当たった場所で止める
+      // D は倒れた的の札が（見えないまま）流れていく。E は倒れて、別の場所に新しい的が起き上がる。それ以外は当たった場所で止める
       if (lane.current) lane.current = markHit(lane.current, targetId);
       else if (rise.current) rise.current = hitRise(rise.current, targetId, clockRef.current, settings.riseDelay, Math.random);
       else downAt.current.set(targetId, pos);

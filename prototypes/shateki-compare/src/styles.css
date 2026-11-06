@@ -328,23 +328,6 @@ button {
     opacity: 0;
   }
 }
-/* D：流れる的。倒れた的は消さずに、つぶれたまま棚に乗って流れていく */
-/* 当てた：奥へパタンと倒れる */
-.target.lane-hit {
-  animation: lane-fall 0.3s ease-in forwards;
-}
-@keyframes lane-fall {
-  0% {
-    transform: scaleY(1);
-  }
-  75% {
-    transform: scaleY(0.08);
-  }
-  100% {
-    transform: scaleY(0.15);
-    opacity: 0.85;
-  }
-}
 /* E：新しい的がピョコッと起き上がる（長さは rise.ts の RISE_SEC と同じ 0.35 秒） */
 .target.rising {
   animation: rise-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
