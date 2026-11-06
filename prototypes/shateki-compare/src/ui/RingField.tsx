@@ -1,4 +1,5 @@
 import './RingField.css';
+import { AmmoLayer } from './AmmoLayer';
 import { Artwork } from './Artwork';
 import { FestivalDecor } from './FestivalDecor';
 import { OP_ARTWORK, OP_INK } from './artworkAssets';
@@ -109,7 +110,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     {[...pegs.map((p) => ({ y: p.y, key: p.id, render: drawPeg(p) })), ...(ringPosition ? [{ y: ringPosition.y + 30, key: 'ring-back', render: <Ring center={ringPosition} start={0} end={Math.PI} /> }, { y: ringPosition.y - 30, key: 'ring-front', render: <Ring center={ringPosition} start={Math.PI} end={Math.PI * 2} /> }] : [])].sort((a, b) => b.y - a.y).map((item) => <g key={item.key}>{item.render}</g>)}
     {!flight.current && (!flying || flying.t >= flying.plan.endTime) && shotsLeft > 0 && active && <Ring center={RING_FROM} />}
     <line x1={from.x + 22} y1="478" x2={from.x} y2={from.y + 8} stroke="var(--stand)" strokeWidth="12" strokeLinecap="round" />
-    <g className="ring-ammo"><rect x="745" y="425" width="235" height="44" rx="12" fill="var(--panel)" stroke="var(--line)" /><text x="762" y="452" fontSize="18" fill="var(--ink)">のこりの わ　{shotsLeft} / {problem.shots}</text></g>
+    <AmmoLayer x={770} y={437} shots={problem.shots} shotsLeft={shotsLeft} kind="ring" />
     {feedback && <text x="500" y="42" textAnchor="middle" className="pop pop-hit">{feedback}</text>}
   </svg></div>;
 }

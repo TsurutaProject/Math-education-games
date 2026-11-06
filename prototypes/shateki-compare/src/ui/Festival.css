@@ -56,18 +56,17 @@
 .festival-footer-actions .restart { background: transparent; color: #fff7e6; border: 2px solid #fff0d8; border-radius: 28px; white-space: nowrap; min-height: 44px; }
 .festival-footer-actions .prize-board { background: #e8ae66; }
 .festival-footer-actions .prize { font-size: 34px; }
-.festival-tap-ammo { background: #8c2d25; border-radius: 12px; padding: 9px 13px; display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 9px; }
+.festival-tap-ammo { background: #d6eefb; color: #24435c; border: 2px solid #8cc4e6; border-radius: 12px; padding: 9px 13px; display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 9px; }
 .festival-tap-ammo > span { grid-column: 1 / -1; font-size: 12px; font-weight: 700; }
 .festival-tap-ammo strong { font-size: 22px; }
 .festival-tap-ammo .corks { padding: 4px 0; gap: 6px; }
 .festival-tap-ammo .cork { width: 15px; height: 15px; border-radius: 50%; background: var(--cork); border: 1px solid #fff6df; }
 .festival-tap-ammo .cork.used { background: transparent; opacity: .35; }
-.festival .gun-ammo-panel { fill: #8d2e26; stroke: #c96953; }
-.festival .gun-ammo-label, .festival .gun-ammo-value { fill: #fff7e6; }
+.festival .gun-ammo-panel { fill: #d6eefb; stroke: #8cc4e6; }
+.festival .gun-ammo-label, .festival .gun-ammo-value { fill: #24435c; }
+.festival .gun-ammo-ring { fill: none; stroke: var(--accent); stroke-width: 3; }
 .festival .gun-cork { fill: #efbb54; stroke: #fff7e6; stroke-width: 1; }
 .festival .gun-cork.used { fill: none; stroke: #e7ab89; }
-.festival .ring-ammo rect { fill: #8d2e26; stroke: #c96953; }
-.festival .ring-ammo text { fill: #fff7e6; font-weight: 700; }
 .festival .ring-grid { stroke: #9d7447; opacity: .38; }
 .festival .reticle circle, .festival .reticle line { stroke: #ffd46a; }
 .festival .reticle .dot { fill: #ffd46a; }

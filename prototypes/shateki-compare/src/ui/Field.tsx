@@ -648,7 +648,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           </g>
         )}
         {shooter === 'gun' && <GunLayer />}
-        {shooter !== 'tap' && <AmmoLayer x={MUZZLE.x} y={MUZZLE.y - 5} shots={problem.shots} shotsLeft={shotsLeft} />}
+        {shooter !== 'tap' && <AmmoLayer x={MUZZLE.x} y={MUZZLE.y - 5} shots={problem.shots} shotsLeft={shotsLeft} kind={slingMode ? 'ball' : 'cork'} />}
         {slingMode && (
           <SlingLayer
             pull={aim ? { dx: aim.x - aim.sx, dy: aim.y - aim.sy } : null}
