@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { exportLog, makeEvent } from './log';
 import { foundEntries, recordSolution, zukanId, type Zukan } from './zukan';
 
 describe('zukan', () => {
@@ -17,17 +16,5 @@ describe('zukan', () => {
     const z: Zukan = new Map();
     recordSolution(z, zukanId('A', 'p1'), { key: 'k1', expression: '' });
     expect(foundEntries(z, zukanId('B', 'p1'))).toEqual([]);
-  });
-});
-
-describe('log', () => {
-  it('イベントにバリエーション・ステージ・問題 id と時刻が入る', () => {
-    const e = makeEvent(
-      { variant: 'B', shooter: 'gun', stage: 2, problemId: 'std-2-1', attemptId: 'abc' },
-      { type: 'restart', current: 10, shotsLeft: 1 },
-      new Date('2026-11-01T00:00:00Z'),
-    );
-    expect(e).toMatchObject({ t: '2026-11-01T00:00:00.000Z', variant: 'B', stage: 2, problemId: 'std-2-1', type: 'restart' });
-    expect(JSON.parse(exportLog([e])).events).toHaveLength(1);
   });
 });

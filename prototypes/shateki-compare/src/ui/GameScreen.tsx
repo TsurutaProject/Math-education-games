@@ -12,7 +12,7 @@ import { foundEntries, recordSolution, zukanId, type Zukan } from '../logic/zuka
 import { Field, type ShotInfo } from './Field';
 import { Hud } from './Hud';
 import { PrizeShelf, prizeFor } from './PrizeShelf';
-import { logEvent } from './logStore';
+import { logEvent, nextAttemptNo } from './logStore';
 import { CelebrateOverlay, OutOverlay, SolutionCards, ZukanScreen } from './Overlays';
 import { shooterOf, type Settings } from './settings';
 import { sfxClear, sfxOut } from './sound';
@@ -26,6 +26,8 @@ interface Props {
   variant: Variant;
   settings: Settings;
   zukan: Zukan;
+  /** 遊んでいる人の id（ログ用） */
+  playerId: string;
   startReason: StartReason;
   onNext: () => void;
 }
@@ -39,12 +41,14 @@ const FEEL: Record<Variant, { celebrateMs: number; outDelayMs: number }> = {
   E: { celebrateMs: 900, outDelayMs: 600 },
 };
 
-export function GameScreen({ problem, variant, settings, zukan, startReason, onNext }: Props) {
+export function GameScreen({ problem, variant, settings, zukan, playerId, startReason, onNext }: Props) {
   const [game, setGame] = useState<GameState>(() => newGame(problem));
   const [phase, setPhase] = useState<Phase>('playing');
   const [round, setRound] = useState(0);
   const [latest, setLatest] = useState<{ key: string; isNew: boolean }>({ key: '', isNew: false });
   const attemptId = useRef(randomId());
+  /** 挑戦を始めた時刻（performance.now）。経過時間をログに残すため */
+  const attemptStartedAt = useRef(performance.now());
   const timers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
   const later = (fn: () => void, ms: number) => timers.current.push(setTimeout(fn, ms));
   const clearTimers = () => {
@@ -68,6 +72,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
         : 'おして ねらい、はなすと うつ';
 
   const ctx = (): LogContext => ({
+    playerId,
     variant,
     shooter,
     stage: problem.stage,
@@ -76,33 +81,84 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   });
   const log = (payload: LogPayload) => logEvent(ctx(), payload);
 
+  const elapsedMs = () => Math.round(performance.now() - attemptStartedAt.current);
+  /** 挑戦の始まりのログ：何回目の挑戦か、始めたときに図鑑でいくつ見つけていたか */
+  const startPayload = (reason: StartReason): LogPayload => ({
+    type: 'problem_start',
+    reason,
+    attemptNo: nextAttemptNo(playerId, zid),
+    foundBefore: foundEntries(zukan, zid).length,
+  });
+
   // 問題の開始（最初の1回）
   const started = useRef(false);
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    log({ type: 'problem_start', reason: startReason });
+    log(startPayload(startReason));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => clearTimers, []);
+
+  // 画面が隠れた・戻ったことを残す（途中でやめたかを見るため）
+  const latestGame = useRef(game);
+  latestGame.current = game;
+
+  // 終わる前（クリア・弾切れの前）に、1発以上撃ってから別の問題・つぎの人などに移ったら「途中でやめた」を残す。
+  // 1発も撃っていないときは残さない（StrictMode の試しの片付けで、始めた直後に残ってしまわないように）
+  useEffect(
+    () => () => {
+      const g = latestGame.current;
+      if (g.status !== 'playing' || g.shotsLeft === problem.shots) return;
+      log({
+        type: 'attempt_leave',
+        current: g.current,
+        shotsLeft: g.shotsLeft,
+        expression: formatExpression(g.steps),
+        elapsedMs: elapsedMs(),
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        log({ type: 'page_hide', current: latestGame.current.current, shotsLeft: latestGame.current.shotsLeft });
+      } else {
+        log({ type: 'page_show' });
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startAgain = useCallback(
     (reason: StartReason) => {
       clearTimers();
       attemptId.current = randomId();
+      attemptStartedAt.current = performance.now();
       setGame(newGame(problem));
       setPhase('playing');
       setRound((r) => r + 1);
       logEvent(
-        { variant, shooter, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current },
-        { type: 'problem_start', reason },
+        { playerId, variant, shooter, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current },
+        startPayload(reason),
       );
     },
-    [problem, variant, shooter],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [problem, variant, shooter, playerId],
   );
 
   const onRestartButton = () => {
-    log({ type: 'restart', current: game.current, shotsLeft: game.shotsLeft });
+    log({
+      type: 'restart',
+      current: game.current,
+      shotsLeft: game.shotsLeft,
+      expression: formatExpression(game.steps),
+      elapsedMs: elapsedMs(),
+    });
     startAgain('retry');
   };
 
@@ -120,6 +176,8 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
       assist: round3(info.assist),
       shotsLeftBefore: game.shotsLeft,
       pointerType: info.pointerType,
+      sinceStartMs: elapsedMs(),
+      aimMs: info.aimMs,
       reachableAfter: reachable,
       ...(info.launch
         ? {
@@ -154,13 +212,22 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
         shotsLeft: next.shotsLeft,
         foundCount: foundEntries(zukan, zid).length,
         totalCount: total,
+        elapsedMs: elapsedMs(),
       });
       setLatest({ key, isNew });
       setPhase('celebrate');
       later(() => sfxClear(variant === 'C'), variant === 'C' ? 450 : 150);
       later(() => setPhase('zukan'), feel.celebrateMs);
     } else if (next.status === 'out') {
-      log({ type: 'out_of_shots', current: next.current, goal: problem.goal, diff: problem.goal - next.current });
+      log({
+        type: 'out_of_shots',
+        current: next.current,
+        goal: problem.goal,
+        diff: problem.goal - next.current,
+        expression: formatExpression(next.steps),
+        key: solutionKey(next.steps),
+        elapsedMs: elapsedMs(),
+      });
       later(() => {
         sfxOut();
         setPhase('out');

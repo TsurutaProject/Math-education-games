@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { LogPayload } from '../logic/log';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GameScreen } from './GameScreen';
 import { StageSelect, stageNodes } from './StageSelect';
+import { currentPlayerId, getLogLevel, logSessionEvent, nextPlayer, subscribeLog } from './logStore';
 import { SettingsPanel } from './SettingsPanel';
 import {
   exhibitFromUrl,
@@ -29,6 +30,12 @@ export function App() {
   const [index, setIndex] = useState(0);
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [showSettings, setShowSettings] = useState(false);
+  // ログの保存がいっぱいに近い・失敗したら、画面の隅に小さな印を出す（スタッフが気づけるように）
+  const logLevel = useSyncExternalStore(subscribeLog, getLogLevel);
+  // 遊んでいる人の id（ログ用）。「つぎの人へ」でだけ変わる
+  const [playerId, setPlayerId] = useState(currentPlayerId);
+  // ログに最後に残した設定（設定パネルを閉じたとき、変わっていれば残す）
+  const loggedSettings = useRef(JSON.stringify(settings));
   const [selectingStage, setSelectingStage] = useState(() => !exhibit);
   // 図鑑はこのセッションの間だけ（再読み込みで消える）
   const zukan = useRef<Zukan>(new Map());
@@ -78,6 +85,26 @@ export function App() {
     restartWith('switch');
   };
 
+  /** 設定パネルを閉じる。設定が変わっていれば、変更後の設定をログに残す（スライダーを動かすたびには残さない） */
+  const closeSettings = () => {
+    const now = JSON.stringify(settings);
+    if (now !== loggedSettings.current) {
+      loggedSettings.current = now;
+      logSessionEvent({ type: 'settings_change', settings });
+    }
+    setShowSettings(false);
+  };
+
+  /** つぎの人へ：新しい人の id にして、図鑑を空にし、最初のステージの1問めから始める（バリエーションはそのまま） */
+  const startNextPlayer = () => {
+    closeSettings();
+    setPlayerId(nextPlayer());
+    zukan.current = new Map();
+    setStage(stagesFor(set)[0]);
+    setIndex(0);
+    restartWith('next_player');
+  };
+
   const next = () => {
     const stages = stagesFor(set);
     if (index + 1 < problems.length) {
@@ -95,6 +122,14 @@ export function App() {
       <div className="festival-awning" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <span key={i} />)}</div>
       <header className="topbar">
         <div className="title">さんすう射的 {!exhibit && <span className="tag">試作</span>}</div>
+        {logLevel !== 'ok' && (
+          <span
+            className="log-alert"
+            title={logLevel === 'failed' ? 'ログを保存できていません。今すぐダウンロードしてください' : 'ログの保存がいっぱいに近づいています'}
+          >
+            ● ログ
+          </span>
+        )}
         <div className="where">
           {selectingStage ? 'ステージセレクト' : `ステージ ${VARIANTS.indexOf(variant) + 1}-${stageNodes(variant).findIndex((n) => n.stage === stage && n.index === Math.min(index, problems.length - 1)) + 1}`}
         </div>
@@ -104,13 +139,14 @@ export function App() {
         </button>}
       </header>
       {selectingStage ? <StageSelect variant={variant} stage={stage} index={index} zukan={zukan.current} onSelect={(v, s, i) => {
-        setVariant(v); setStage(s); setIndex(i); restartWith('switch'); setSelectingStage(false);
+        setVariant(v); setStage(s); setIndex(i); restartWith('select'); setSelectingStage(false);
       }} /> : <GameScreen
         key={`${session.n}-${variant}-${shooterOf(variant, settings)}-${problem.id}`}
         problem={problem}
         variant={variant}
         settings={settings}
         zukan={zukan.current}
+        playerId={playerId}
         startReason={session.reason}
         onNext={next}
       />}
@@ -124,8 +160,9 @@ export function App() {
           onShooter={changeShooter}
           onProblem={changeProblem}
           onSettings={setSettings}
+          onClose={closeSettings}
+          onNextPlayer={startNextPlayer}
           exhibit={exhibit}
-          onClose={() => setShowSettings(false)}
         />
       )}
     </div>

@@ -58,6 +58,8 @@ export interface ShotInfo {
   /** 当たり判定の倍率 */
   assist: number;
   pointerType: string;
+  /** 押してから離すまで（狙っていた時間）のミリ秒。A（タップ）は null */
+  aimMs: number | null;
   /** パチンコ・カタパルトのときだけ（landing はフィールド単位） */
   launch?: { angleDeg: number; pull: number; flightMs: number; bounces?: number; landing?: { x: number; y: number } };
 }
@@ -99,6 +101,8 @@ interface Aim {
   /** パチンコ：押しはじめた位置（ここからの引っ張りで向きを決める） */
   sx: number;
   sy: number;
+  /** 押しはじめた時刻（performance.now）。狙っていた時間をログに残すため */
+  downAt: number;
 }
 
 interface SlingFlight {
@@ -177,6 +181,11 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     pointerType: string;
     launch: ShotInfo['launch'];
   } | null>(null);
+  /**
+   * いま撃った1発の「押してから離すまで」のミリ秒（ログ用）。離したときに決まる。
+   * パチンコ・カタパルトは当たり・外れが決まるまで次を撃てないので、そのときまで変わらない
+   */
+  const aimMsOfShot = useRef<number | null>(null);
   /** 毎フレーム呼ぶ処理（最新の props を使うため、描画のたびに入れ替える） */
   const onFrame = useRef<(dt: number) => void>(() => {});
 
@@ -374,7 +383,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       if (catapultMode) sfxThud();
       else sfxMiss();
     }
-    onShot({ aim: point, targetId, assist, pointerType, launch });
+    onShot({ aim: point, targetId, assist, pointerType, aimMs: aimMsOfShot.current, launch });
   };
 
   // パチンコ：弾を進めて、的に当たるか外に出たら1発ぶんを確定する
@@ -463,6 +472,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     if (!aimMode) {
       // A：的をタップすれば必ず当たる。何もない所は弾を使わない。
       const hit = hitTest(pt, circlesAt(clockRef.current), TAP_TOLERANCE);
+      aimMsOfShot.current = null;
       if (hit) fire(pt, hit, 1, e.pointerType);
       return;
     }
@@ -472,7 +482,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     } catch {
       // 合成イベントなどでキャプチャできなくても狙えるようにする
     }
-    setAim({ pointerId: e.pointerId, pointerType: e.pointerType, ...pt, sx: pt.x, sy: pt.y });
+    setAim({ pointerId: e.pointerId, pointerType: e.pointerType, ...pt, sx: pt.x, sy: pt.y, downAt: performance.now() });
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -490,6 +500,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     if (!aim || e.pointerId !== aim.pointerId) return;
     setAim(null);
     if (!canShoot()) return;
+    aimMsOfShot.current = Math.round(performance.now() - aim.downAt);
     if (slingMode) {
       // 短く引いただけなら撃たない（弾も減らない）
       const launch = slingLaunchOf(aim);

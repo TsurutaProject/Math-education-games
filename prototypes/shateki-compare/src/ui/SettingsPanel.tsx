@@ -3,7 +3,7 @@ import { MAX_VISIBLE, MIN_VISIBLE } from '../logic/lane';
 import { RISE_POSITIONS } from '../logic/rise';
 import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
 import type { Shooter, Variant } from '../logic/types';
-import { clearLog, downloadLog, getLogCount, subscribeLog } from './logStore';
+import { clearLog, downloadLog, getLogCount, getLogLevel, getLogUsage, subscribeLog } from './logStore';
 import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, shooterAllowed, VARIANT_LABEL, VARIANTS, type Settings } from './settings';
 
 interface Props {
@@ -16,6 +16,8 @@ interface Props {
   onProblem: (stage: number, index: number) => void;
   onSettings: (s: Settings) => void;
   onClose: () => void;
+  /** つぎの人へ（新しい人として記録し、図鑑を空にして最初から） */
+  onNextPlayer: () => void;
   /** 展示モード：スタッフ用の項目（あそぶもの・ログ）だけを出し、細かい調整は隠す */
   exhibit: boolean;
 }
@@ -47,8 +49,10 @@ function Slider({
   );
 }
 
-export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose, exhibit }: Props) {
+export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose, onNextPlayer, exhibit }: Props) {
   const logCount = useSyncExternalStore(subscribeLog, getLogCount);
+  const logUsage = useSyncExternalStore(subscribeLog, getLogUsage);
+  const logLevel = useSyncExternalStore(subscribeLog, getLogLevel);
   const set = setForVariant(variant);
   const stages = stagesFor(set);
   const problems = problemsFor(set, stage);
@@ -63,6 +67,21 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             とじる
           </button>
         </div>
+
+        <section className="staff">
+          <h3>遊ぶ人</h3>
+          <div className="row">
+            <button
+              className="btn small"
+              onClick={() => {
+                if (window.confirm('つぎの人に替えます。図鑑を空にして、ステージ1の1問めにもどります。よろしいですか？')) onNextPlayer();
+              }}
+            >
+              つぎの人へ
+            </button>
+            <span className="row-note">新しい人として記録します（図鑑を空にして、最初の問題から）</span>
+          </div>
+        </section>
 
         <section className="staff">
           <h3>あそぶもの</h3>
@@ -249,6 +268,20 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
 
         <section className="staff">
           <h3>ログ（{logCount}件）</h3>
+          <div className="row">
+            <span className="row-label">保存の量（目安）</span>
+            <span className={logLevel === 'ok' ? '' : 'log-warn'}>{Math.round(logUsage * 100)}%</span>
+          </div>
+          {logLevel === 'warn' && (
+            <p className="log-warn">
+              ログの保存がいっぱいに近づいています。ダウンロードしてから、展示モードを外した画面で「ログを消去」してください。
+            </p>
+          )}
+          {logLevel === 'failed' && (
+            <p className="log-warn">
+              ログを保存できていません。今すぐダウンロードしてください（画面を閉じると、保存できていない分が消えます）。
+            </p>
+          )}
           <div className="row">
             <button className="btn small" onClick={downloadLog} disabled={logCount === 0}>
               JSONをダウンロード
