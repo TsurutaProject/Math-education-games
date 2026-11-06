@@ -135,12 +135,40 @@ export function refFromUrl(search: string = location.search): NodeRef | null {
   return v ? firstRefOfVariant(v) : null;
 }
 
+const EXHIBIT_KEY = 'shateki-exhibit-v1';
+
+type ExhibitStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+function browserStore(): ExhibitStore | null {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * 展示モードか（URL に ?mode=exhibit）。展示では子どもが切り替えや設定を触れないようにする。
- * URL で決めるので、再読み込みしても展示モードのまま（writeUrlParams はほかの項目を残す）。
+ * 展示モードか。展示では子どもが切り替えや設定を触れないようにする。
+ * - URL に ?mode=exhibit を付けて開くと展示モードになり、ブラウザに覚える（#49）。
+ *   タイトルからホームにもどり、ホームから入り直したとき（URL に mode が付かない）も展示モードのまま
+ * - やめるときは ?mode=normal を付けて開く（覚えたものを消す）
+ * - 保存できない環境では、URL の ?mode=exhibit だけで決める
  */
-export function exhibitFromUrl(search: string = location.search): boolean {
-  return new URLSearchParams(search).get('mode') === 'exhibit';
+export function exhibitFromUrl(search: string = location.search, store: ExhibitStore | null = browserStore()): boolean {
+  const mode = new URLSearchParams(search).get('mode');
+  try {
+    if (mode === 'exhibit') {
+      store?.setItem(EXHIBIT_KEY, '1');
+      return true;
+    }
+    if (mode === 'normal') {
+      store?.removeItem(EXHIBIT_KEY);
+      return false;
+    }
+    return store?.getItem(EXHIBIT_KEY) === '1';
+  } catch {
+    return mode === 'exhibit';
+  }
 }
 
 /**
