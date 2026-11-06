@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exhibitFromUrl, isStaffKey, shooterFromParam, upgradeSaved } from './settings';
+import { exhibitFromUrl, isStaffKey, refFromUrl, shooterFromParam, upgradeSaved } from './settings';
 
 describe('exhibitFromUrl（展示モード）', () => {
   it('?mode=exhibit のときだけ展示モード', () => {
@@ -58,5 +58,22 @@ describe('輪投げの名前（catapult → ring）', () => {
   it('今の名前の値があれば、そちらを使う。知らない射撃タイプは捨てて既定に戻す', () => {
     expect(upgradeSaved({ catapultTime: 1.2, ringTime: 0.5 })).toEqual({ ringTime: 0.5 });
     expect(upgradeSaved({ shooter: 'bow' })).toEqual({});
+  });
+});
+
+describe('refFromUrl（URL で問題を指定する）', () => {
+  it('?node=2-3 はステージ 2 の 3 問目', () => {
+    expect(refFromUrl('?node=2-3&shooter=gun')).toEqual({ stage: 2, index: 2 });
+  });
+
+  it('前の形の ?variant= は、その遊び方がコースで最初に出てくる問題', () => {
+    expect(refFromUrl('?variant=b')).toEqual({ stage: 3, index: 0 });
+    expect(refFromUrl('?variant=E&mode=exhibit')).toEqual({ stage: 1, index: 5 });
+  });
+
+  it('?node= が先。コースにない番号・指定なしは null', () => {
+    expect(refFromUrl('?node=1-2&variant=E')).toEqual({ stage: 1, index: 1 });
+    expect(refFromUrl('?node=9-9')).toBeNull();
+    expect(refFromUrl('')).toBeNull();
   });
 });

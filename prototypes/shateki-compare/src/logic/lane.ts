@@ -69,6 +69,7 @@ export function laterFactor(problem: Problem, usedIds: ReadonlyArray<string>, ex
  *   × は最後の項にかかるので、10 − 10 のあとに見えていた ×2 を当てると 10 − 20 になる。
  *   D は見えている札を倒さないので、出す時点でこれを防ぐ
  * - × ÷ は、当ててもマイナスにならず、数が変わるときだけ（まだ項がないときの ×2 は何も変えない）
+ * - ÷ で小数になることはない（validateProblem の決まりで、+ − の札はどれも ÷ の数で割り切れ、÷ は1枚まで）
  */
 export function canShow(target: Target, calc: Calc, factor = 1): boolean {
   if (target.op === '+') return true;

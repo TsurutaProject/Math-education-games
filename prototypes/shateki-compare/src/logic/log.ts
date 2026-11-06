@@ -1,18 +1,23 @@
+import type { NodeRole, Unit } from './course';
 import type { Op, Shooter, Variant } from './types';
 
 /**
  * ログの形の版。ダウンロードするファイルに入れる。
  * 2：起動ごとの sessionId・人ごとの playerId・通し番号 seq を足した（issue #20）。これらがないイベントは版 1。
+ * 3：ステージを単元ごとに作り直した（#52・#56）。stage は単元のステージ（1 足し算・2 引き算・3 掛け算割り算）、
+ *    mapNo は「ステージ-何問目」、variant は問題ごとの遊び方になった。unit・role・pressMs・マップのイベントを足した。
  */
-export const LOG_SCHEMA_VERSION = 2;
+export const LOG_SCHEMA_VERSION = 3;
 
 /** 遊びのイベント（1回の挑戦の中で起きること）に付く項目。個人情報は入れない。 */
 export interface LogContext {
   /** 遊んでいる人ごとのランダムな id。スタッフ用パネルの「つぎの人へ」でだけ変わる（再読み込みでは変わらない） */
   playerId: string;
+  /** その問題の遊び方（版 3 から、1つのステージの中で問題ごとに変わる） */
   variant: Variant;
   /** A は tap。B・C は射撃タイプ */
   shooter: 'tap' | Shooter;
+  /** 単元のステージ（版 3 から。1 足し算・2 引き算・3 掛け算割り算） */
   stage: number;
   problemId: string;
   /** 1回の挑戦（問題の開始〜クリア/弾切れ/やり直し）を区別するランダムな id */
@@ -27,8 +32,12 @@ export type LogPayload =
       attemptNo: number;
       /** 始めたとき、図鑑でその問題の解き方をいくつ見つけていたか */
       foundBefore: number;
-      /** マップの番号（例 "2-5"）。ステージ（＝バリエーション）の順番と、その中の何問目か。#42 より前のログにはない */
+      /** マップの番号（例 "2-5" ＝ステージ 2 の 5 問目）。版 2 では「バリエーションの順番-何問目」。#42 より前のログにはない */
       mapNo: string;
+      /** 単元（add 足し算・sub 引き算・muldiv 掛け算割り算）。版 3 から */
+      unit: Unit;
+      /** intro = はじめの、単元を伝える問題（A・B）。main = メインの問題（C・D・E）。版 3 から */
+      role: NodeRole;
     }
   | {
       type: 'shot';
@@ -44,6 +53,8 @@ export type LogPayload =
       sinceStartMs: number;
       /** 押してから離すまで（狙っていた時間）のミリ秒。A（タップ）は null */
       aimMs: number | null;
+      /** 挑戦を始めてから、この1発を押し始めるまでのミリ秒（タップは押した時点）。版 3 から */
+      pressMs: number;
       /** 撃ったあと、残りの弾で届くか */
       reachableAfter: boolean;
       /**
@@ -81,7 +92,31 @@ export type SessionPayload =
   /** 新しい人が遊び始めた。first = このパソコンで初めて開いた、next_player = スタッフが「つぎの人へ」を押した */
   | { type: 'player_start'; reason: 'first' | 'next_player' }
   /** 設定パネルを閉じたとき、設定が変わっていれば変更後の設定を全部残す */
-  | { type: 'settings_change'; settings: object };
+  | { type: 'settings_change'; settings: object }
+  /**
+   * マップを開いた（版 3 から）。start = 起動したとき、button = 「マップへ」、course_end = コースの最後の問題のあと、
+   * next_player = つぎの人へ
+   */
+  | { type: 'map_open'; reason: 'start' | 'button' | 'course_end' | 'next_player' }
+  /**
+   * マップで問題を選んだ（版 3 から）。説明の問題を飛ばしたか・どんな順で選んだかを見るため。
+   * clearedMapNos：その人がそれまでにクリアした問題（解き方を1つ以上見つけた）。
+   * firstUnclearedMapNo：コースの順で、まだクリアしていない最初の問題（全部クリアしていれば null）。
+   * skippedMapNos：選んだ問題より前にある、まだクリアしていない問題（空なら飛ばしていない）。
+   * mapMs：マップを開いてから選ぶまで。misses：選ぶまでに的のないところを撃った回数
+   */
+  | {
+      type: 'map_select';
+      mapNo: string;
+      variant: Variant;
+      unit: Unit;
+      role: NodeRole;
+      clearedMapNos: string[];
+      firstUnclearedMapNo: string | null;
+      skippedMapNos: string[];
+      mapMs: number;
+      misses: number;
+    };
 
 /** イベントの中身（遊びのイベントか、遊びの外のイベント） */
 export type LogBody = (LogContext & LogPayload) | ({ playerId: string } & SessionPayload);

@@ -27,6 +27,7 @@ const shot = (attemptId: string, sinceStartMs: number, hit: string | null) => ({
   pointerType: 'mouse',
   sinceStartMs,
   aimMs: 300,
+  pressMs: sinceStartMs - 300,
   reachableAfter: true,
 });
 
@@ -48,6 +49,8 @@ const start = (attemptId: string, reason: 'first' | 'retry', attemptNo: number, 
   attemptNo,
   foundBefore: 0,
   mapNo: '2-1',
+  unit: 'sub' as const,
+  role: 'intro' as const,
 });
 
 describe('summarizeAttempts（挑戦ごとのまとめ）', () => {
@@ -85,12 +88,15 @@ describe('summarizeAttempts（挑戦ごとのまとめ）', () => {
       startReason: 'first',
       attemptNo: 1,
       mapNo: '2-1',
+      unit: 'sub',
+      role: 'intro',
       result: 'restart',
       expression: '10',
       key: null,
       shots: 1,
       hits: 1,
       firstShotMs: 1200,
+      firstPressMs: 900,
       elapsedMs: 3000,
     });
   });
@@ -106,18 +112,19 @@ describe('summarizeAttempts（挑戦ごとのまとめ）', () => {
       shots: 2,
       hits: 2,
       firstShotMs: 800,
+      firstPressMs: 500,
       elapsedMs: 5100,
       pageHides: 1,
     });
   });
 
   it('終わりの記録がない挑戦は unfinished（目標がわからなければ null）', () => {
-    expect(rows[2]).toMatchObject({ result: 'unfinished', expression: '0', shots: 0, firstShotMs: null, elapsedMs: null, goal: null });
+    expect(rows[2]).toMatchObject({ result: 'unfinished', expression: '0', shots: 0, firstShotMs: null, firstPressMs: null, elapsedMs: null, goal: null });
   });
 
   it('版 1 のログ（起動の id がない）もまとめられる', () => {
     const old = [{ t: '2026-10-01T00:00:00.000Z', ...game('o1'), type: 'out_of_shots', current: 20, goal: 40, diff: 20 }];
     const [row] = summarizeAttempts(old as unknown as LogEvent[], { deviceId: 'd1' });
-    expect(row).toMatchObject({ sessionId: null, attemptId: 'o1', result: 'out', key: null, elapsedMs: null });
+    expect(row).toMatchObject({ sessionId: null, attemptId: 'o1', result: 'out', key: null, elapsedMs: null, unit: null, role: null, firstPressMs: null });
   });
 });

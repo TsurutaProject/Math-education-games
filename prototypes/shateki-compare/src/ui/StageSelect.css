@@ -11,7 +11,10 @@
 .stage-node.current .stage-target, .stage-node:focus-visible .stage-target { stroke: var(--accent); stroke-width: 6; }
 .stage-node-number { fill: var(--ink); font-size: 28px; font-weight: 800; }
 .stage-node-state { fill: var(--accent); font-size: 18px; font-weight: 700; }
-.stage-node.cleared .stage-node-state { fill: var(--good); }
+/* 進み具合（#44）：挑戦済み＝白、クリア＝明るい緑、完全クリア＝山吹色と星 */
+.stage-node.status-tried .stage-node-state { fill: #fff7e6; }
+.stage-node.status-cleared .stage-node-state { fill: #5fe08a; }
+.stage-node.status-complete .stage-node-state { fill: #f8b500; font-size: 20px; }
 @media (max-width: 760px) {
   .stage-select { padding: 12px; gap: 10px; }
   .stage-select-heading { align-items: start; flex-direction: column; }
@@ -42,9 +45,14 @@
 .stage-map-viewport.is-shooting .stage-pages { overflow: hidden; pointer-events: none; }
 
 
-/* マップの左右に控えめな移動矢印を重ねる。 */
-.stage-edge-arrow { position: absolute; z-index: 2; top: 50%; transform: translateY(-50%); width: 40px; height: 80px; padding: 0; border: 0; border-radius: 18px; background: rgb(255 247 230 / 8%); color: #fff7e6; opacity: .3; font-size: 54px; line-height: 1; cursor: pointer; }
+/* マップの左右に移動矢印を重ねる。 */
+/* 大きめにする（#44：スクロールだけだと横に動きにくい） */
+.stage-edge-arrow { position: absolute; z-index: 2; top: 50%; transform: translateY(-50%); width: 64px; height: 128px; padding: 0; border: 0; border-radius: 22px; background: rgb(255 247 230 / 14%); color: #fff7e6; opacity: .65; font-size: 76px; line-height: 1; cursor: pointer; }
 .stage-edge-prev { left: 8px; }
 .stage-edge-next { right: 8px; }
-.stage-edge-arrow:hover, .stage-edge-arrow:focus-visible { opacity: .8; background: rgb(255 247 230 / 15%); }
+.stage-edge-arrow:hover, .stage-edge-arrow:focus-visible { opacity: 1; background: rgb(255 247 230 / 24%); }
 .stage-edge-arrow:disabled { visibility: hidden; }
+
+/* ステージの単元の名前と、問題ごとの射撃タイプの名前（#53） */
+.stage-world-unit { font-size: .8em; color: #f2dcb8; }
+.stage-node-play { fill: #fff7e6; font-size: 18px; font-weight: 700; }

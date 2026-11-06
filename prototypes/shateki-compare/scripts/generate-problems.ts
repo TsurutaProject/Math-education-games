@@ -2,7 +2,7 @@
  * 問題データ src/data/problems.json を作るスクリプト。
  *   npm run gen:problems            足りない問題だけ作る（今ある問題はそのまま残す）
  *   npm run gen:problems -- --all   全部作り直す
- * 各ステージの1問目は手で決めた問題、残りはソルバーで条件を満たすものを探す。
+ * コースの表（src/logic/course.ts）に出てくる問題だけを作る。std-1-1・risk-1-1 は手で決めた問題、残りはソルバーで条件を満たすものを探す。
  * シードを変えると別の問題セットになる（例：npm run gen:problems -- --all 42）。
  *
  * 今ある問題を残すのは、遊び比べに使っている問題を変えないため。
@@ -11,6 +11,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createRng, generateProblem, sizeFor, validateProblem } from '../src/logic/generator';
+import { allNodes, setForVariant } from '../src/logic/course';
 import type { Problem, ProblemSet } from '../src/logic/types';
 
 const args = process.argv.slice(2);
@@ -57,34 +58,24 @@ const handmade: Problem[] = [
 ];
 
 const problems: Problem[] = [];
-const plan: Array<{ set: ProblemSet; stage: number }> = [
-  { set: 'standard', stage: 1 },
-  { set: 'standard', stage: 2 },
-  { set: 'risk', stage: 1 },
-  { set: 'risk', stage: 2 },
-  // D 用。乱数の順番が変わらないように、いちばん後ろに足す
-  { set: 'lane', stage: 1 },
-  { set: 'lane', stage: 2 },
-  // E 用。同じく、いちばん後ろに足す
-  { set: 'rise', stage: 1 },
-  { set: 'rise', stage: 2 },
-];
-for (const { set, stage } of plan) {
-  const prefix = set === 'standard' ? 'std' : set;
-  const goals = new Set<number>();
-  for (let n = 1; n <= 3; n++) {
-    const id = `${prefix}-${stage}-${n}`;
-    const kept = handmade.find((h) => h.id === id) ?? existing.find((e) => e.id === id) ?? null;
-    let p = kept;
-    while (!p || (goals.has(p.goal) && p !== kept)) {
-      p = generateProblem(rng, { set, stage, id });
-      if (!p) throw new Error(`${id} を作れませんでした`);
-    }
-    const errors = validateProblem(p);
-    if (errors.length) throw new Error(`${id}: ${errors.join(', ')}（今ある問題が条件を満たさないときは --all で作り直す）`);
-    goals.add(p.goal);
-    problems.push(p);
+// コースの表（src/logic/course.ts）に出てくる問題を、ステージの順に作る。同じ種類・ステージの中で目標はそろえない
+const goalsOf = new Map<string, Set<number>>();
+for (const { stage, node } of allNodes()) {
+  const set: ProblemSet = setForVariant(node.variant);
+  const id = node.problemId;
+  const goals = goalsOf.get(`${set}-${stage}`) ?? new Set<number>();
+  goalsOf.set(`${set}-${stage}`, goals);
+  const kept = handmade.find((h) => h.id === id) ?? existing.find((e) => e.id === id) ?? null;
+  let p = kept;
+  while (!p || (goals.has(p.goal) && p !== kept)) {
+    p = generateProblem(rng, { set, stage, id });
+    if (!p) throw new Error(`${id} を作れませんでした`);
   }
+  const errors = validateProblem(p);
+  if (errors.length) throw new Error(`${id}: ${errors.join(', ')}（今ある問題が条件を満たさないときは --all で作り直す）`);
+  if (p.stage !== stage || p.set !== set) throw new Error(`${id}: コースではステージ${stage}・${set} なのに、問題はステージ${p.stage}・${p.set}`);
+  goals.add(p.goal);
+  problems.push(p);
 }
 
 writeFileSync(out, JSON.stringify({ seed, problems }, null, 2) + '\n');

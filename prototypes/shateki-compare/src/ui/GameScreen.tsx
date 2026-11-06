@@ -7,6 +7,7 @@ import { randomId } from '../logic/log';
 import { solutionKey } from '../logic/normalize';
 import { formatExpression, targetLabel } from '../logic/ops';
 import { canReach, distinctSolutions } from '../logic/solver';
+import type { NodeRole, Unit } from '../logic/course';
 import type { Problem, Variant } from '../logic/types';
 import { foundEntries, recordSolution, zukanId, type Zukan } from '../logic/zukan';
 import { Field, type ShotInfo } from './Field';
@@ -15,7 +16,6 @@ import { PrizeShelf, prizeFor } from './PrizeShelf';
 import { logEvent, nextAttemptNo } from './logStore';
 import { CelebrateOverlay, OutOverlay, SolutionCards, ZukanScreen } from './Overlays';
 import { shooterOf, type Settings } from './settings';
-import { mapLabel } from './StageSelect';
 import { sfxClear, sfxOut } from './sound';
 import { FIELD_H, FIELD_W } from '../logic/hit';
 
@@ -25,11 +25,18 @@ type StartReason = Extract<LogPayload, { type: 'problem_start' }>['reason'];
 interface Props {
   problem: Problem;
   variant: Variant;
+  /** マップの番号（例 "2-3"） */
+  mapNo: string;
+  /** 単元と、はじめの問題かメインの問題か（ログ用） */
+  unit: Unit;
+  role: NodeRole;
   settings: Settings;
   zukan: Zukan;
   /** 遊んでいる人の id（ログ用） */
   playerId: string;
   startReason: StartReason;
+  /** 1発撃ったとき（マップの「挑戦済み」用） */
+  onPlayed: () => void;
   onNext: () => void;
 }
 
@@ -42,7 +49,7 @@ const FEEL: Record<Variant, { celebrateMs: number; outDelayMs: number }> = {
   E: { celebrateMs: 900, outDelayMs: 600 },
 };
 
-export function GameScreen({ problem, variant, settings, zukan, playerId, startReason, onNext }: Props) {
+export function GameScreen({ problem, variant, mapNo, unit, role, settings, zukan, playerId, startReason, onPlayed, onNext }: Props) {
   const [game, setGame] = useState<GameState>(() => newGame(problem));
   const [phase, setPhase] = useState<Phase>('playing');
   const [round, setRound] = useState(0);
@@ -82,7 +89,9 @@ export function GameScreen({ problem, variant, settings, zukan, playerId, startR
     reason,
     attemptNo: nextAttemptNo(playerId, zid),
     foundBefore: foundEntries(zukan, zid).length,
-    mapNo: mapLabel(variant, problem.id),
+    mapNo,
+    unit,
+    role,
   });
 
   // 問題の開始（最初の1回）
@@ -161,6 +170,7 @@ export function GameScreen({ problem, variant, settings, zukan, playerId, startR
     if (phase !== 'playing') return;
     const next = shoot(problem, game, info.targetId);
     if (next === game) return;
+    onPlayed();
     const reachable = canReach(problem, next.calc, next.usedIds, next.shotsLeft);
     const target = info.targetId ? problem.targets.find((t) => t.id === info.targetId) : undefined;
     log({
@@ -173,6 +183,7 @@ export function GameScreen({ problem, variant, settings, zukan, playerId, startR
       pointerType: info.pointerType,
       sinceStartMs: elapsedMs(),
       aimMs: info.aimMs,
+      pressMs: Math.max(0, Math.round(info.pressedAt - attemptStartedAt.current)),
       reachableAfter: reachable,
       ...(info.launch
         ? {

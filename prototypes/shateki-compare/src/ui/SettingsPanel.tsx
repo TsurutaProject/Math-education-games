@@ -1,19 +1,18 @@
 import { useSyncExternalStore } from 'react';
 import { MAX_VISIBLE, MIN_VISIBLE } from '../logic/lane';
 import { RISE_POSITIONS } from '../logic/rise';
-import { problemsFor, setForVariant, stagesFor } from '../logic/problems';
-import type { Shooter, Variant } from '../logic/types';
+import { COURSE, courseStage, nodeAt, UNIT_LABEL, type NodeRef } from '../logic/course';
+import { problemById } from '../logic/problems';
+import type { Shooter } from '../logic/types';
 import { clearLog, downloadLog, getLogCount, getLogLevel, getLogUsage, subscribeLog } from './logStore';
-import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, shooterAllowed, VARIANT_LABEL, VARIANTS, type Settings } from './settings';
+import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, shooterAllowed, VARIANT_LABEL, type Settings } from './settings';
 
 interface Props {
-  variant: Variant;
-  stage: number;
-  index: number;
+  /** いまの問題（コースの中の位置） */
+  current: NodeRef;
   settings: Settings;
-  onVariant: (v: Variant) => void;
   onShooter: (s: Shooter) => void;
-  onProblem: (stage: number, index: number) => void;
+  onProblem: (ref: NodeRef) => void;
   onSettings: (s: Settings) => void;
   onClose: () => void;
   /** つぎの人へ（新しい人として記録し、図鑑を空にして最初から） */
@@ -49,13 +48,12 @@ function Slider({
   );
 }
 
-export function SettingsPanel({ variant, stage, index, settings, onVariant, onShooter, onProblem, onSettings, onClose, onNextPlayer, exhibit }: Props) {
+export function SettingsPanel({ current, settings, onShooter, onProblem, onSettings, onClose, onNextPlayer, exhibit }: Props) {
   const logCount = useSyncExternalStore(subscribeLog, getLogCount);
   const logUsage = useSyncExternalStore(subscribeLog, getLogUsage);
   const logLevel = useSyncExternalStore(subscribeLog, getLogLevel);
-  const set = setForVariant(variant);
-  const stages = stagesFor(set);
-  const problems = problemsFor(set, stage);
+  const variant = nodeAt(current)?.variant ?? 'A';
+  const nodes = courseStage(current.stage)?.nodes ?? [];
   const update = (patch: Partial<Settings>) => onSettings({ ...settings, ...patch });
 
   return (
@@ -74,27 +72,17 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
             <button
               className="btn small"
               onClick={() => {
-                if (window.confirm('つぎの人に替えます。図鑑を空にして、ステージ1の1問めにもどります。よろしいですか？')) onNextPlayer();
+                if (window.confirm('つぎの人に替えます。図鑑を空にして、マップ（ステージ1）にもどります。よろしいですか？')) onNextPlayer();
               }}
             >
               つぎの人へ
             </button>
-            <span className="row-note">新しい人として記録します（図鑑を空にして、最初の問題から）</span>
+            <span className="row-note">新しい人として記録します（図鑑を空にして、マップから）</span>
           </div>
         </section>
 
         <section className="staff">
           <h3>あそぶもの</h3>
-          <div className="row">
-            <span className="row-label">バリエーション</span>
-            <div className="seg">
-              {VARIANTS.map((v) => (
-                <button key={v} className={v === variant ? 'on' : ''} onClick={() => onVariant(v)}>
-                  {VARIANT_LABEL[v]}
-                </button>
-              ))}
-            </div>
-          </div>
           <div className="row">
             <span className="row-label">射撃タイプ（B〜E）</span>
             <div className="seg">
@@ -113,9 +101,9 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
           <div className="row">
             <span className="row-label">ステージ</span>
             <div className="seg">
-              {stages.map((s) => (
-                <button key={s} className={s === stage ? 'on' : ''} onClick={() => onProblem(s, 0)}>
-                  ステージ{s}
+              {COURSE.map((c) => (
+                <button key={c.stage} className={c.stage === current.stage ? 'on' : ''} onClick={() => onProblem({ stage: c.stage, index: 0 })}>
+                  ステージ{c.stage}（{UNIT_LABEL[c.unit]}）
                 </button>
               ))}
             </div>
@@ -123,9 +111,9 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
           <div className="row">
             <span className="row-label">問題</span>
             <div className="seg">
-              {problems.map((p, i) => (
-                <button key={p.id} className={i === index ? 'on' : ''} onClick={() => onProblem(stage, i)} title={p.id}>
-                  {i + 1}（目標{p.goal}）
+              {nodes.map((n, i) => (
+                <button key={n.problemId} className={i === current.index ? 'on' : ''} onClick={() => onProblem({ stage: current.stage, index: i })} title={n.problemId}>
+                  {current.stage}-{i + 1}（{VARIANT_LABEL[n.variant]}・目標{problemById(n.problemId)?.goal}）
                 </button>
               ))}
             </div>

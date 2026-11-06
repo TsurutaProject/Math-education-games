@@ -34,7 +34,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
   const feedbackSeq = useRef(0);
   /** 入ったときに画面を揺らす（ほかの射撃タイプと同じ手応え） */
   const [shaking, setShaking] = useState(0);
-  const flight = useRef<{ shot: RingThrow; plan: RingPlan; start: number; pointerType: string; aimMs: number } | null>(null);
+  const flight = useRef<{ shot: RingThrow; plan: RingPlan; start: number; pointerType: string; aimMs: number; pressedAt: number } | null>(null);
   const props = useRef({ onShot, active, usedIds });
   props.current = { onShot, active, usedIds };
   const pegs = useMemo(() => ringPegs(problem), [problem]);
@@ -72,7 +72,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
             setFeedback({ id, text: 'おしい！', kind: 'miss', x: at.x, y: at.y - 16 });
           }
           if (f.plan.hit) { sfxHit(); setShaking((s) => s + 1); setSettled((old) => ({ ...old, [f.plan.hit!]: f.plan.landing })); } else sfxThud();
-          props.current.onShot({ aim: screen, targetId: f.plan.hit, assist: 1, pointerType: f.pointerType, aimMs: f.aimMs,
+          props.current.onShot({ aim: screen, targetId: f.plan.hit, assist: 1, pointerType: f.pointerType, aimMs: f.aimMs, pressedAt: f.pressedAt,
             launch: { angleDeg: Math.round(Math.atan2(f.shot.x, f.shot.y - RING_FROM.y) * 1800 / Math.PI) / 10, pull: Math.round(f.shot.pull), flightMs: Math.round(f.shot.duration * f.plan.endTime * 1000), landing: projectRing(f.plan.landing) } });
         }
       }
@@ -114,7 +114,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
   return <div className={`field ring-field ${shaking ? 'shake' : ''}`}><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"
     onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(null); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
     onPointerMove={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); if (p) setAim({ ...aim, x: p.x, y: p.y }); }}
-    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.ringTime) : null; setAim(null); if (shot && active) { sfxRingThrow(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
+    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.ringTime) : null; setAim(null); if (shot && active) { sfxRingThrow(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt), pressedAt: aim.downAt }; } }}
     onPointerCancel={() => setAim(null)} onLostPointerCapture={() => setAim(null)}>
     <rect width="1000" height="480" fill="var(--booth)" />
     <FestivalDecor instruction={INSTRUCTION.ring} instructionX={215} />

@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { mapLabel, stageNodes } from './StageSelect';
+import { DEFAULT_SETTINGS } from './settings';
+import { shooterLabel } from './StageSelect';
 
-describe('mapLabel（マップの番号）', () => {
-  it('ステージ（＝バリエーション）の順番と、その中の何問目か', () => {
-    const nodes = stageNodes('B');
-    expect(mapLabel('B', nodes[0].problem.id)).toBe('2-1');
-    expect(mapLabel('B', nodes[4].problem.id)).toBe('2-5');
-    expect(mapLabel('E', stageNodes('E')[0].problem.id)).toBe('5-1');
+describe('マップの問題の下に出す射撃タイプの名前', () => {
+  it('A はタップ。ほかは今の設定の射撃タイプ', () => {
+    expect(shooterLabel('A', { ...DEFAULT_SETTINGS, shooter: 'sling' })).toBe('タップ');
+    expect(shooterLabel('B', { ...DEFAULT_SETTINGS, shooter: 'ring' })).toBe('輪投げ');
+    expect(shooterLabel('C', { ...DEFAULT_SETTINGS, shooter: 'sling' })).toBe('パチンコ');
+  });
+
+  it('D・E で輪投げが選ばれていたら、遊ぶときと同じくコルク銃', () => {
+    expect(shooterLabel('D', { ...DEFAULT_SETTINGS, shooter: 'ring' })).toBe('コルク銃');
+    expect(shooterLabel('E', { ...DEFAULT_SETTINGS, shooter: 'ring' })).toBe('コルク銃');
   });
 });

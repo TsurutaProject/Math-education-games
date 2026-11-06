@@ -58,6 +58,8 @@ export interface ShotInfo {
   pointerType: string;
   /** 押してから離すまで（狙っていた時間）のミリ秒。A（タップ）は null */
   aimMs: number | null;
+  /** 押し始めた時刻（performance.now()）。タップは押した時刻 */
+  pressedAt: number;
   /** パチンコ・輪投げのときだけ（landing はフィールド単位。輪投げだけ） */
   launch?: { angleDeg: number; pull: number; flightMs: number; bounces?: number; landing?: { x: number; y: number } };
 }
@@ -165,6 +167,8 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
    * パチンコは当たり・外れが決まるまで次を撃てないので、そのときまで変わらない
    */
   const aimMsOfShot = useRef<number | null>(null);
+  /** その1発を押し始めた時刻（ログの pressMs 用） */
+  const pressedAtOfShot = useRef(0);
   /** 毎フレーム呼ぶ処理（最新の props を使うため、描画のたびに入れ替える） */
   const onFrame = useRef<(dt: number) => void>(() => {});
 
@@ -360,7 +364,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       addEffect(point, point.x, point.y, 'スカッ', 'miss');
       sfxMiss();
     }
-    onShot({ aim: point, targetId, assist, pointerType, aimMs: aimMsOfShot.current, launch });
+    onShot({ aim: point, targetId, assist, pointerType, aimMs: aimMsOfShot.current, pressedAt: pressedAtOfShot.current, launch });
   };
 
   // パチンコ：弾を進めて、的に当たるか外に出たら1発ぶんを確定する
@@ -430,6 +434,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       // A：的をタップすれば必ず当たる。何もない所は弾を使わない。
       const hit = hitTest(pt, circlesAt(clockRef.current), TAP_TOLERANCE);
       aimMsOfShot.current = null;
+      pressedAtOfShot.current = performance.now();
       if (hit) fire(pt, hit, 1, e.pointerType);
       return;
     }
@@ -458,6 +463,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     setAim(null);
     if (!canShoot()) return;
     aimMsOfShot.current = Math.round(performance.now() - aim.downAt);
+    pressedAtOfShot.current = aim.downAt;
     if (slingMode) {
       // 短く引いただけなら撃たない（弾も減らない）
       const launch = slingLaunchOf(aim);
