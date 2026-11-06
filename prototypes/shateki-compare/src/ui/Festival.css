@@ -27,24 +27,21 @@
 .festival .gear { font-size: 21px; border-radius: 50%; background: #744525; width: 36px; height: 36px; padding: 0; color: #fff7e6; }
 .festival .topbar .btn { background: transparent; border-color: #edceab; color: #fff7e6; }
 .festival .play-layout { padding: 0; gap: 0; grid-template-rows: auto minmax(0, 1fr) auto; }
-.festival .play-top { display: block; padding: 12px 24px; background: #895832; }
+.festival .play-top { display: block; min-width: 0; padding: 12px 24px; background: #895832; }
 .festival-hud { min-height: 122px; display: flex; align-items: stretch; border: 2px solid #e8d6bd; border-radius: 18px; background: #fffaf1; color: #30251c; overflow: hidden; }
-.festival-goal { flex: 0 0 140px; padding: 12px 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px solid #ead8be; color: #c34230; }
-.festival-goal span { font-size: 16px; font-weight: 800; letter-spacing: .08em; }
-.festival-goal strong { font-size: 52px; font-weight: 900; line-height: 1.1; overflow-wrap: anywhere; }
 .festival-equation-area { flex: 1; min-width: 0; padding: 10px 20px; display: flex; flex-direction: column; justify-content: center; gap: 7px; }
 .festival-equation-caption { font-size: 13px; font-weight: 700; color: #79634e; }
-.festival-equation { overflow-x: auto; overflow-y: hidden; min-width: 0; padding: 2px 0 4px; touch-action: pan-x; }
+.festival-equation-row { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.festival-equation { flex: 0 1 auto; overflow-x: auto; overflow-y: hidden; min-width: 0; padding: 2px 0 4px; touch-action: pan-x; }
 .festival-equation:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .festival-equation-track { display: flex; align-items: center; gap: 12px; width: max-content; min-height: 68px; padding-right: 8px; }
-.equation-value, .equation-slot { min-width: 90px; height: 68px; border-radius: 10px; display: inline-flex; justify-content: center; align-items: center; }
-.equation-value { padding: 0 13px; background: #eaf1fb; color: #2e62a2; border: 2px solid #5689c5; font-size: 42px; font-weight: 900; }
-.equation-operator { font-size: 34px; font-weight: 700; color: #6d5845; }
-.equation-pending { display: flex; align-items: center; gap: 12px; }
-.equation-slot { border: 2px dashed #b49b7b; background: #fffdf8; }
-.equation-continuation { font-size: 24px; color: #b19a7e; }
-.slot-ball { display: block; width: 18px; height: 18px; border: 2px solid #b78a3f; background: #f0bd57; border-radius: 50%; }
-.slot-ring { display: block; width: 32px; height: 13px; border: 4px solid #c74a3b; border-radius: 50%; }
+/* 当てた的は演算子ごと箱に入れ、的の色（--op-ink）にそろえる。先頭の 0 とめあては箱に入れない。 */
+.equation-zero { font-size: 42px; font-weight: 900; color: #6d5845; padding: 0 4px; }
+.equation-term, .equation-slot { min-width: 90px; height: 68px; border-radius: 10px; display: inline-flex; justify-content: center; align-items: center; }
+.equation-term { padding: 0 13px; color: var(--op-ink); background: color-mix(in srgb, var(--op-ink) 12%, #fff); border: 2px solid var(--op-ink); font-size: 42px; font-weight: 900; white-space: nowrap; }
+.equation-slot { border: 2px dashed #b49b7b; background: #fffdf8; color: #b49b7b; font-size: 34px; font-weight: 800; }
+.equation-goal { flex: 0 0 auto; font-size: 42px; font-weight: 900; color: #b19a7e; white-space: nowrap; }
+.equation-goal-only { color: #c34230; }
 .festival .play-area { margin: 0 24px; border: solid #94613a; border-width: 4px 6px 0; background: var(--booth); min-height: 0; }
 .festival .play-bottom { grid-template-columns: minmax(0, 1fr) auto; gap: 18px; padding: 12px 24px; background: #ad3b2e; border-top: 5px solid #822c24; color: #fff7e6; }
 .festival .play-zukan { height: auto; overflow: visible; flex-shrink: 0; }
@@ -57,18 +54,17 @@
 .festival-footer-actions .restart { background: transparent; color: #fff7e6; border: 2px solid #fff0d8; border-radius: 28px; white-space: nowrap; min-height: 44px; }
 .festival-footer-actions .prize-board { background: #e8ae66; }
 .festival-footer-actions .prize { font-size: 34px; }
-.festival-tap-ammo { background: #8c2d25; border-radius: 12px; padding: 9px 13px; display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 9px; }
+.festival-tap-ammo { background: #d6eefb; color: #24435c; border: 2px solid #8cc4e6; border-radius: 12px; padding: 9px 13px; display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 9px; }
 .festival-tap-ammo > span { grid-column: 1 / -1; font-size: 12px; font-weight: 700; }
 .festival-tap-ammo strong { font-size: 22px; }
 .festival-tap-ammo .corks { padding: 4px 0; gap: 6px; }
 .festival-tap-ammo .cork { width: 15px; height: 15px; border-radius: 50%; background: var(--cork); border: 1px solid #fff6df; }
 .festival-tap-ammo .cork.used { background: transparent; opacity: .35; }
-.festival .gun-ammo-panel { fill: #8d2e26; stroke: #c96953; }
-.festival .gun-ammo-label, .festival .gun-ammo-value { fill: #fff7e6; }
+.festival .gun-ammo-panel { fill: #d6eefb; stroke: #8cc4e6; }
+.festival .gun-ammo-label, .festival .gun-ammo-value { fill: #24435c; }
+.festival .gun-ammo-ring { fill: none; stroke: var(--accent); stroke-width: 3; }
 .festival .gun-cork { fill: #efbb54; stroke: #fff7e6; stroke-width: 1; }
 .festival .gun-cork.used { fill: none; stroke: #e7ab89; }
-.festival .ring-ammo rect { fill: #8d2e26; stroke: #c96953; }
-.festival .ring-ammo text { fill: #fff7e6; font-weight: 700; }
 .festival .ring-grid { stroke: #9d7447; opacity: .38; }
 .festival .reticle circle, .festival .reticle line { stroke: #ffd46a; }
 .festival .reticle .dot { fill: #ffd46a; }
@@ -81,7 +77,6 @@
   .festival .play-top { padding: 10px 16px; }
   .festival .play-area { margin-inline: 16px; }
   .festival .play-bottom { padding: 10px 16px; }
-  .festival-goal { flex-basis: 120px; }
   .festival-footer-actions { gap: 10px; }
 }
 @media (max-width: 760px) {
@@ -91,15 +86,11 @@
   .festival .topbar .tag { display: none; }
   .festival .play-top { padding: 8px; }
   .festival-hud { min-height: 96px; border-radius: 12px; }
-  .festival-goal { flex-basis: 88px; padding: 8px; }
-  .festival-goal strong { font-size: 42px; }
-  .festival-goal span { font-size: 13px; }
   .festival-equation-area { padding: 8px 12px; }
   .festival-equation-caption { font-size: 11px; }
   .festival-equation-track { gap: 7px; }
-  .equation-value, .equation-slot { min-width: 52px; height: 48px; font-size: 28px; }
-  .equation-pending { gap: 7px; }
-  .equation-operator { font-size: 26px; }
+  .equation-term, .equation-slot { min-width: 52px; height: 48px; font-size: 28px; }
+  .equation-zero, .equation-goal { font-size: 28px; }
   .festival .play-area { margin-inline: 8px; border-width: 3px 4px 0; }
   .festival .play-bottom { padding: 10px; gap: 10px; }
   .festival-footer-actions { flex-direction: column; gap: 8px; }
@@ -116,7 +107,6 @@
 .festival .sling-band { stroke: #30251c; }
 
 /* 提供素材の球を使用する。 */
-.slot-ball-art { display: block; width: 24px; height: 24px; }
 .ammo-art { display: inline-flex; width: 16px; height: 16px; }
 .ammo-art.used { opacity: .2; }
 
@@ -135,3 +125,5 @@
 
 .festival .field-sling-no-bounce { background: var(--booth); }
 
+/* 操作の説明は提灯の下に白い字で、遊んでいる間ずっと出す。 */
+.festival-instruction { fill: #fff; font-size: 26px; font-weight: 800; text-anchor: middle; letter-spacing: .04em; }

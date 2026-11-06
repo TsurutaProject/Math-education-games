@@ -323,19 +323,6 @@ button {
 .finger {
   fill: rgba(43, 33, 24, 0.12);
 }
-.hint {
-  font-size: 26px;
-  font-weight: 800;
-  fill: var(--muted);
-  text-anchor: middle;
-  pointer-events: none;
-  animation: blink 1.6s ease-in-out infinite;
-}
-@keyframes blink {
-  50% {
-    opacity: 0.35;
-  }
-}
 .cork-shot {
   fill: var(--cork);
   pointer-events: none;

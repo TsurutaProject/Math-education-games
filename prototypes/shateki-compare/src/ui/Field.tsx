@@ -41,7 +41,7 @@ import {
 import { aimCatapult, CATAPULT, flightDuration, type CatapultShot } from '../logic/catapult';
 import { normalizeAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
 import type { Problem, Variant } from '../logic/types';
-import { shooterOf, type Settings } from './settings';
+import { INSTRUCTION, shooterOf, type Settings } from './settings';
 import { CatapultLayer } from './CatapultLayer';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
 import { AmmoLayer } from './AmmoLayer';
@@ -557,7 +557,6 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const f = flight.current;
   const sf = f?.kind === 'sling' ? f : null;
   const cf = f?.kind === 'catapult' ? f : null;
-  const firstShot = shotsLeft === problem.shots;
   const rowYs = laneMode ? [laneY] : riseMode ? [RISE_Y] : [...new Set(placed.map((p) => p.y))];
   // E の「いれかえる」：撃てるとき・起き上がりきった的があるときだけ押せる
   const canSwap = !!rise.current && active && !f && rise.current.slots.some((s) => isHittable(s, clock));
@@ -588,7 +587,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           <line x1={0} x2={0} y1={0} y2={FIELD_H} className="sling-wall-edge" />
           <line x1={FIELD_W} x2={FIELD_W} y1={0} y2={FIELD_H} className="sling-wall-edge" />
         </g>}
-        <FestivalDecor />
+        <FestivalDecor instruction={INSTRUCTION[shooter]} />
         {rowYs.map((y) => (
           <rect key={y} x={0} y={y + 74} width={FIELD_W} height={16} rx={4} className="shelf" />
         ))}
@@ -649,7 +648,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           </g>
         )}
         {shooter === 'gun' && <GunLayer />}
-        {shooter !== 'tap' && <AmmoLayer x={MUZZLE.x} y={MUZZLE.y - 5} shots={problem.shots} shotsLeft={shotsLeft} />}
+        {shooter !== 'tap' && <AmmoLayer x={MUZZLE.x} y={MUZZLE.y - 5} shots={problem.shots} shotsLeft={shotsLeft} kind={slingMode ? 'ball' : 'cork'} />}
         {slingMode && (
           <SlingLayer
             pull={aim ? { dx: aim.x - aim.sx, dy: aim.y - aim.sy } : null}
@@ -676,15 +675,6 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           </>
         )}
         {aim && (pullMode || aim.pointerType === 'touch') && <circle cx={aim.x} cy={aim.y} r={14} className="finger" />}
-        {aimMode && firstShot && !aim && !f && active && (
-          <text x={FIELD_W / 2} y={pullMode ? 44 : FIELD_H - 18} className="hint">
-            {slingMode
-              ? 'ゆびで おして うしろに ひっぱり、はなすと とぶ！'
-              : catapultMode
-                ? 'うしろに ひっぱって はなす。ながく ひくほど 遠くへ とぶ！'
-                : 'ゆびで おして ねらって、はなすと うつ！'}
-          </text>
-        )}
       </svg>
     </div>
   );

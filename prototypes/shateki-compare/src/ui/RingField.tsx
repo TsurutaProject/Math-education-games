@@ -1,12 +1,14 @@
 import './RingField.css';
+import { AmmoLayer } from './AmmoLayer';
 import { Artwork } from './Artwork';
+import { FestivalDecor } from './FestivalDecor';
 import { OP_ARTWORK, OP_INK } from './artworkAssets';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { aimRing, PEG_HEIGHT, PEG_RADIUS, POLE_RADIUS, projectRing, RING_FROM, RING_INNER, RING_OUTER, RING_TUBE, ringPegs, ringPlanPoint, traceRing, type Point3, type RingPlan, type RingThrow } from '../logic/ring';
 import { targetLabel } from '../logic/ops';
 import type { Problem, Variant } from '../logic/types';
 import type { ShotInfo } from './Field';
-import type { Settings } from './settings';
+import { INSTRUCTION, type Settings } from './settings';
 import { sfxCatapult, sfxHit, sfxThud, unlockAudio } from './sound';
 
 interface Props {
@@ -93,6 +95,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.catapultTime) : null; setAim(null); if (shot && active) { sfxCatapult(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
     onPointerCancel={() => setAim(null)} onLostPointerCapture={() => setAim(null)}>
     <rect width="1000" height="480" fill="var(--booth)" />
+    <FestivalDecor instruction={INSTRUCTION.catapult} instructionX={215} />
     <polygon points={floor.map((p) => { const q = projectRing(p); return `${q.x},${q.y}`; }).join(' ')} fill="var(--ring-floor, var(--booth))" />
     {[-450, -150, 150, 450].map((x) => <path key={x} d={floorLine({ x, y: -120, z: 0 }, { x, y: 1120, z: 0 })} className="ring-grid" />)}
     {[100, 480, 860, 1120].map((y) => <path key={y} d={floorLine({ x: -540, y, z: 0 }, { x: 540, y, z: 0 })} className="ring-grid" />)}
@@ -107,7 +110,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     {[...pegs.map((p) => ({ y: p.y, key: p.id, render: drawPeg(p) })), ...(ringPosition ? [{ y: ringPosition.y + 30, key: 'ring-back', render: <Ring center={ringPosition} start={0} end={Math.PI} /> }, { y: ringPosition.y - 30, key: 'ring-front', render: <Ring center={ringPosition} start={Math.PI} end={Math.PI * 2} /> }] : [])].sort((a, b) => b.y - a.y).map((item) => <g key={item.key}>{item.render}</g>)}
     {!flight.current && (!flying || flying.t >= flying.plan.endTime) && shotsLeft > 0 && active && <Ring center={RING_FROM} />}
     <line x1={from.x + 22} y1="478" x2={from.x} y2={from.y + 8} stroke="var(--stand)" strokeWidth="12" strokeLinecap="round" />
-    <g className="ring-ammo"><rect x="745" y="425" width="235" height="44" rx="12" fill="var(--panel)" stroke="var(--line)" /><text x="762" y="452" fontSize="18" fill="var(--ink)">のこりの わ　{shotsLeft} / {problem.shots}</text></g>
+    <AmmoLayer x={770} y={437} shots={problem.shots} shotsLeft={shotsLeft} kind="ring" />
     {feedback && <text x="500" y="42" textAnchor="middle" className="pop pop-hit">{feedback}</text>}
   </svg></div>;
 }
