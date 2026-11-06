@@ -66,6 +66,8 @@ describe('summarizeAttempts（挑戦ごとのまとめ）', () => {
     shot('a2', 800, '+10'),
     hit('a2', 10, 0),
     { ...game('a2'), type: 'page_hide', current: 10, shotsLeft: 2 },
+    { ...game('a2'), type: 'hint', sinceStartMs: 4000, current: 10, shotsLeft: 2, key: '+10,+30', targetId: 't3', targetLabel: '+30', restart: false },
+    { ...game('a2'), type: 'hint', sinceStartMs: 4500, current: 10, shotsLeft: 2, key: '+10,+30', targetId: 't3', targetLabel: '+30', restart: false },
     shot('a2', 5000, '+30'),
     hit('a2', 30, 10),
     { ...game('a2'), type: 'clear', key: '+10,+30', expression: '10 + 30', isNew: true, shotsLeft: 1, foundCount: 1, totalCount: 3, elapsedMs: 5100 },
@@ -98,6 +100,7 @@ describe('summarizeAttempts（挑戦ごとのまとめ）', () => {
       firstShotMs: 1200,
       firstPressMs: 900,
       elapsedMs: 3000,
+      hints: 0,
     });
   });
 
@@ -115,6 +118,7 @@ describe('summarizeAttempts（挑戦ごとのまとめ）', () => {
       firstPressMs: 500,
       elapsedMs: 5100,
       pageHides: 1,
+      hints: 2,
     });
   });
 

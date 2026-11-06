@@ -42,6 +42,7 @@ import { normalizeAngle, launchBall, launchFromPull, stepBall, type Ball, type L
 import type { Problem, Variant } from '../logic/types';
 import { INSTRUCTION, shooterOf, type Settings } from './settings';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
+import { HintGlow, useHintGlow, type HintMark } from './HintGlow';
 import { AmmoLayer } from './AmmoLayer';
 import { LaneLayer } from './LaneLayer';
 import { RiseLayer } from './RiseLayer';
@@ -74,6 +75,8 @@ interface Props {
   shotsLeft: number;
   /** false のあいだは撃てない（クリア演出中など） */
   active: boolean;
+  /** ヒントで光らせる的（#57） */
+  hint: HintMark | null;
   onShot: (info: ShotInfo) => void;
 }
 
@@ -130,7 +133,8 @@ const BOTTOM_MISS_DELAY = 0.1;
 const MUZZLE = GUN_MUZZLE;
 const SLING_WALL_WIDTH = 12;
 
-export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, onShot }: Props) {
+export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, hint, onShot }: Props) {
+  const glowing = useHintGlow(hint);
   const svgRef = useRef<SVGSVGElement>(null);
   const riskMode = variant === 'C';
   const laneMode = variant === 'D';
@@ -538,9 +542,9 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           <rect key={y} x={0} y={y + 74} width={FIELD_W} height={16} rx={4} className="shelf" />
         ))}
         {lane.current ? (
-          <LaneLayer problem={problem} lane={lane.current} geo={geo} speed={settings.laneSpeed} clock={clock} y={laneY} />
+          <LaneLayer problem={problem} lane={lane.current} geo={geo} speed={settings.laneSpeed} clock={clock} y={laneY} hintSeq={hint?.seq ?? 0} glowing={glowing} />
         ) : rise.current ? (
-          <RiseLayer problem={problem} rise={rise.current} />
+          <RiseLayer problem={problem} rise={rise.current} hintSeq={hint?.seq ?? 0} glowing={glowing} />
         ) : (
           placed.map((p) => {
             const t = problem.targets.find((x) => x.id === p.id)!;
@@ -552,6 +556,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
                   <line x1={-p.amp - x + p.x} x2={p.amp - x + p.x} y1={78} y2={78} className="rail" />
                 )}
                 <TargetMark op={t.op} value={t.value} r={p.r} className={down ? 'down' : ''} />
+                {!down && glowing(p.id) && <HintGlow seq={hint!.seq} r={p.r + 14} />}
               </g>
             );
           })

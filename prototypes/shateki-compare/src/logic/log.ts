@@ -78,6 +78,12 @@ export type LogPayload =
   | { type: 'out_of_shots'; current: number; goal: number; diff: number; expression: string; key: string; elapsedMs: number }
   /** 「さいしょから」を押した */
   | { type: 'restart'; current: number; shotsLeft: number; expression: string; elapsedMs: number }
+  /**
+   * ヒントを押した（#57）。sinceStartMs は挑戦を始めてからのミリ秒、current・shotsLeft は押したときの数と残りの弾。
+   * key は選んだ解き方（クリアと同じ形のキー）、targetId・targetLabel はつぎに光らせる的。
+   * いまの式の続きで、まだ見つけていない解き方に行けないときは restart = true で、「さいしょから」を強調した（key・targetId は null）
+   */
+  | { type: 'hint'; sinceStartMs: number; current: number; shotsLeft: number; key: string | null; targetId: string | null; targetLabel: string | null; restart: boolean }
   /** 終わる前（クリア・弾切れの前）に、1発以上撃ってから別の問題・つぎの人などに移った（途中でやめた） */
   | { type: 'attempt_leave'; current: number; shotsLeft: number; expression: string; elapsedMs: number }
   /** 画面が隠れた（タブを切り替えた・閉じたなど）。途中でやめたかを見るため */

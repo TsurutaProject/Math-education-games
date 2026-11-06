@@ -55,6 +55,8 @@ export interface AttemptRow {
   elapsedMs: number | null;
   /** 挑戦の途中で画面が隠れた回数 */
   pageHides: number;
+  /** ヒントを押した回数（#57） */
+  hints: number;
 }
 
 const END_RESULT = {
@@ -104,6 +106,7 @@ export function summarizeAttempts(
         firstPressMs: null,
         elapsedMs: null,
         pageHides: 0,
+        hints: 0,
       };
       rows.set(id, row);
       steps.set(id, []);
@@ -132,6 +135,9 @@ export function summarizeAttempts(
         break;
       case 'page_hide':
         row.pageHides += 1;
+        break;
+      case 'hint':
+        row.hints += 1;
         break;
       case 'clear':
       case 'out_of_shots':
