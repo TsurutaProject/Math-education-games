@@ -42,6 +42,7 @@ import type {
   TrophyProgress,
 } from './types/game'
 import { createWholeCakePiece, cutCakePieces, normalizeAngle } from './utils/cakeGeometry'
+import { PLATFORM_URL } from './utils/platform'
 import {
   addFractions,
   areFractionsEqual,
@@ -1349,7 +1350,7 @@ function App() {
       {soundControl}
       <main className={mainClassName}>
       <header className="game-header">
-        <span className="game-logo"><FuriganaText text="分ケーキ" /></span>
+        <a className="game-logo" href={PLATFORM_URL} target="_top" title="ホームにもどる"><FuriganaText text="分ケーキ" /></a>
         <div className="stage-heading"><span>ステージ {activeStageIndex + 1}</span>
           <h1><FuriganaText text={activeStage.title} /></h1>
         </div>

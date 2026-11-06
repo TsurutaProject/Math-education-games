@@ -1,6 +1,7 @@
 import type { Stage, StageResultSummary } from '../types/game'
 import { toppingImages } from '../data/assets'
 import { FuriganaText } from './FuriganaText'
+import { PLATFORM_URL } from '../utils/platform'
 
 interface TitleScreenProps {
   onStart: () => void
@@ -34,7 +35,7 @@ export function TitleScreen({ onStart }: TitleScreenProps) {
     <main className="flow-screen flow-screen--title">
       <section className="flow-panel flow-panel--title" aria-labelledby="game-title">
         <p className="flow-panel__eyebrow"><FuriganaText text="ケーキを切って、ぴったり販売" /></p>
-        <h1 id="game-title"><FuriganaText text="分ケーキ" /></h1>
+        <h1 id="game-title"><a className="home-link" href={PLATFORM_URL} target="_top" title="ホームにもどる"><FuriganaText text="分ケーキ" /></a></h1>
         <p><FuriganaText text="お客さんの注文どおりに、ケーキを分けよう。" /></p>
         <figure className="flow-panel__title-cake" aria-label="切り分けたショートケーキ">
           <svg viewBox="0 0 260 240" role="img" aria-hidden="true">
