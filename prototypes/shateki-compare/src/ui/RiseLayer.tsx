@@ -1,10 +1,14 @@
 import { riseSlotPlace, type RiseState } from '../logic/rise';
 import type { Problem } from '../logic/types';
+import { HintGlow } from './HintGlow';
 import { TargetMark } from './TargetMark';
 
 interface Props {
   problem: Problem;
   rise: RiseState;
+  /** ヒント（#57）：いま光らせる的か（立っている的についてだけ聞く）と、ヒントの番号 */
+  glowing: (targetId: string) => boolean;
+  hintSeq: number;
 }
 
 /**
@@ -13,7 +17,7 @@ interface Props {
  * - 当てた的は C と同じ倒れ方（ぐらついてから倒れる）、いれかえた的は静かに沈む。倒れきると見えなくなる
  * 最初から立っている的（起き上がる時刻が「ずっと前」）は、起き上がる演出をしない。
  */
-export function RiseLayer({ problem, rise }: Props) {
+export function RiseLayer({ problem, rise, glowing, hintSeq }: Props) {
   return (
     <g className="rise">
       {rise.slots.map((s, i) => {
@@ -27,6 +31,7 @@ export function RiseLayer({ problem, rise }: Props) {
           <g key={`${i}-${s.appearAt}`} transform={`translate(${x} ${y})`}>
             {risen && !s.fell && <circle r={r} className="rise-flash" />}
             <TargetMark op={t.op} value={t.value} r={r} className={cls} />
+            {!s.fell && glowing(t.id) && <HintGlow seq={hintSeq} r={r + 14} />}
           </g>
         );
       })}

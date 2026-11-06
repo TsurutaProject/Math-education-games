@@ -856,3 +856,38 @@ button {
 .gun-ammo-value { fill: var(--ink); font-size: 21px; font-weight: 800; }
 .gun-cork { fill: var(--cork); }
 .gun-cork.used { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 3 2; }
+
+/* ヒント（#57）：つぎに当てる的のまわりの光る輪。3秒（HINT_GLOW_MS）脈打って消える */
+.hint-glow {
+  fill: none;
+  stroke: #ffe14d;
+  stroke-width: 10;
+  filter: drop-shadow(0 0 8px #ffd400);
+  animation: hint-glow 3s ease-in-out both;
+}
+@keyframes hint-glow {
+  0% { opacity: 0; transform: scale(1.25); }
+  10% { opacity: 1; transform: scale(1); }
+  30% { opacity: 0.45; }
+  50% { opacity: 1; }
+  70% { opacity: 0.45; }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+/* ヒントで行ける解き方がないとき、「さいしょから」を強調する（3秒） */
+.restart.hint-emphasis {
+  animation: hint-restart 3s ease-in-out both;
+}
+@keyframes hint-restart {
+  0%, 30%, 60%, 90% { box-shadow: 0 0 0 0 rgba(255, 225, 77, 0); transform: scale(1); }
+  15%, 45%, 75% { box-shadow: 0 0 0 8px rgba(255, 225, 77, 0.85); transform: scale(1.12); }
+  100% { box-shadow: none; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint-glow { animation: hint-glow-still 3s step-end both; }
+  .restart.hint-emphasis { animation: none; outline: 4px solid #ffe14d; }
+}
+@keyframes hint-glow-still {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}

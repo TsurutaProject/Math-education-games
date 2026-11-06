@@ -2,6 +2,7 @@ import './RingField.css';
 import { AmmoLayer } from './AmmoLayer';
 import { Artwork } from './Artwork';
 import { FestivalDecor } from './FestivalDecor';
+import { HintGlow, useHintGlow, type HintMark } from './HintGlow';
 import { OP_ARTWORK, OP_INK } from './artworkAssets';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { aimRing, PEG_HEIGHT, PEG_RADIUS, POLE_RADIUS, projectRing, RING_FROM, RING_INNER, RING_OUTER, RING_TUBE, ringPegs, ringPlanPoint, traceRing, type Point3, type RingPlan, type RingThrow } from '../logic/ring';
@@ -14,6 +15,8 @@ import { sfxHit, sfxRingThrow, sfxThud, unlockAudio } from './sound';
 interface Props {
   problem: Problem; variant: Variant; settings: Settings; usedIds: string[];
   calc: import('../logic/ops').Calc; shotsLeft: number; active: boolean; onShot: (info: ShotInfo) => void;
+  /** ヒントで光らせる棒（#57） */
+  hint: HintMark | null;
 }
 function ringPath(center: Point3, radius: number, start = 0, end = Math.PI * 2) {
   return Array.from({ length: 41 }, (_, i) => {
@@ -25,7 +28,8 @@ function ringPath(center: Point3, radius: number, start = 0, end = Math.PI * 2) 
 function Ring({ center, dashed = false, start = 0, end = Math.PI * 2 }: { center: Point3; dashed?: boolean; start?: number; end?: number }) {
   return <path d={ringPath(center, (RING_INNER + RING_OUTER) / 2, start, end)} fill="none" stroke="var(--accent)" strokeWidth={(RING_OUTER - RING_INNER) * projectRing(center).scale} strokeDasharray={dashed ? '6 6' : undefined} />;
 }
-export function RingField({ problem, variant, settings, usedIds, shotsLeft, active, onShot }: Props) {
+export function RingField({ problem, variant, settings, usedIds, shotsLeft, active, hint, onShot }: Props) {
+  const glowing = useHintGlow(hint);
   const [aim, setAim] = useState<{ sx: number; sy: number; x: number; y: number; pointer: number; downAt: number } | null>(null);
   const [flying, setFlying] = useState<{ plan: RingPlan; t: number } | null>(null);
   const [settled, setSettled] = useState<Record<string, Point3>>({});
@@ -109,6 +113,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
       <Artwork name={OP_ARTWORK[p.op]} x={top.x - PEG_RADIUS * top.scale} y={signTop.y} width={PEG_RADIUS * 2 * top.scale} height={signBottom.y - signTop.y} />
       <text x={top.x} y={top.y} dy=".35em" textAnchor="middle" fill={color} fontWeight="800" fontSize={24 * top.scale}>{targetLabel(p.op, p.value)}</text>
       {done && <path d={ringPath(restingRing, 66, Math.PI, Math.PI * 2)} fill="none" stroke="var(--accent)" strokeWidth={8 * bottom.scale} />}
+      {!done && glowing(p.id) && <HintGlow seq={hint!.seq} cx={top.x} cy={(signTop.y + signBottom.y) / 2} r={(PEG_RADIUS + 12) * top.scale} />}
     </g>;
   };
   return <div className={`field ring-field ${shaking ? 'shake' : ''}`}><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"

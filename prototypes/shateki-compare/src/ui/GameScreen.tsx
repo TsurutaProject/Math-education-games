@@ -7,10 +7,12 @@ import { randomId } from '../logic/log';
 import { solutionKey } from '../logic/normalize';
 import { formatExpression, targetLabel } from '../logic/ops';
 import { canReach, distinctSolutions } from '../logic/solver';
+import { chooseHint } from '../logic/hint';
 import type { NodeRole, Unit } from '../logic/course';
 import type { Problem, Variant } from '../logic/types';
 import { foundEntries, recordSolution, zukanId, type Zukan } from '../logic/zukan';
 import { Field, type ShotInfo } from './Field';
+import type { HintMark } from './HintGlow';
 import { Hud } from './Hud';
 import { PrizeShelf, prizeFor } from './PrizeShelf';
 import { logEvent, nextAttemptNo } from './logStore';
@@ -54,6 +56,12 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
   const [phase, setPhase] = useState<Phase>('playing');
   const [round, setRound] = useState(0);
   const [latest, setLatest] = useState<{ key: string; isNew: boolean }>({ key: '', isNew: false });
+  // ヒント（#57）：光らせる的。押すたびに seq を増やす。restartPulse は「さいしょから」を強調したときの seq（0 はなし）
+  const [hint, setHint] = useState<HintMark | null>(null);
+  const [restartPulse, setRestartPulse] = useState(0);
+  const hintSeq = useRef(0);
+  // 前に選んだ解き方。まだ行けるあいだは同じ解き方を続ける（押すたびに道が変わって迷わないように）
+  const hintKey = useRef<string | undefined>(undefined);
   const attemptId = useRef(randomId());
   /** 挑戦を始めた時刻（performance.now）。経過時間をログに残すため */
   const attemptStartedAt = useRef(performance.now());
@@ -69,6 +77,8 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
   const zid = zukanId(shooter === 'gun' || shooter === 'tap' ? variant : `${variant}-${shooter}`, problem.id);
   const entries = foundEntries(zukan, zid);
   const feel = FEEL[variant];
+  // 全部の解き方を見つけたら、ヒントは押せない
+  const allFound = entries.length >= total;
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
   const PlayField = shooter === 'ring' ? RingField : Field;
 
@@ -145,6 +155,8 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
       attemptStartedAt.current = performance.now();
       setGame(newGame(problem));
       setPhase('playing');
+      setHint(null);
+      setRestartPulse(0);
       setRound((r) => r + 1);
       logEvent(
         { playerId, variant, shooter, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current },
@@ -166,11 +178,46 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
     startAgain('retry');
   };
 
+  /**
+   * ヒント（#57）：図鑑にまだない解き方を1つ選び、つぎに当てる的を3秒光らせる。
+   * いまの式の続きで行ける解き方がなければ、「さいしょから」を強調する。D・E はマイナスにする札を出さないので、
+   * マイナスを通らない道だけから選ぶ
+   */
+  const onHint = () => {
+    if (phase !== 'playing' || allFound) return;
+    const h = chooseHint(problem, game, new Set(entries.map((e) => e.key)), {
+      previousKey: hintKey.current,
+      nonNegativeOnly: variant === 'D' || variant === 'E',
+    });
+    if (h.kind === 'none') return;
+    const target = h.kind === 'target' ? problem.targets.find((t) => t.id === h.targetId) : undefined;
+    log({
+      type: 'hint',
+      sinceStartMs: elapsedMs(),
+      current: game.current,
+      shotsLeft: game.shotsLeft,
+      key: h.kind === 'target' ? h.key : null,
+      targetId: target?.id ?? null,
+      targetLabel: target ? targetLabel(target.op, target.value) : null,
+      restart: h.kind === 'restart',
+    });
+    hintSeq.current += 1;
+    if (h.kind === 'target') {
+      hintKey.current = h.key;
+      setHint({ seq: hintSeq.current, targetId: h.targetId });
+    } else {
+      setHint(null);
+      setRestartPulse(hintSeq.current);
+    }
+  };
+
   const onShot = (info: ShotInfo) => {
     if (phase !== 'playing') return;
     const next = shoot(problem, game, info.targetId);
     if (next === game) return;
     onPlayed();
+    // 撃ったら、前のヒントの光は消す（撃ったあとの式では、もう合わないことがあるため）
+    setHint(null);
     const reachable = canReach(problem, next.calc, next.usedIds, next.shotsLeft);
     const target = info.targetId ? problem.targets.find((t) => t.id === info.targetId) : undefined;
     log({
@@ -257,6 +304,7 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
             calc={game.calc}
             shotsLeft={game.shotsLeft}
             active={phase === 'playing'}
+            hint={hint}
             onShot={onShot}
           />
         </div>
@@ -274,7 +322,17 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
               <span>のこりの たま</span><strong>{game.shotsLeft} / {problem.shots}</strong>
               <div className="corks">{Array.from({ length: problem.shots }, (_, i) => <span key={i} className={`ammo-art ${i < game.shotsLeft ? '' : 'used'}`}><Artwork name="ammo" x={0} y={0} width={16} height={16} /></span>)}</div>
             </div>}
-            <button className="btn restart" onClick={onRestartButton} aria-label="さいしょから" title="さいしょから">
+            <button
+              className="btn hint-btn"
+              onClick={onHint}
+              disabled={allFound || phase !== 'playing'}
+              aria-label={allFound ? 'ヒント（ぜんぶ 見つけた）' : 'ヒント'}
+              title={allFound ? 'ぜんぶ 見つけた！' : 'ヒント'}
+            >
+              <span aria-hidden="true">💡</span>
+              <span>ヒント</span>
+            </button>
+            <button key={`restart-${restartPulse}`} className={`btn restart ${restartPulse ? 'hint-emphasis' : ''}`} onClick={onRestartButton} aria-label="さいしょから" title="さいしょから">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M20 3v6h-6" /><path d="M20 9a8 8 0 1 0 .1 5" />
               </svg>

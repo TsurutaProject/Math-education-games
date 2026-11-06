@@ -117,6 +117,9 @@
 }
 
 .festival .festival-footer-actions .restart { display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; min-width: 46px; padding: 0; border-radius: 50%; }
+/* ヒントのボタン（#57）。「さいしょから」の左隣。全部の解き方を見つけたら押せない */
+.festival .festival-footer-actions .hint-btn { display: inline-flex; align-items: center; gap: 4px; height: 46px; min-height: 46px; padding: 0 14px; background: transparent; color: #fff7e6; border: 2px solid #fff0d8; border-radius: 23px; font-weight: 800; white-space: nowrap; }
+.festival .festival-footer-actions .hint-btn:disabled { opacity: .4; cursor: default; }
 
 /* 壁はSVGの物理境界へ描く。横長画面の余白は幕と異なる色にする。 */
 .festival .play-area-sling { border-inline-width: 0; background: #754b2e; }
