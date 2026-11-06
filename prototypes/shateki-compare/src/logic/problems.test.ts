@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { analyzeProblem, createRng, generateProblem, hasDuplicateCard, isEasyTarget, validateProblem } from './generator';
 import { allNodes, setForVariant } from './course';
-import { ALL_PROBLEMS, problemById, problemsFor } from './problems';
+import { ALL_PROBLEMS, problemById } from './problems';
 import { START, step, valueOf, type Calc } from './ops';
 import type { Problem, Target } from './types';
 
@@ -25,8 +25,8 @@ describe('問題データ（problems.json）', () => {
     expect(new Set(ALL_PROBLEMS.map((p) => p.id)).size).toBe(ALL_PROBLEMS.length);
   });
 
-  it('standard ステージ1の1問目は依頼の例そのまま', () => {
-    const p = problemsFor('standard', 1)[0];
+  it('std-1-1（コースの最初の問題）は依頼の例そのまま', () => {
+    const p = problemById('std-1-1')!;
     expect(p.goal).toBe(40);
     expect(p.shots).toBe(3);
     expect(p.targets.map((t) => `${t.op}${t.value}`)).toEqual(['+10', '+5', '+20', '+10', '+15']);

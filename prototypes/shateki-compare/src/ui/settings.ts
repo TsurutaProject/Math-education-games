@@ -1,3 +1,4 @@
+import { firstRefOfVariant, mapNo, parseMapNo, type NodeRef } from '../logic/course';
 import type { Shooter, Variant } from '../logic/types';
 
 export interface Settings {
@@ -118,9 +119,20 @@ export function isVariant(v: unknown): v is Variant {
   return v === 'A' || v === 'B' || v === 'C' || v === 'D' || v === 'E';
 }
 
-export function variantFromUrl(): Variant | null {
-  const v = new URLSearchParams(location.search).get('variant')?.toUpperCase();
+export function variantFromUrl(search: string = location.search): Variant | null {
+  const v = new URLSearchParams(search).get('variant')?.toUpperCase();
   return isVariant(v) ? v : null;
+}
+
+/**
+ * URL で指定した問題（例 ?node=2-3 ＝ステージ 2 の 3 問目）。
+ * 前の形の ?variant=（バリエーションごとのマップ）は、その遊び方がコースで最初に出てくる問題として読む。
+ */
+export function refFromUrl(search: string = location.search): NodeRef | null {
+  const ref = parseMapNo(new URLSearchParams(search).get('node'));
+  if (ref) return ref;
+  const v = variantFromUrl(search);
+  return v ? firstRefOfVariant(v) : null;
 }
 
 /**
@@ -139,9 +151,10 @@ export function isStaffKey(e: Pick<KeyboardEvent, 'ctrlKey' | 'shiftKey' | 'altK
   return e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.code === 'KeyS';
 }
 
-export function writeUrlParams(v: Variant, shooter: Shooter): void {
+export function writeUrlParams(ref: NodeRef, shooter: Shooter): void {
   const url = new URL(location.href);
-  url.searchParams.set('variant', v);
+  url.searchParams.delete('variant');
+  url.searchParams.set('node', mapNo(ref));
   url.searchParams.set('shooter', shooter);
   history.replaceState(null, '', url);
 }

@@ -48,3 +48,7 @@
 .stage-edge-next { right: 8px; }
 .stage-edge-arrow:hover, .stage-edge-arrow:focus-visible { opacity: .8; background: rgb(255 247 230 / 15%); }
 .stage-edge-arrow:disabled { visibility: hidden; }
+
+/* ステージの単元の名前と、問題ごとの遊び方の名前（#53） */
+.stage-world-unit { font-size: .8em; color: #f2dcb8; }
+.stage-node-play { fill: #fff7e6; font-size: 18px; font-weight: 700; }

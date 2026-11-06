@@ -15,7 +15,6 @@ import { PrizeShelf, prizeFor } from './PrizeShelf';
 import { logEvent, nextAttemptNo } from './logStore';
 import { CelebrateOverlay, OutOverlay, SolutionCards, ZukanScreen } from './Overlays';
 import { shooterOf, type Settings } from './settings';
-import { mapLabel } from './StageSelect';
 import { sfxClear, sfxOut } from './sound';
 import { FIELD_H, FIELD_W } from '../logic/hit';
 
@@ -25,6 +24,8 @@ type StartReason = Extract<LogPayload, { type: 'problem_start' }>['reason'];
 interface Props {
   problem: Problem;
   variant: Variant;
+  /** マップの番号（例 "2-3"） */
+  mapNo: string;
   settings: Settings;
   zukan: Zukan;
   /** 遊んでいる人の id（ログ用） */
@@ -42,7 +43,7 @@ const FEEL: Record<Variant, { celebrateMs: number; outDelayMs: number }> = {
   E: { celebrateMs: 900, outDelayMs: 600 },
 };
 
-export function GameScreen({ problem, variant, settings, zukan, playerId, startReason, onNext }: Props) {
+export function GameScreen({ problem, variant, mapNo, settings, zukan, playerId, startReason, onNext }: Props) {
   const [game, setGame] = useState<GameState>(() => newGame(problem));
   const [phase, setPhase] = useState<Phase>('playing');
   const [round, setRound] = useState(0);
@@ -82,7 +83,7 @@ export function GameScreen({ problem, variant, settings, zukan, playerId, startR
     reason,
     attemptNo: nextAttemptNo(playerId, zid),
     foundBefore: foundEntries(zukan, zid).length,
-    mapNo: mapLabel(variant, problem.id),
+    mapNo,
   });
 
   // 問題の開始（最初の1回）
