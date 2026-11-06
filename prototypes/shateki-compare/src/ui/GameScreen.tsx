@@ -63,13 +63,6 @@ export function GameScreen({ problem, variant, settings, zukan, playerId, startR
   const feel = FEEL[variant];
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
   const PlayField = shooter === 'catapult' ? RingField : Field;
-  const instruction = shooter === 'tap'
-    ? 'まとを タップして うとう'
-    : shooter === 'sling'
-      ? 'ひっぱって はなすと、反対むきに とぶ'
-      : shooter === 'catapult'
-        ? 'ひっぱって はなそう'
-        : 'おして ねらい、はなすと うつ';
 
   const ctx = (): LogContext => ({
     playerId,
@@ -239,7 +232,7 @@ export function GameScreen({ problem, variant, settings, zukan, playerId, startR
     <div className="game">
       <div className="play-layout">
         <div className="play-top">
-          <Hud goal={problem.goal} steps={game.steps} shotsLeft={game.shotsLeft} showExpression={settings.showExpression} instruction={instruction} />
+          <Hud goal={problem.goal} steps={game.steps} shotsLeft={game.shotsLeft} showExpression={settings.showExpression} />
         </div>
         <div className={`play-area ${shooter === 'sling' ? 'play-area-sling' : ''}`}>
           <PlayField

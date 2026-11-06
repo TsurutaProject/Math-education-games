@@ -129,3 +129,5 @@
 
 .festival .field-sling-no-bounce { background: var(--booth); }
 
+/* 操作の説明は提灯の下に白い字で、遊んでいる間ずっと出す。 */
+.festival-instruction { fill: #fff; font-size: 26px; font-weight: 800; text-anchor: middle; letter-spacing: .04em; }

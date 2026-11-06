@@ -134,6 +134,14 @@ export const SHOOTER_LABEL: Record<Shooter, string> = {
 
 export const SHOOTERS: Shooter[] = ['gun', 'sling', 'catapult'];
 
+/** 提灯の下に出す操作の説明。空白も数えて10文字以内。 */
+export const INSTRUCTION: Record<'tap' | Shooter, string> = {
+  tap: 'まとを タップ',
+  gun: 'ねらって はなす',
+  sling: 'ひっぱって はなす',
+  catapult: 'ひっぱって なげる',
+};
+
 /** そのバリエーションで選べる射撃タイプか。D・E は的が1段なので、奥と手前の2段が前提のカタパルトは使わない。 */
 export function shooterAllowed(v: Variant, sh: Shooter): boolean {
   if (v === 'A') return false;

@@ -1,12 +1,13 @@
 import './RingField.css';
 import { Artwork } from './Artwork';
+import { FestivalDecor } from './FestivalDecor';
 import { OP_ARTWORK, OP_INK } from './artworkAssets';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { aimRing, PEG_HEIGHT, PEG_RADIUS, POLE_RADIUS, projectRing, RING_FROM, RING_INNER, RING_OUTER, RING_TUBE, ringPegs, ringPlanPoint, traceRing, type Point3, type RingPlan, type RingThrow } from '../logic/ring';
 import { targetLabel } from '../logic/ops';
 import type { Problem, Variant } from '../logic/types';
 import type { ShotInfo } from './Field';
-import type { Settings } from './settings';
+import { INSTRUCTION, type Settings } from './settings';
 import { sfxCatapult, sfxHit, sfxThud, unlockAudio } from './sound';
 
 interface Props {
@@ -93,6 +94,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.catapultTime) : null; setAim(null); if (shot && active) { sfxCatapult(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
     onPointerCancel={() => setAim(null)} onLostPointerCapture={() => setAim(null)}>
     <rect width="1000" height="480" fill="var(--booth)" />
+    <FestivalDecor instruction={INSTRUCTION.catapult} instructionX={215} />
     <polygon points={floor.map((p) => { const q = projectRing(p); return `${q.x},${q.y}`; }).join(' ')} fill="var(--ring-floor, var(--booth))" />
     {[-450, -150, 150, 450].map((x) => <path key={x} d={floorLine({ x, y: -120, z: 0 }, { x, y: 1120, z: 0 })} className="ring-grid" />)}
     {[100, 480, 860, 1120].map((y) => <path key={y} d={floorLine({ x: -540, y, z: 0 }, { x: 540, y, z: 0 })} className="ring-grid" />)}

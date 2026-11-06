@@ -8,17 +8,16 @@ interface Props {
   steps: Step[];
   shotsLeft: number;
   showExpression: boolean;
-  instruction: string;
 }
 
 /**
  * 0 から始まる式と、右に薄いめあて。当てた的は「+10」「×2」のように演算子ごと箱に入れ、的の色にそろえる。
  * 先頭の 0 は画面の表示だけ（ログ・図鑑の式は formatExpression のまま）。
  */
-export function Hud({ goal, steps, shotsLeft, showExpression, instruction }: Props) {
+export function Hud({ goal, steps, shotsLeft, showExpression }: Props) {
   return <div className="festival-hud">
     <div className="festival-equation-area">
-      <div className="festival-equation-caption" title={instruction}>けいさんしき</div>
+      <div className="festival-equation-caption">けいさんしき</div>
       <div className="festival-equation-row">
         {showExpression && <div className="festival-equation" role="region" aria-label="いまの式" tabIndex={0}>
           <div className="festival-equation-track">
