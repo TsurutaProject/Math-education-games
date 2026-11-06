@@ -1,12 +1,8 @@
 import { targetLabel } from '../logic/ops';
 import type { Op } from '../logic/types';
 
-const OP_COLOR: Record<Op, string> = {
-  '+': 'var(--op-plus)',
-  '-': 'var(--op-minus)',
-  '*': 'var(--op-times)',
-  '/': 'var(--op-times)',
-};
+import { Artwork } from './Artwork';
+import { OP_ARTWORK, OP_INK } from './artworkAssets';
 
 interface Props {
   op: Op;
@@ -22,9 +18,8 @@ export function TargetMark({ op, value, r, className = '' }: Props) {
   return (
     <g className={`target ${className}`}>
       <rect x={-6} y={r - 4} width={12} height={standH + 4} className="stand" />
-      <circle r={r} fill="var(--target-face)" stroke={OP_COLOR[op]} strokeWidth={r * 0.16} />
-      <circle r={r * 0.7} fill="none" stroke={OP_COLOR[op]} strokeWidth={2} opacity={0.35} />
-      <text className="target-label" fontSize={r * 0.62} dy="0.35em" fill={OP_COLOR[op]}>
+      <Artwork name={OP_ARTWORK[op]} x={-r} y={-r} width={r * 2} height={r * 2} />
+      <text className="target-label" fontSize={Math.max(18, r * 0.62)} dy="0.35em" fill={OP_INK[op]}>
         {targetLabel(op, value)}
       </text>
     </g>

@@ -1,3 +1,4 @@
+import { Artwork } from './Artwork';
 import { BALL_R, guidePath, LAUNCHER, MAX_PULL } from '../logic/sling';
 
 /** 引っ張ったとき、画面上でゴムがのびる見た目の倍率（実際の引っ張りより短く描く） */
@@ -51,12 +52,8 @@ export function SlingLayer({ pull, angleDeg, guideLength, bounce, flying, loaded
       )}
       {/* うしろのゴム */}
       <line x1={right.x} y1={right.y} x2={pouch.x} y2={pouch.y} className="sling-band" />
-      {/* 本体（Y の形） */}
-      <path
-        d={`M${LAUNCHER.x} ${LAUNCHER.y + 62} L${LAUNCHER.x} ${LAUNCHER.y + 26} L${left.x} ${left.y} M${LAUNCHER.x} ${LAUNCHER.y + 26} L${right.x} ${right.y}`}
-        className="sling-frame"
-      />
-      {loaded && <circle cx={pouch.x} cy={pouch.y} r={BALL_R} className="sling-ball" />}
+      <Artwork name="sling" x={LAUNCHER.x - 38} y={LAUNCHER.y - 8} width={76} height={76 * 1577 / 1404} />
+      {loaded && <Artwork name="sling-ball" x={pouch.x - BALL_R} y={pouch.y - BALL_R} width={BALL_R * 2} height={BALL_R * 2} />}
       {/* 手前のゴム */}
       <line x1={left.x} y1={left.y} x2={pouch.x} y2={pouch.y} className="sling-band" />
       {flying && (
@@ -64,7 +61,7 @@ export function SlingLayer({ pull, angleDeg, guideLength, bounce, flying, loaded
           {flying.trail.map((p, i) => (
             <circle key={i} cx={p.x} cy={p.y} r={BALL_R * (0.4 + (0.5 * i) / flying.trail.length)} className="sling-trail" />
           ))}
-          <circle cx={flying.x} cy={flying.y} r={BALL_R} className="sling-ball" />
+          <Artwork name="sling-ball" x={flying.x - BALL_R} y={flying.y - BALL_R} width={BALL_R * 2} height={BALL_R * 2} />
         </>
       )}
     </g>

@@ -13,3 +13,7 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+import './ui/GameLayout.css';
+
+import './ui/Festival.css';
