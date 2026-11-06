@@ -79,7 +79,7 @@ issue #20 で見直し、#56 でステージの作り直し（#52）に合わせ
 | --- | --- | --- |
 | `session_start` | ページを開いた | `deviceId`、`mode`（`exhibit` / `dev`）、`settings`（その時点の設定すべて） |
 | `player_start` | 新しい人が遊び始めた | `reason`：`first`（このパソコンで初めて開いた）/ `next_player`（つぎの人へ） |
-| `settings_change` | 設定パネルを閉じたとき、設定が変わっていた | `settings`（変更後の設定すべて） |
+| `settings_change` | 設定パネルを閉じたとき、設定が変わっていた | `settings`（変更後の設定すべて）。展示モードでは `settings.shooter` は使われない（射撃タイプは問題ごとに決まっている。#46） |
 | `problem_start` | 問題を始めた | `reason`、`attemptNo`、`foundBefore`、`mapNo`（マップの番号。例 `2-5`）、`unit`、`role` |
 | `map_open` | マップを開いた（版 3 から） | `reason`：`start`（起動したとき）/ `button`（「マップへ」）/ `course_end`（最後の問題のあと）/ `next_player`（つぎの人へ） |
 | `map_select` | マップで問題を選んだ（版 3 から） | `mapNo`、`variant`、`unit`、`role`、`clearedMapNos`（その人がそれまでにクリアした問題。解き方を1つ以上見つけた問題）、`firstUnclearedMapNo`（コースの順で、まだクリアしていない最初の問題。全部クリアなら空）、`skippedMapNos`（選んだ問題より前にある、まだクリアしていない問題。空なら飛ばしていない）、`mapMs`（マップを開いてから選ぶまで）、`misses`（選ぶまでに的のないところを撃った回数） |

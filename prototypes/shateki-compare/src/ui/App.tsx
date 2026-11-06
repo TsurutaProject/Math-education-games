@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { LogPayload, SessionPayload } from '../logic/log';
 import { courseStage, FIRST_REF, mapNo, nextRef, nodeAt, type NodeRef } from '../logic/course';
 import { selectionInfo } from '../logic/progress';
@@ -13,6 +13,7 @@ import {
   exhibitFromUrl,
   isStaffKey,
   loadSettings,
+  playSettings,
   saveSettings,
   shooterAllowed,
   shooterOf,
@@ -64,7 +65,8 @@ export function App() {
   // 問題を作り直すたびに増やして GameScreen を新しくする
   const [session, setSession] = useState({ n: 0, reason: 'first' as StartReason });
 
-  useEffect(() => writeUrlParams(ref, settings.shooter), [ref, settings.shooter]);
+  // 展示モードでは ?shooter= が効かないので、URL に残さない（#46）
+  useEffect(() => writeUrlParams(ref, exhibit ? null : settings.shooter), [ref, exhibit, settings.shooter]);
   useEffect(() => {
     saveSettings(settings);
     setSoundEnabled(settings.sound);
@@ -86,6 +88,8 @@ export function App() {
   const node = nodeAt(ref) ?? nodeAt(FIRST_REF)!;
   const variant = node.variant;
   const problem = problemById(node.problemId)!;
+  // 遊ぶときの設定。展示モードでは、射撃タイプを問題ごとに決めたものにする（#46）
+  const play = useMemo(() => playSettings(node, settings, exhibit), [node, settings, exhibit]);
 
   const restartWith = (reason: StartReason) => setSession((s) => ({ n: s.n + 1, reason }));
 
@@ -154,7 +158,7 @@ export function App() {
           ⚙️
         </button>}
       </header>
-      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} played={played.current} settings={settings} onMiss={() => { mapMisses.current += 1; }} onSelect={(to) => {
+      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} played={played.current} settings={settings} exhibit={exhibit} onMiss={() => { mapMisses.current += 1; }} onSelect={(to) => {
         const picked = nodeAt(to)!;
         logSessionEvent({
           type: 'map_select',
@@ -168,13 +172,13 @@ export function App() {
         });
         setRef(to); restartWith('select'); setSelectingStage(false);
       }} /> : <GameScreen
-        key={`${session.n}-${mapNo(ref)}-${shooterOf(variant, settings)}`}
+        key={`${session.n}-${mapNo(ref)}-${shooterOf(variant, play)}`}
         problem={problem}
         variant={variant}
         mapNo={mapNo(ref)}
         unit={courseStage(ref.stage)!.unit}
         role={node.role}
-        settings={settings}
+        settings={play}
         zukan={zukan.current}
         playerId={playerId}
         startReason={session.reason}

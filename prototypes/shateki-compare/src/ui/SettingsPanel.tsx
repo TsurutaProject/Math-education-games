@@ -5,7 +5,7 @@ import { COURSE, courseStage, nodeAt, UNIT_LABEL, type NodeRef } from '../logic/
 import { problemById } from '../logic/problems';
 import type { Shooter } from '../logic/types';
 import { clearLog, downloadLog, getLogCount, getLogLevel, getLogUsage, subscribeLog } from './logStore';
-import { DEFAULT_SETTINGS, SHOOTER_LABEL, SHOOTERS, shooterAllowed, VARIANT_LABEL, type Settings } from './settings';
+import { DEFAULT_SETTINGS, playSettings, SHOOTER_LABEL, SHOOTERS, shooterAllowed, shooterOf, VARIANT_LABEL, type Settings } from './settings';
 
 interface Props {
   /** いまの問題（コースの中の位置） */
@@ -52,7 +52,10 @@ export function SettingsPanel({ current, settings, onShooter, onProblem, onSetti
   const logCount = useSyncExternalStore(subscribeLog, getLogCount);
   const logUsage = useSyncExternalStore(subscribeLog, getLogUsage);
   const logLevel = useSyncExternalStore(subscribeLog, getLogLevel);
-  const variant = nodeAt(current)?.variant ?? 'A';
+  const node = nodeAt(current);
+  const variant = node?.variant ?? 'A';
+  // 展示モードでは射撃タイプは問題ごとに決まっていて、ここでは変えられない（#46）
+  const fixedShooter = node ? shooterOf(variant, playSettings(node, settings, true)) : 'tap';
   const nodes = courseStage(current.stage)?.nodes ?? [];
   const update = (patch: Partial<Settings>) => onSettings({ ...settings, ...patch });
 
@@ -85,18 +88,24 @@ export function SettingsPanel({ current, settings, onShooter, onProblem, onSetti
           <h3>あそぶもの</h3>
           <div className="row">
             <span className="row-label">射撃タイプ（B〜E）</span>
-            <div className="seg">
-              {SHOOTERS.map((sh) => (
-                <button
-                  key={sh}
-                  className={sh === settings.shooter ? 'on' : ''}
-                  disabled={variant !== 'A' && !shooterAllowed(variant, sh)}
-                  onClick={() => onShooter(sh)}
-                >
-                  {SHOOTER_LABEL[sh]}
-                </button>
-              ))}
-            </div>
+            {exhibit ? (
+              <span className="row-note">
+                展示モードでは問題ごとに決まっています（いまの問題：{fixedShooter === 'tap' ? 'タップ' : SHOOTER_LABEL[fixedShooter]}）
+              </span>
+            ) : (
+              <div className="seg">
+                {SHOOTERS.map((sh) => (
+                  <button
+                    key={sh}
+                    className={sh === settings.shooter ? 'on' : ''}
+                    disabled={variant !== 'A' && !shooterAllowed(variant, sh)}
+                    onClick={() => onShooter(sh)}
+                  >
+                    {SHOOTER_LABEL[sh]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="row">
             <span className="row-label">ステージ</span>
