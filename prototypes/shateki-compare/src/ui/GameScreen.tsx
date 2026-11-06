@@ -1,3 +1,5 @@
+import { RingField } from './RingField';
+import { Artwork } from './Artwork';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { newGame, shoot, type GameState } from '../logic/game';
 import type { LogContext, LogPayload } from '../logic/log';
@@ -56,6 +58,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   const entries = foundEntries(zukan, zid);
   const feel = FEEL[variant];
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
+  const PlayField = shooter === 'catapult' ? RingField : Field;
   const instruction = shooter === 'tap'
     ? 'まとを タップして うとう'
     : shooter === 'sling'
@@ -169,10 +172,10 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
     <div className="game">
       <div className="play-layout">
         <div className="play-top">
-          <Hud goal={problem.goal} steps={game.steps} shotsLeft={game.shotsLeft} showExpression={settings.showExpression} ring={false} instruction={instruction} />
+          <Hud goal={problem.goal} steps={game.steps} shotsLeft={game.shotsLeft} showExpression={settings.showExpression} ring={shooter === 'catapult'} instruction={instruction} />
         </div>
-        <div className="play-area">
-          <Field
+        <div className={`play-area ${shooter === 'sling' ? 'play-area-sling' : ''}`}>
+          <PlayField
             key={`field-${round}`}
             problem={problem}
             variant={variant}
@@ -196,7 +199,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
             {prize && <PrizeShelf prize={prize} goal={problem.goal} current={game.current} hits={game.steps.length} fallen={game.status === 'cleared'} />}
             {shooter === 'tap' && <div className="festival-tap-ammo" aria-label={`のこり ${game.shotsLeft} 発、全部で ${problem.shots} 発`}>
               <span>のこりの たま</span><strong>{game.shotsLeft} / {problem.shots}</strong>
-              <div className="corks">{Array.from({ length: problem.shots }, (_, i) => <span key={i} className={`cork ${i < game.shotsLeft ? '' : 'used'}`} />)}</div>
+              <div className="corks">{Array.from({ length: problem.shots }, (_, i) => <span key={i} className={`ammo-art ${i < game.shotsLeft ? '' : 'used'}`}><Artwork name="ammo" x={0} y={0} width={16} height={16} /></span>)}</div>
             </div>}
             <button className="btn restart" onClick={onRestartButton} aria-label="さいしょから" title="さいしょから">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

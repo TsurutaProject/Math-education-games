@@ -10,3 +10,5 @@ createRoot(document.getElementById('root')!).render(
 );
 
 import './ui/GameLayout.css';
+
+import './ui/Festival.css';
