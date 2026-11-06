@@ -21,7 +21,7 @@ export function RiseLayer({ problem, rise }: Props) {
         if (!t) return null;
         const { x, y, r } = riseSlotPlace(i, rise.slots.length);
         const risen = Number.isFinite(s.appearAt);
-        const cls = s.fell === 'hit' ? 'down heavy' : s.fell === 'swap' ? 'sink' : risen ? 'rising' : '';
+        const cls = s.fell === 'hit' ? 'down' : s.fell === 'swap' ? 'sink' : risen ? 'rising' : '';
         // 起き上がるたびに作り直す（新しい的として描く。演出は作られたときに1回だけ動く）
         return (
           <g key={`${i}-${s.appearAt}`} transform={`translate(${x} ${y})`}>

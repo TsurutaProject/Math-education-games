@@ -133,8 +133,6 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const riskMode = variant === 'C';
   const laneMode = variant === 'D';
   const riseMode = variant === 'E';
-  /** 当てたときの手応えを厚くする（C と、それに合わせた E）：一瞬止まる・揺れる・ぐらついて倒れる */
-  const heavyFeel = riskMode || riseMode;
   const aimMode = variant !== 'A';
   const shooter = shooterOf(variant, settings);
   const slingMode = shooter === 'sling';
@@ -354,11 +352,10 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       else if (rise.current) rise.current = hitRise(rise.current, targetId, clockRef.current, settings.riseDelay, Math.random);
       else downAt.current.set(targetId, pos);
       addEffect(pos, pos.x, pos.y - r - 10, targetLabel(t.op, t.value), 'hit');
-      sfxHit(heavyFeel);
-      if (heavyFeel) {
-        freezeUntil.current = performance.now() + 110;
-        setShaking((s) => s + 1);
-      }
+      // 当てたときの手応えは全部のバリエーションで同じ：一瞬止まる・揺れる・重い音・ぐらついて倒れる（#45）
+      sfxHit();
+      freezeUntil.current = performance.now() + 110;
+      setShaking((s) => s + 1);
     } else {
       addEffect(point, point.x, point.y, 'スカッ', 'miss');
       sfxMiss();
@@ -548,7 +545,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
                 {riskMode && p.amp > 0 && !down && (
                   <line x1={-p.amp - x + p.x} x2={p.amp - x + p.x} y1={78} y2={78} className="rail" />
                 )}
-                <TargetMark op={t.op} value={t.value} r={p.r} className={down ? (riskMode ? 'down heavy' : 'down') : ''} />
+                <TargetMark op={t.op} value={t.value} r={p.r} className={down ? 'down' : ''} />
               </g>
             );
           })
@@ -560,7 +557,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
                 <animateMotion dur="0.12s" fill="freeze" path={`M${MUZZLE.x},${MUZZLE.y} L${ef.tx},${ef.ty}`} />
               </g>
             )}
-            <text x={ef.x} y={ef.y} className={`pop pop-${ef.kind} ${heavyFeel ? 'pop-big' : ''}`}>
+            <text x={ef.x} y={ef.y} className={`pop pop-${ef.kind} pop-big`}>
               {ef.text}
             </text>
           </g>

@@ -128,16 +128,14 @@ export function sfxShot() {
   tone(320, 0.08, { to: 120, gain: 0.15 });
 }
 
-/** 当たった。heavy で手応えを厚く（C） */
-export function sfxHit(heavy = false) {
-  if (playFile(heavy && buffers.has('hit-heavy') ? 'hit-heavy' : 'hit')) return;
+/** 当たった。全部のバリエーションで重い手応えの音（#45 までは C・E だけ） */
+export function sfxHit() {
+  if (playFile(buffers.has('hit-heavy') ? 'hit-heavy' : 'hit')) return;
   tone(880, 0.09, { type: 'triangle', gain: 0.25, to: 520 });
-  if (heavy) {
-    tone(1320, 0.12, { type: 'square', gain: 0.06, delay: 0.03 });
-    // 倒れる「コトン」
-    tone(180, 0.18, { gain: 0.35, to: 70, delay: 0.32 });
-    noise(0.08, 0.15, 0.32, 300);
-  }
+  tone(1320, 0.12, { type: 'square', gain: 0.06, delay: 0.03 });
+  // 倒れる「コトン」
+  tone(180, 0.18, { gain: 0.35, to: 70, delay: 0.32 });
+  noise(0.08, 0.15, 0.32, 300);
 }
 
 /** パチンコのゴムが戻る「ビョン」 */
