@@ -154,7 +154,7 @@ export function App() {
           ⚙️
         </button>}
       </header>
-      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} played={played.current} onMiss={() => { mapMisses.current += 1; }} onSelect={(to) => {
+      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} played={played.current} settings={settings} onMiss={() => { mapMisses.current += 1; }} onSelect={(to) => {
         const picked = nodeAt(to)!;
         logSessionEvent({
           type: 'map_select',
