@@ -19,6 +19,24 @@ describe('コースの表（#52）', () => {
     expect(allNodes().filter((n) => n.node.variant === 'A')).toHaveLength(3);
   });
 
+  it('射撃タイプ（#46）：A はなし。ほかは必ずある。D・E は輪投げにしない', () => {
+    for (const { node } of allNodes()) {
+      if (node.variant === 'A') expect(node.shooter).toBeNull();
+      else expect(node.shooter).not.toBeNull();
+      if (node.variant === 'D' || node.variant === 'E') expect(node.shooter).not.toBe('ring');
+    }
+  });
+
+  it('射撃タイプの並び（#46）：どのステージにも 2 種類以上。輪投げはステージ 2 から', () => {
+    const rows = COURSE.map((s) => s.nodes.map((n) => n.shooter ?? '-').join(' '));
+    expect(rows).toEqual([
+      '- - gun gun sling sling',
+      '- ring sling gun gun',
+      'ring sling gun ring sling',
+    ]);
+    for (const s of COURSE) expect(new Set(s.nodes.flatMap((n) => n.shooter ?? [])).size).toBeGreaterThanOrEqual(2);
+  });
+
   it('同じ問題を2回使わない', () => {
     const ids = allNodes().map((n) => n.node.problemId);
     expect(new Set(ids).size).toBe(ids.length);

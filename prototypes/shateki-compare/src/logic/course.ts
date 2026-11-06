@@ -1,4 +1,4 @@
-import type { ProblemSet, Variant } from './types';
+import type { ProblemSet, Shooter, Variant } from './types';
 
 /** 遊び方ごとに使う問題の種類（A・B は standard、C は risk、D は lane、E は rise） */
 export function setForVariant(variant: Variant): ProblemSet {
@@ -16,6 +16,9 @@ export function setForVariant(variant: Variant): ProblemSet {
  * - そのあとはメイン（main）。C・D・C・E の順に、間に別の遊び方をはさむ（C:D:E = 2:1:1）
  * - A はゲーム全体で 3 問
  *
+ * - 射撃タイプも問題ごとに決める（#46）。展示モードでは、この表の射撃タイプだけを使う
+ *   （ふだんの画面では、設定・URL で選んだ射撃タイプを使う）
+ *
  * 問題の中身は src/data/problems.json（npm run gen:problems がこの表の問題 id を見て作る）。
  */
 
@@ -29,6 +32,11 @@ export interface CourseNode {
   variant: Variant;
   problemId: string;
   role: NodeRole;
+  /**
+   * 展示モードで使う射撃タイプ（#46）。A はタップなので null。
+   * D・E は的が1段なので輪投げにはしない。C の輪投げは、棒が動かず大きさも同じなので C の特徴は薄れる
+   */
+  shooter: Shooter | null;
 }
 
 export interface CourseStage {
@@ -44,25 +52,36 @@ export const UNIT_LABEL: Record<Unit, string> = {
   muldiv: 'かけざん・わりざん',
 };
 
-const intro = (variant: Variant, problemId: string): CourseNode => ({ variant, problemId, role: 'intro' });
-const main = (variant: Variant, problemId: string): CourseNode => ({ variant, problemId, role: 'main' });
+const intro = (variant: Variant, problemId: string, shooter: Shooter | null = null): CourseNode => ({ variant, problemId, role: 'intro', shooter });
+const main = (variant: Variant, problemId: string, shooter: Shooter): CourseNode => ({ variant, problemId, role: 'main', shooter });
 
 export const COURSE: CourseStage[] = [
   {
     stage: 1,
     unit: 'add',
     // ステージ 1 は前からある足し算の問題を使う（前のログと比べられるように、問題 id もそのまま）
-    nodes: [intro('A', 'std-1-1'), intro('A', 'std-1-2'), main('C', 'risk-1-1'), main('D', 'lane-1-1'), main('C', 'risk-1-2'), main('E', 'rise-1-1')],
+    // 射撃タイプは、いちばんわかりやすいコルク銃から始めて、パチンコに進む
+    nodes: [
+      intro('A', 'std-1-1'), intro('A', 'std-1-2'),
+      main('C', 'risk-1-1', 'gun'), main('D', 'lane-1-1', 'gun'), main('C', 'risk-1-2', 'sling'), main('E', 'rise-1-1', 'sling'),
+    ],
   },
   {
     stage: 2,
     unit: 'sub',
-    nodes: [intro('A', 'std-s2-1'), main('C', 'risk-s2-1'), main('D', 'lane-s2-1'), main('C', 'risk-s2-2'), main('E', 'rise-s2-1')],
+    // 輪投げはステージ 2 から
+    nodes: [
+      intro('A', 'std-s2-1'),
+      main('C', 'risk-s2-1', 'ring'), main('D', 'lane-s2-1', 'sling'), main('C', 'risk-s2-2', 'gun'), main('E', 'rise-s2-1', 'gun'),
+    ],
   },
   {
     stage: 3,
     unit: 'muldiv',
-    nodes: [intro('B', 'std-s3-1'), main('C', 'risk-s3-1'), main('D', 'lane-s3-1'), main('C', 'risk-s3-2'), main('E', 'rise-s3-1')],
+    nodes: [
+      intro('B', 'std-s3-1', 'ring'),
+      main('C', 'risk-s3-1', 'sling'), main('D', 'lane-s3-1', 'gun'), main('C', 'risk-s3-2', 'ring'), main('E', 'rise-s3-1', 'sling'),
+    ],
   },
 ];
 
