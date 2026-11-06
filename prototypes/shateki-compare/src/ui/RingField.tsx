@@ -29,8 +29,9 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
   const [aim, setAim] = useState<{ sx: number; sy: number; x: number; y: number; pointer: number; downAt: number } | null>(null);
   const [flying, setFlying] = useState<{ plan: RingPlan; t: number } | null>(null);
   const [settled, setSettled] = useState<Record<string, Point3>>({});
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState<{ id: number; text: string; kind: 'hit' | 'miss' | 'note'; x: number; y: number } | null>(null);
   const svg = useRef<SVGSVGElement>(null);
+  const feedbackSeq = useRef(0);
   const flight = useRef<{ shot: RingThrow; plan: RingPlan; start: number; pointerType: string; aimMs: number } | null>(null);
   const props = useRef({ onShot, active, usedIds });
   props.current = { onShot, active, usedIds };
@@ -47,8 +48,21 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
         if (t >= f.plan.endTime) {
           flight.current = null;
           const hitPeg = pegs.find((p) => p.id === f.plan.hit);
+          const repeatPeg = pegs.find((p) => p.id === f.plan.repeat);
           const screen = projectRing(hitPeg ?? f.plan.landing);
-          setFeedback(f.plan.hit ? '入った！' : 'おしい！');
+          // 入ったら札の上に足した数、同じ棒なら札の上に一言、外れたら落ちた場所に「おしい！」
+          const id = (feedbackSeq.current += 1);
+          const signOf = (p: typeof pegs[number]) => projectRing({ ...p, y: p.y - 3, z: PEG_HEIGHT + PEG_RADIUS });
+          if (hitPeg) {
+            const sign = signOf(hitPeg);
+            setFeedback({ id, text: targetLabel(hitPeg.op, hitPeg.value), kind: 'hit', x: sign.x, y: sign.y - 12 });
+          } else if (repeatPeg) {
+            const sign = signOf(repeatPeg);
+            setFeedback({ id, text: 'おなじ ぼうは 1かいだけ', kind: 'note', x: Math.max(170, Math.min(830, sign.x)), y: sign.y - 12 });
+          } else {
+            const at = projectRing(f.plan.landing);
+            setFeedback({ id, text: 'おしい！', kind: 'miss', x: at.x, y: at.y - 16 });
+          }
           if (f.plan.hit) { sfxHit(variant === 'C'); setSettled((old) => ({ ...old, [f.plan.hit!]: f.plan.landing })); } else sfxThud();
           props.current.onShot({ aim: screen, targetId: f.plan.hit, assist: 1, pointerType: f.pointerType, aimMs: f.aimMs,
             launch: { angleDeg: Math.atan2(f.shot.x, f.shot.y - RING_FROM.y) * 180 / Math.PI, pull: f.shot.pull, flightMs: Math.round(f.shot.duration * f.plan.endTime * 1000), landing: projectRing(f.plan.landing) } });
@@ -90,7 +104,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     </g>;
   };
   return <div className="field ring-field"><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"
-    onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(''); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
+    onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(null); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
     onPointerMove={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); if (p) setAim({ ...aim, x: p.x, y: p.y }); }}
     onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.catapultTime) : null; setAim(null); if (shot && active) { sfxCatapult(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
     onPointerCancel={() => setAim(null)} onLostPointerCapture={() => setAim(null)}>
@@ -111,6 +125,6 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     {!flight.current && (!flying || flying.t >= flying.plan.endTime) && shotsLeft > 0 && active && <Ring center={RING_FROM} />}
     <line x1={from.x + 22} y1="478" x2={from.x} y2={from.y + 8} stroke="var(--stand)" strokeWidth="12" strokeLinecap="round" />
     <AmmoLayer x={770} y={437} shots={problem.shots} shotsLeft={shotsLeft} kind="ring" />
-    {feedback && <text x="500" y="42" textAnchor="middle" className="pop pop-hit">{feedback}</text>}
+    {feedback && <text key={feedback.id} x={feedback.x} y={feedback.y} className={`pop pop-${feedback.kind} ${feedback.kind === 'hit' && variant === 'C' ? 'pop-big' : ''}`}>{feedback.text}</text>}
   </svg></div>;
 }
