@@ -22,7 +22,7 @@ export interface LogContext {
 export type LogPayload =
   | {
       type: 'problem_start';
-      reason: 'first' | 'retry' | 'another_way' | 'next' | 'switch' | 'next_player';
+      reason: 'first' | 'retry' | 'another_way' | 'next' | 'switch' | 'next_player' | 'select';
       /** その人がその問題（射撃タイプ別）に何回目の挑戦か。再読み込みすると 1 から数え直す */
       attemptNo: number;
       /** 始めたとき、図鑑でその問題の解き方をいくつ見つけていたか */

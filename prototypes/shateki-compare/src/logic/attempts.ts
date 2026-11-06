@@ -21,7 +21,7 @@ export interface AttemptRow {
   goal: number | null;
   /** 挑戦を始めた時刻（ISO）。始まりのイベントがなければ最初のイベントの時刻 */
   startedAt: string;
-  /** どうやって始めたか（first / retry / another_way / next / switch / next_player） */
+  /** どうやって始めたか（first / retry / another_way / next / switch / next_player / select） */
   startReason: string | null;
   /** その人がその問題に何回目の挑戦か（再読み込みすると 1 から） */
   attemptNo: number | null;

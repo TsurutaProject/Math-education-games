@@ -139,7 +139,7 @@ export function App() {
         </button>}
       </header>
       {selectingStage ? <StageSelect variant={variant} stage={stage} index={index} zukan={zukan.current} onSelect={(v, s, i) => {
-        setVariant(v); setStage(s); setIndex(i); restartWith('switch'); setSelectingStage(false);
+        setVariant(v); setStage(s); setIndex(i); restartWith('select'); setSelectingStage(false);
       }} /> : <GameScreen
         key={`${session.n}-${variant}-${shooterOf(variant, settings)}-${problem.id}`}
         problem={problem}
