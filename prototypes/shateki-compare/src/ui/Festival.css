@@ -104,7 +104,8 @@
 }
 
 .festival .sling-ball { fill: #efbb54; stroke: #fff7e6; stroke-width: 2; }
-.festival .sling-band { stroke: #30251c; }
+/* 腕の上でも紺の背景の上でも見えるよう、クリーム色（#41） */
+.festival .sling-band { stroke: #fff7e6; }
 
 /* 提供素材の球を使用する。 */
 .ammo-art { display: inline-flex; width: 16px; height: 16px; }
