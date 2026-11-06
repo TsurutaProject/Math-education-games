@@ -11,7 +11,7 @@ import { Field, type ShotInfo } from './Field';
 import { Hud } from './Hud';
 import { PrizeShelf, prizeFor } from './PrizeShelf';
 import { logEvent } from './logStore';
-import { CelebrateOverlay, OutOverlay, ZukanScreen } from './Overlays';
+import { CelebrateOverlay, OutOverlay, SolutionCards, ZukanScreen } from './Overlays';
 import { shooterOf, type Settings } from './settings';
 import { sfxClear, sfxOut } from './sound';
 import { FIELD_H, FIELD_W } from '../logic/hit';
@@ -29,13 +29,12 @@ interface Props {
 }
 
 /** バリエーションごとの「手応え」の違い（C を厚くする） */
-const FEEL: Record<Variant, { countMs: number; countDelayMs: number; celebrateMs: number; outDelayMs: number }> = {
-  A: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 500 },
-  B: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 600 },
-  C: { countMs: 380, countDelayMs: 260, celebrateMs: 2000, outDelayMs: 900 },
-  D: { countMs: 0, countDelayMs: 0, celebrateMs: 900, outDelayMs: 600 },
-  // E は当てたときの手応え（数え上げ）だけ C と同じ。景品はないので、クリア後の間は B と同じ
-  E: { countMs: 380, countDelayMs: 260, celebrateMs: 900, outDelayMs: 600 },
+const FEEL: Record<Variant, { celebrateMs: number; outDelayMs: number }> = {
+  A: { celebrateMs: 900, outDelayMs: 500 },
+  B: { celebrateMs: 900, outDelayMs: 600 },
+  C: { celebrateMs: 2000, outDelayMs: 900 },
+  D: { celebrateMs: 900, outDelayMs: 600 },
+  E: { celebrateMs: 900, outDelayMs: 600 },
 };
 
 export function GameScreen({ problem, variant, settings, zukan, startReason, onNext }: Props) {
@@ -54,8 +53,16 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
   // 射撃タイプがちがえば別の図鑑にする（遊び比べで混ざらないように）
   const shooter = shooterOf(variant, settings);
   const zid = zukanId(shooter === 'gun' || shooter === 'tap' ? variant : `${variant}-${shooter}`, problem.id);
+  const entries = foundEntries(zukan, zid);
   const feel = FEEL[variant];
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
+  const instruction = shooter === 'tap'
+    ? 'まとを タップして うとう'
+    : shooter === 'sling'
+      ? 'ひっぱって はなすと、反対むきに とぶ'
+      : shooter === 'catapult'
+        ? 'ひっぱって はなそう'
+        : 'おして ねらい、はなすと うつ';
 
   const ctx = (): LogContext => ({
     variant,
@@ -160,45 +167,49 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
 
   return (
     <div className="game">
-      <Hud
-        key={`hud-${round}`}
-        goal={problem.goal}
-        current={game.current}
-        shots={problem.shots}
-        shotsLeft={game.shotsLeft}
-        steps={game.steps}
-        showExpression={settings.showExpression}
-        countMs={feel.countMs}
-        countDelayMs={feel.countDelayMs}
-        onRestart={onRestartButton}
-        prize={
-          prize && (
-            <PrizeShelf
-              prize={prize}
-              goal={problem.goal}
-              current={game.current}
-              hits={game.steps.length}
-              fallen={game.status === 'cleared'}
-            />
-          )
-        }
-      />
-      <Field
-        key={`field-${round}`}
-        problem={problem}
-        variant={variant}
-        settings={settings}
-        usedIds={game.usedIds}
-        calc={game.calc}
-        shotsLeft={game.shotsLeft}
-        active={phase === 'playing'}
-        onShot={onShot}
-      />
+      <div className="play-layout">
+        <div className="play-top">
+          <Hud goal={problem.goal} steps={game.steps} shotsLeft={game.shotsLeft} showExpression={settings.showExpression} ring={false} instruction={instruction} />
+        </div>
+        <div className="play-area">
+          <Field
+            key={`field-${round}`}
+            problem={problem}
+            variant={variant}
+            settings={settings}
+            usedIds={game.usedIds}
+            calc={game.calc}
+            shotsLeft={game.shotsLeft}
+            active={phase === 'playing'}
+            onShot={onShot}
+          />
+        </div>
+        <div className="play-bottom">
+          <section className="play-zukan" aria-labelledby="play-zukan-title">
+            <div className="play-zukan-head">
+              <h2 id="play-zukan-title">解き方ずかん</h2>
+              <p className="play-zukan-count" aria-live="polite">{total}つ中 <b>{entries.length}つ</b> 見つけた！</p>
+            </div>
+            <SolutionCards entries={entries} total={total} goal={problem.goal} compact />
+          </section>
+          <div className="festival-footer-actions">
+            {prize && <PrizeShelf prize={prize} goal={problem.goal} current={game.current} hits={game.steps.length} fallen={game.status === 'cleared'} />}
+            {shooter === 'tap' && <div className="festival-tap-ammo" aria-label={`のこり ${game.shotsLeft} 発、全部で ${problem.shots} 発`}>
+              <span>のこりの たま</span><strong>{game.shotsLeft} / {problem.shots}</strong>
+              <div className="corks">{Array.from({ length: problem.shots }, (_, i) => <span key={i} className={`cork ${i < game.shotsLeft ? '' : 'used'}`} />)}</div>
+            </div>}
+            <button className="btn restart" onClick={onRestartButton} aria-label="さいしょから" title="さいしょから">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M20 3v6h-6" /><path d="M20 9a8 8 0 1 0 .1 5" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
       {phase === 'celebrate' && <CelebrateOverlay prize={prize} />}
       {phase === 'out' && (
         <OutOverlay
           goal={problem.goal}
-          current={game.current}
           steps={game.steps}
           onRetry={() => startAgain('retry')}
           onNext={onNext}
@@ -207,7 +218,7 @@ export function GameScreen({ problem, variant, settings, zukan, startReason, onN
       {phase === 'zukan' && (
         <ZukanScreen
           goal={problem.goal}
-          entries={foundEntries(zukan, zid)}
+          entries={entries}
           total={total}
           latestKey={latest.key}
           latestIsNew={latest.isNew}
