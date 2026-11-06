@@ -11,9 +11,7 @@
 .equation-zero { font-size: 42px; font-weight: 900; color: #6d5845; padding: 0 4px; }
 .equation-term, .equation-slot { min-width: 90px; height: 68px; border-radius: 10px; display: inline-flex; justify-content: center; align-items: center; }
 .equation-term { padding: 0 13px; color: var(--op-ink); background: color-mix(in srgb, var(--op-ink) 12%, #fff); border: 2px solid var(--op-ink); font-size: 42px; font-weight: 900; white-space: nowrap; }
-.equation-pending { display: flex; align-items: center; gap: 12px; }
 .equation-slot { border: 2px dashed #b49b7b; background: #fffdf8; color: #b49b7b; font-size: 34px; font-weight: 800; }
-.equation-continuation { font-size: 24px; color: #b19a7e; }
 .equation-goal { flex: 0 0 auto; font-size: 42px; font-weight: 900; color: #b19a7e; white-space: nowrap; }
 .equation-goal-only { color: #c34230; }
 .game-ui .play-area { margin: 0 24px; border: solid #94613a; border-width: 4px 6px 0; background: var(--booth); min-height: 0; }

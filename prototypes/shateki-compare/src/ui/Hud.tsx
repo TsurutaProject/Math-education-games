@@ -25,10 +25,7 @@ export function Hud({ goal, steps, shotsLeft, showExpression }: Props) {
             {steps.map((s, i) => <span key={`${i}-${s.targetId}`} className="equation-term" style={{ '--op-ink': OP_INK[s.op] } as CSSProperties}>
               {targetLabel(s.op, s.value)}
             </span>)}
-            {Array.from({ length: Math.max(0, shotsLeft) }, (_, i) => <span className="equation-pending" key={`pending-${i}`}>
-              <span className="equation-continuation" aria-hidden="true">…</span>
-              <span className="equation-slot" aria-label="これから狙う的">？</span>
-            </span>)}
+            {Array.from({ length: Math.max(0, shotsLeft) }, (_, i) => <span className="equation-slot" key={`pending-${i}`} aria-label="これから狙う的">？</span>)}
           </div>
         </div>}
         <div className={`equation-goal ${showExpression ? '' : 'equation-goal-only'}`} aria-label={`めあて ${formatNumber(goal)}`}>
