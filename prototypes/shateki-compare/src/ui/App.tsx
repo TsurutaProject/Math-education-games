@@ -6,6 +6,7 @@ import { problemById } from '../logic/problems';
 import type { Shooter } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GameScreen } from './GameScreen';
+import { PLATFORM_URL } from './platform';
 import { StageSelect } from './StageSelect';
 import { currentPlayerId, getLogLevel, logSessionEvent, nextPlayer, subscribeLog } from './logStore';
 import { SettingsPanel } from './SettingsPanel';
@@ -141,7 +142,8 @@ export function App() {
     <div className={`app game-ui festival ${selectingStage ? 'festival-map' : 'festival-playing'}`} onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}>
       <div className="festival-awning" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <span key={i} />)}</div>
       <header className="topbar">
-        <div className="title">さんすう射的 {!exhibit && <span className="tag">試作</span>}</div>
+        {/* タイトルを押すとプラットフォームのホームにもどる（#49）。分ケーキに合わせて確認は出さない。ログは残る */}
+        <a className="title" href={PLATFORM_URL} target="_top" title="ホームにもどる">さんすう射的 {!exhibit && <span className="tag">試作</span>}</a>
         {logLevel !== 'ok' && (
           <span
             className="log-alert"
