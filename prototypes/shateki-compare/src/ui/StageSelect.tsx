@@ -1,21 +1,20 @@
 import { Artwork } from './Artwork';
 import './StageSelect.css';
 import { useEffect, useRef, useState } from 'react';
-import { COURSE, mapNo, UNIT_LABEL, type CourseStage, type NodeRef } from '../logic/course';
+import { COURSE, mapNo, UNIT_LABEL, type CourseNode, type CourseStage, type NodeRef } from '../logic/course';
 import { nodeStatus, type NodeStatus } from '../logic/progress';
-import type { Variant } from '../logic/types';
 import type { Zukan } from '../logic/zukan';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
-import { SHOOTER_LABEL, shooterOf, type Settings } from './settings';
+import { playSettings, SHOOTER_LABEL, shooterOf, type Settings } from './settings';
 import { sfxMiss, sfxShot, unlockAudio } from './sound';
 
 /**
  * マップの問題の下に出す、射撃タイプの名前。遊び方（動く的など）は出さない
  * （輪投げのように的が動かない射撃タイプもあり、遊び方の名前だと混乱させるため）。
- * 射撃タイプは今の設定のもの。問題ごとに決める形は #46 で作る。
+ * 展示モードではコースの表で問題ごとに決めた射撃タイプ、ふだんの画面では今の設定の射撃タイプ（#46）。
  */
-export function shooterLabel(variant: Variant, settings: Settings): string {
-  const shooter = shooterOf(variant, settings);
+export function shooterLabel(node: Pick<CourseNode, 'variant' | 'shooter'>, settings: Settings, exhibit: boolean): string {
+  const shooter = shooterOf(node.variant, playSettings(node, settings, exhibit));
   return shooter === 'tap' ? 'タップ' : SHOOTER_LABEL[shooter];
 }
 
@@ -27,6 +26,8 @@ interface Props {
   played: ReadonlySet<string>;
   /** 射撃タイプの名前を出すため */
   settings: Settings;
+  /** 展示モードなら、問題ごとに決めた射撃タイプの名前を出す */
+  exhibit: boolean;
   onSelect: (ref: NodeRef) => void;
   /** 的のないところを撃った（ログ用） */
   onMiss: () => void;
@@ -44,7 +45,7 @@ const STATUS_TEXT: Record<NodeStatus, string> = {
 const ROW_GAP = 210;
 const position = (i: number) => ({ x: 170 + (i % 3) * 330, y: 110 + Math.floor(i / 3) * ROW_GAP });
 
-function WorldMap({ world, current, zukan, played, settings, onSelect, onMiss, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }, miss?: boolean) => boolean }) {
+function WorldMap({ world, current, zukan, played, settings, exhibit, onSelect, onMiss, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }, miss?: boolean) => boolean }) {
   const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
   const [shot, setShot] = useState<number | null>(null);
   /** 外れたところに出す「スカッ」（#44）。id を変えて、続けて外しても出し直す */
@@ -116,7 +117,7 @@ function WorldMap({ world, current, zukan, played, settings, onSelect, onMiss, o
             const label = mapNo({ stage: world.stage, index: i });
             const status = nodeStatus(zukan, node, played.has(node.problemId));
             const isCurrent = current.stage === world.stage && current.index === i;
-            const shooter = shooterLabel(node.variant, settings);
+            const shooter = shooterLabel(node, settings, exhibit);
             return <g key={node.problemId} transform={`translate(${p.x} ${p.y})`} className={`stage-node ${isCurrent ? 'current' : ''} status-${status}`} role="button" tabIndex={shot === null ? 0 : -1}
               aria-label={`${label} ${shooter} ${STATUS_TEXT[status]}`.trim()} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(i); } }}>
               <rect x="-6" y="32" width="12" height="42" rx="3" fill="var(--stand)" />

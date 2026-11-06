@@ -1,4 +1,4 @@
-import { firstRefOfVariant, mapNo, parseMapNo, type NodeRef } from '../logic/course';
+import { firstRefOfVariant, mapNo, parseMapNo, type CourseNode, type NodeRef } from '../logic/course';
 import type { Shooter, Variant } from '../logic/types';
 
 export interface Settings {
@@ -151,11 +151,13 @@ export function isStaffKey(e: Pick<KeyboardEvent, 'ctrlKey' | 'shiftKey' | 'altK
   return e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.code === 'KeyS';
 }
 
-export function writeUrlParams(ref: NodeRef, shooter: Shooter): void {
+/** URL を今の問題・射撃タイプに合わせる。shooter が null（展示モード）なら ?shooter= を消す（展示では効かないため） */
+export function writeUrlParams(ref: NodeRef, shooter: Shooter | null): void {
   const url = new URL(location.href);
   url.searchParams.delete('variant');
   url.searchParams.set('node', mapNo(ref));
-  url.searchParams.set('shooter', shooter);
+  if (shooter) url.searchParams.set('shooter', shooter);
+  else url.searchParams.delete('shooter');
   history.replaceState(null, '', url);
 }
 
@@ -188,6 +190,15 @@ export function shooterAllowed(v: Variant, sh: Shooter): boolean {
 export function shooterOf(v: Variant, s: Settings): 'tap' | Shooter {
   if (v === 'A') return 'tap';
   return shooterAllowed(v, s.shooter) ? s.shooter : 'gun';
+}
+
+/**
+ * 遊ぶときに使う設定（#46）。展示モードでは、射撃タイプをコースの表で問題ごとに決めたものにする
+ * （URL の ?shooter= や設定パネルで選んだものは使わない）。ふだんの画面では設定のまま。
+ * A は表の射撃タイプがない（null）ので設定のまま（shooterOf でタップになる）。
+ */
+export function playSettings(node: Pick<CourseNode, 'shooter'>, settings: Settings, exhibit: boolean): Settings {
+  return exhibit && node.shooter ? { ...settings, shooter: node.shooter } : settings;
 }
 
 export const VARIANT_LABEL: Record<Variant, string> = {

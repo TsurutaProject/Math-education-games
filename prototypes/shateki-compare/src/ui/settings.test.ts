@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exhibitFromUrl, isStaffKey, refFromUrl, shooterFromParam, upgradeSaved } from './settings';
+import { DEFAULT_SETTINGS, exhibitFromUrl, isStaffKey, playSettings, refFromUrl, shooterFromParam, shooterOf, upgradeSaved } from './settings';
 
 describe('exhibitFromUrl（展示モード）', () => {
   it('?mode=exhibit のときだけ展示モード', () => {
@@ -75,5 +75,27 @@ describe('refFromUrl（URL で問題を指定する）', () => {
     expect(refFromUrl('?node=1-2&variant=E')).toEqual({ stage: 1, index: 1 });
     expect(refFromUrl('?node=9-9')).toBeNull();
     expect(refFromUrl('')).toBeNull();
+  });
+});
+
+describe('playSettings（展示モードで射撃タイプを問題ごとに固定する #46）', () => {
+  const s = { ...DEFAULT_SETTINGS, shooter: 'ring' as const };
+
+  it('展示モードでは、表で決めた射撃タイプにする（設定・URL の射撃タイプは使わない）', () => {
+    expect(playSettings({ shooter: 'sling' }, s, true).shooter).toBe('sling');
+    expect(shooterOf('D', playSettings({ shooter: 'gun' }, s, true))).toBe('gun');
+  });
+
+  it('展示モードの A は表の射撃タイプがないので、タップのまま', () => {
+    expect(shooterOf('A', playSettings({ shooter: null }, s, true))).toBe('tap');
+  });
+
+  it('ふだんの画面では設定のまま（同じオブジェクトを返す）', () => {
+    expect(playSettings({ shooter: 'sling' }, s, false)).toBe(s);
+  });
+
+  it('射撃タイプのほかの設定は変えない', () => {
+    const custom = { ...s, slingSpeed: 1234 };
+    expect(playSettings({ shooter: 'gun' }, custom, true)).toEqual({ ...custom, shooter: 'gun' });
   });
 });
