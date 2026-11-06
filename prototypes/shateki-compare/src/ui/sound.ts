@@ -8,7 +8,7 @@ let bgmGain: GainNode | null = null;
 const buffers = new Map<string, AudioBuffer>();
 const activeSounds = new Set<AudioBufferSourceNode>();
 let loading = false;
-const soundNames = ['shot', 'hit', 'hit-heavy', 'miss', 'sling', 'catapult', 'thud', 'clear', 'clear-big', 'out', 'rise'];
+const soundNames = ['shot', 'hit', 'hit-heavy', 'miss', 'sling', 'ring', 'thud', 'clear', 'clear-big', 'out', 'rise'];
 
 async function loadAudio(name: string, folder: string) {
   for (const extension of ['mp3', 'ogg', 'wav']) {
@@ -147,15 +147,15 @@ export function sfxSling() {
   noise(0.05, 0.08, 0, 2000);
 }
 
-/** カタパルトのうでが振れる「ギッ・ブン」 */
-export function sfxCatapult() {
-  if (playFile('catapult')) return;
+/** 輪投げの輪を投げる「ギッ・ブン」 */
+export function sfxRingThrow() {
+  if (playFile('ring')) return;
   noise(0.06, 0.12, 0, 600);
   tone(140, 0.2, { type: 'sawtooth', gain: 0.08, to: 60 });
   tone(300, 0.18, { type: 'triangle', gain: 0.12, to: 700, delay: 0.05 });
 }
 
-/** カタパルトの弾が外れて地面に落ちた「ポスッ」 */
+/** 輪投げの輪が外れて床に落ちた「ポスッ」 */
 export function sfxThud() {
   if (playFile('thud')) return;
   noise(0.12, 0.18, 0, 200);

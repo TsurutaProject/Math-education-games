@@ -9,7 +9,7 @@ import { targetLabel } from '../logic/ops';
 import type { Problem, Variant } from '../logic/types';
 import type { ShotInfo } from './Field';
 import { INSTRUCTION, type Settings } from './settings';
-import { sfxCatapult, sfxHit, sfxThud, unlockAudio } from './sound';
+import { sfxHit, sfxRingThrow, sfxThud, unlockAudio } from './sound';
 
 interface Props {
   problem: Problem; variant: Variant; settings: Settings; usedIds: string[];
@@ -77,7 +77,7 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     const matrix = e.currentTarget.getScreenCTM();
     return matrix ? new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse()) : null;
   };
-  const preview = useMemo(() => aim ? aimRing(aim.x - aim.sx, aim.y - aim.sy, settings.catapultTime) : null, [aim, settings.catapultTime]);
+  const preview = useMemo(() => aim ? aimRing(aim.x - aim.sx, aim.y - aim.sy, settings.ringTime) : null, [aim, settings.ringTime]);
   // 予測は的・棒のない空間で計算する。実投ではsolidsとの衝突を判定する。
   const previewPlan = useMemo(() => preview ? traceRing(preview, []) : null, [preview]);
   const from = projectRing(RING_FROM);
@@ -106,14 +106,14 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
   return <div className="field ring-field"><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"
     onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(null); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
     onPointerMove={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); if (p) setAim({ ...aim, x: p.x, y: p.y }); }}
-    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.catapultTime) : null; setAim(null); if (shot && active) { sfxCatapult(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
+    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.ringTime) : null; setAim(null); if (shot && active) { sfxRingThrow(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt) }; } }}
     onPointerCancel={() => setAim(null)} onLostPointerCapture={() => setAim(null)}>
     <rect width="1000" height="480" fill="var(--booth)" />
-    <FestivalDecor instruction={INSTRUCTION.catapult} instructionX={215} />
+    <FestivalDecor instruction={INSTRUCTION.ring} instructionX={215} />
     <polygon points={floor.map((p) => { const q = projectRing(p); return `${q.x},${q.y}`; }).join(' ')} fill="var(--ring-floor, var(--booth))" />
     {[-450, -150, 150, 450].map((x) => <path key={x} d={floorLine({ x, y: -120, z: 0 }, { x, y: 1120, z: 0 })} className="ring-grid" />)}
     {[100, 480, 860, 1120].map((y) => <path key={y} d={floorLine({ x: -540, y, z: 0 }, { x: 540, y, z: 0 })} className="ring-grid" />)}
-    {previewPlan && settings.catapultShowLanding && <g className="ring-preview" pointerEvents="none">
+    {previewPlan && settings.ringShowLanding && <g className="ring-preview" pointerEvents="none">
       <path d={previewPlan.frames.map((f, i) => { const p = projectRing(f.point); return `${i ? 'L' : 'M'}${p.x},${p.y}`; }).join(' ')} className="ring-guide" />
       <g className="ring-landing"><Ring center={previewPlan.landing} dashed /></g>
     </g>}

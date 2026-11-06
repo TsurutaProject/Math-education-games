@@ -54,7 +54,7 @@ issue #20 で見直したログの説明です。データ分析班の要望と�
 
 ## イベント（`events`）
 
-すべてのイベントに `t`（時刻）・`sessionId`・`seq`・`playerId` が入ります。遊びのイベントには、さらに `variant` / `shooter`（`tap` / `gun` / `sling` / `catapult`。`catapult` は輪投げ（#38 でカタパルトから置き換え））/ `stage` / `problemId` / `attemptId` が入ります。
+すべてのイベントに `t`（時刻）・`sessionId`・`seq`・`playerId` が入ります。遊びのイベントには、さらに `variant` / `shooter`（`tap` / `gun` / `sling` / `ring`。`ring` は輪投げ。#42 より前のログでは輪投げを `catapult` と記録している）/ `stage` / `problemId` / `attemptId` が入ります。
 
 | `type` | いつ | 主な項目 |
 | --- | --- | --- |

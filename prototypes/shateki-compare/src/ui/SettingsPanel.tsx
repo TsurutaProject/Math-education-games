@@ -167,12 +167,12 @@ export function SettingsPanel({ variant, stage, index, settings, onVariant, onSh
         </section>
 
         <section>
-          <h3>カタパルト（B・C）</h3>
-          <Slider label="飛んでいる時間（秒）" value={settings.catapultTime} min={0.3} max={1.6} step={0.1} onChange={(v) => update({ catapultTime: v })} note="いちばん遠くまでの時間。長いほど、動く的は先を読む必要がある" />
+          <h3>輪投げ（B・C）</h3>
+          <Slider label="飛んでいる時間（秒）" value={settings.ringTime} min={0.3} max={1.6} step={0.1} onChange={(v) => update({ ringTime: v })} note="長いほど輪がゆっくり飛ぶ。落ちる場所は変わらない" />
           <label className="row">
-            <span className="row-label">着地点を見せる</span>
-            <input type="checkbox" checked={settings.catapultShowLanding} onChange={(e) => update({ catapultShowLanding: e.target.checked })} />
-            <span className="row-note">オフにすると向きの線と「ひっぱりの強さ」だけ。距離は自分で感覚をつかむ</span>
+            <span className="row-label">落ちる場所を見せる</span>
+            <input type="checkbox" checked={settings.ringShowLanding} onChange={(e) => update({ ringShowLanding: e.target.checked })} />
+            <span className="row-note">オフにすると、引っ張っている間の道すじと落ちる場所を出さない。距離は自分で感覚をつかむ</span>
           </label>
         </section>
 

@@ -62,7 +62,7 @@ export function GameScreen({ problem, variant, settings, zukan, playerId, startR
   const entries = foundEntries(zukan, zid);
   const feel = FEEL[variant];
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
-  const PlayField = shooter === 'catapult' ? RingField : Field;
+  const PlayField = shooter === 'ring' ? RingField : Field;
 
   const ctx = (): LogContext => ({
     playerId,
