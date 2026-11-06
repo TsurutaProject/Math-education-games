@@ -1,16 +1,49 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, exhibitFromUrl, isStaffKey, playSettings, refFromUrl, shooterFromParam, shooterOf, upgradeSaved } from './settings';
 
+/** localStorage の代わり（テスト用） */
+function memoryStore() {
+  const m = new Map<string, string>();
+  return {
+    getItem: (k: string) => m.get(k) ?? null,
+    setItem: (k: string, v: string) => void m.set(k, v),
+    removeItem: (k: string) => void m.delete(k),
+  };
+}
+
 describe('exhibitFromUrl（展示モード）', () => {
-  it('?mode=exhibit のときだけ展示モード', () => {
-    expect(exhibitFromUrl('?mode=exhibit')).toBe(true);
-    expect(exhibitFromUrl('?variant=B&mode=exhibit&shooter=gun')).toBe(true);
+  it('?mode=exhibit のときは展示モード', () => {
+    expect(exhibitFromUrl('?mode=exhibit', memoryStore())).toBe(true);
+    expect(exhibitFromUrl('?variant=B&mode=exhibit&shooter=gun', memoryStore())).toBe(true);
   });
 
-  it('付いていない・ほかの値のときは展示モードにしない', () => {
-    expect(exhibitFromUrl('')).toBe(false);
-    expect(exhibitFromUrl('?variant=B')).toBe(false);
-    expect(exhibitFromUrl('?mode=dev')).toBe(false);
+  it('一度も展示モードで開いていなければ、付いていない・ほかの値のときは展示モードにしない', () => {
+    const store = memoryStore();
+    expect(exhibitFromUrl('', store)).toBe(false);
+    expect(exhibitFromUrl('?variant=B', store)).toBe(false);
+    expect(exhibitFromUrl('?mode=dev', store)).toBe(false);
+  });
+
+  it('展示モードで開いたら覚えて、ホームから入り直した（mode なし）ときも展示モード（#49）', () => {
+    const store = memoryStore();
+    exhibitFromUrl('?mode=exhibit', store);
+    expect(exhibitFromUrl('', store)).toBe(true);
+    expect(exhibitFromUrl('?node=2-3', store)).toBe(true);
+  });
+
+  it('?mode=normal で開くと、覚えた展示モードを消す', () => {
+    const store = memoryStore();
+    exhibitFromUrl('?mode=exhibit', store);
+    expect(exhibitFromUrl('?mode=normal', store)).toBe(false);
+    expect(exhibitFromUrl('', store)).toBe(false);
+  });
+
+  it('保存できない環境では、URL だけで決める', () => {
+    expect(exhibitFromUrl('?mode=exhibit', null)).toBe(true);
+    expect(exhibitFromUrl('', null)).toBe(false);
+    const broken = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); }, removeItem: () => { throw new Error('blocked'); } };
+    expect(exhibitFromUrl('?mode=exhibit', broken)).toBe(true);
+    expect(exhibitFromUrl('', broken)).toBe(false);
   });
 });
 

@@ -5,6 +5,8 @@
 .stage-heading > span { font-size: 1.25rem; }
 .game-header h1 { margin: 8px 0 0; font-size: clamp(1.65rem, 3.4vw, 3rem); line-height: 1.3; }
 .game-logo { position: absolute; left: 24px; top: 22px; display: grid; place-items: center; width: 86px; height: 86px; border-radius: 50%; background: #fffaf5; color: #b94d2d; font-weight: 900; }
+/* ロゴはホームへのリンク（#49）。見た目は今までどおり */
+.game-logo { text-decoration: none; }
 .sound-toggle { top: 24px; right: 32px; border-color: #864b19; color: #593600; box-shadow: none; }
 .workbench-navigation { max-width: 1480px; margin: auto auto 20px; display: flex; justify-content: space-between; gap: 12px; align-items: start; }
 .workbench-navigation .help-menu { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; border: 0; background: none; box-shadow: none; }
