@@ -225,17 +225,17 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     laneMadeFor.current = laneKey;
   }
 
-  // D の札の看板（#62）：SVG の大きさを測って、左の余白に入るときだけ出す
+  // D・E の札の看板（#62）：SVG の大きさを測って、左の余白に入るときだけ出す
   const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
   useLayoutEffect(() => {
     const el = svgRef.current;
-    if (!laneMode || !el) return;
+    if (!(laneMode || riseMode) || !el) return;
     const measure = () => setSvgSize({ width: el.clientWidth, height: el.clientHeight });
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [laneMode]);
+  }, [laneMode, riseMode]);
 
   // ---- E：置き場所。札の入れ替えは rise.ts、ここでは毎フレーム進めるだけ
   const riseCtx: RiseContext = { problem, calc, usedIds, rng: Math.random };
@@ -523,7 +523,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const view = slingMode
     ? { x: -SLING_WALL_WIDTH, width: FIELD_W + SLING_WALL_WIDTH * 2, height: FIELD_H }
     : { x: 0, width: FIELD_W, height: FIELD_H };
-  const board = laneMode && settings.laneBoard ? boardPlace(svgSize, view) : null;
+  const board = (laneMode || riseMode) && settings.laneBoard ? boardPlace(svgSize, view) : null;
   const rowYs = laneMode ? [laneY] : riseMode ? [RISE_Y] : [...new Set(placed.map((p) => p.y))];
   // E の「いれかえる」：撃てるとき・起き上がりきった的があるときだけ押せる
   const canSwap = !!rise.current && active && !f && rise.current.slots.some((s) => isHittable(s, clock));
@@ -555,7 +555,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           <line x1={FIELD_W} x2={FIELD_W} y1={0} y2={FIELD_H} className="sling-wall-edge" />
         </g>}
         <FestivalDecor instruction={INSTRUCTION[shooter]} />
-        {board && <LaneBoard problem={problem} usedIds={usedIds} place={board} />}
+        {board && <LaneBoard problem={problem} usedIds={usedIds} place={board} title={laneMode ? 'ながれる ふだ' : 'おきあがる ふだ'} />}
         {rowYs.map((y) => (
           <rect key={y} x={0} y={y + 74} width={FIELD_W} height={16} rx={4} className="shelf" />
         ))}

@@ -49,4 +49,8 @@ describe('D の札の看板の置き場所（#62）', () => {
     expect(boardHeight(6)).toBe(boardHeight(5));
     expect(boardHeight(6)).toBeGreaterThan(boardHeight(4));
   });
+
+  it('E（8 枚）の看板も、フィールドの下の端より上に収まる（看板の上の端は 60）', () => {
+    expect(60 + boardHeight(8)).toBeLessThan(620);
+  });
 });
