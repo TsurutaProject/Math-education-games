@@ -129,7 +129,9 @@ export type SessionPayload =
    * skipped = 「とばす」を押して終えた。step が map なのは、クリアする前に 1-1 から出て、マップからやり直したとき。
    * 手引きが始まったことは残さない（その人の最初の map_open が始まり）
    */
-  | { type: 'tutorial'; step: TutorialStep; from: TutorialStep; fromMs: number; skipped: boolean };
+  | { type: 'tutorial'; step: TutorialStep; from: TutorialStep; fromMs: number; skipped: boolean }
+  /** パチンコ・輪投げの指の手引き（#15）を終えた。skipped = 「とばす」を押した（false なら1発撃った） */
+  | { type: 'pull_guide'; shooter: string; skipped: boolean };
 
 /** イベントの中身（遊びのイベントか、遊びの外のイベント） */
 export type LogBody = (LogContext & LogPayload) | ({ playerId: string } & SessionPayload);

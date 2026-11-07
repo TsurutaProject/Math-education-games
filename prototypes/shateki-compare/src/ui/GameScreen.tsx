@@ -19,7 +19,7 @@ import { logEvent, nextAttemptNo } from './logStore';
 import { CelebrateOverlay, OutOverlay, SolutionCards, ZukanScreen } from './Overlays';
 import { shooterOf, type Settings } from './settings';
 import { sfxClear, sfxOut } from './sound';
-import { TutorialBubble } from './TutorialBubble';
+import { PullGuide, TutorialBubble } from './TutorialBubble';
 import { afterRestart, afterShot, TUTORIAL_TARGET, type TutorialStep } from '../logic/tutorial';
 import { FIELD_H, FIELD_W } from '../logic/hit';
 
@@ -45,6 +45,9 @@ interface Props {
   /** はじめの手引き（#15）の手順。1-1 で手引きをしているときだけ渡す */
   tutorial?: TutorialStep;
   onTutorial?: (step: TutorialStep, skipped?: boolean) => void;
+  /** パチンコ・輪投げの指の手引きを出すか（その人がまだ見ていない射撃タイプのとき）。onPullGuideDone で、見たことを覚える */
+  pullGuide?: boolean;
+  onPullGuideDone?: (skipped: boolean) => void;
 }
 
 /** バリエーションごとの「手応え」の違い（C を厚くする） */
@@ -56,7 +59,7 @@ const FEEL: Record<Variant, { celebrateMs: number; outDelayMs: number }> = {
   E: { celebrateMs: 900, outDelayMs: 600 },
 };
 
-export function GameScreen({ problem, variant, mapNo, unit, role, settings, zukan, playerId, startReason, onPlayed, onNext, tutorial = 'done', onTutorial = () => {} }: Props) {
+export function GameScreen({ problem, variant, mapNo, unit, role, settings, zukan, playerId, startReason, onPlayed, onNext, tutorial = 'done', onTutorial = () => {}, pullGuide = false, onPullGuideDone = () => {} }: Props) {
   const [game, setGame] = useState<GameState>(() => newGame(problem));
   const [phase, setPhase] = useState<Phase>('playing');
   const [round, setRound] = useState(0);
@@ -89,6 +92,9 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
   // 手引きで、説明を読んでもらう手順（このあいだは撃てない）。ヒントは自分で選ぶ手順から
   const tutorialReading = tutorial === 'goal' || tutorial === 'changed';
   const tutorialGuiding = tutorialReading || tutorial === 'aim';
+  // 指の手引きは、最初の1発を撃つまで
+  const pullKind = shooter === 'sling' || shooter === 'ring' ? shooter : null;
+  const showPullGuide = pullGuide && pullKind !== null && phase === 'playing';
 
   const ctx = (): LogContext => ({
     playerId,
@@ -263,6 +269,7 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
       });
     }
     setGame(next);
+    if (showPullGuide) onPullGuideDone(false);
     if (tutorial === 'aim') onTutorial(afterShot(tutorial, info.targetId));
 
     if (next.status === 'cleared') {
@@ -321,6 +328,13 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
             tutorialTarget={tutorial === 'aim' ? TUTORIAL_TARGET : null}
             onShot={onShot}
           />
+          {showPullGuide && pullKind && <>
+            <PullGuide kind={pullKind} />
+            {/* 下にはパチンコがあるので、吹き出しは上に出す */}
+            <TutorialBubble className="tutorial-top tutorial-compact" onSkip={() => onPullGuideDone(true)}>
+              {pullKind === 'sling' ? 'どこでも おして、したに ひっぱって、はなそう' : 'ひっぱって はなそう。ながく ひくと おくへ'}
+            </TutorialBubble>
+          </>}
           {tutorial === 'goal' && <TutorialBubble className="tutorial-top" onOk={() => onTutorial('aim')} onSkip={() => onTutorial('done', true)}>
             めあては <b>{problem.goal}</b>。まとに あてて、かずを <b>{problem.goal}</b> に しよう！
           </TutorialBubble>}

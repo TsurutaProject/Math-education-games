@@ -66,7 +66,47 @@
 .tutorial-bottom { bottom: 12px; }
 /* クリア後の解き方ずかんの中の、ひとこと */
 .tutorial-next-note { margin: 0; padding: 8px 14px; border-radius: 12px; background: #fff6c2; color: var(--ink); font-size: 18px; font-weight: 800; text-align: center; }
-/* 下の吹き出しは的に重なりやすいので、1行に収めて小さくする */
-.tutorial-bottom { padding-block: 8px; }
-.tutorial-bottom .tutorial-text { font-size: 19px; white-space: nowrap; }
-@media (max-width: 760px) { .tutorial-bottom .tutorial-text { font-size: 15px; white-space: normal; } }
+/* 撃つあいだに出す吹き出しは的に重なりやすいので、1行に収めて小さくする */
+.tutorial-bottom, .tutorial-compact { padding-block: 8px; }
+.tutorial-bottom .tutorial-text, .tutorial-compact .tutorial-text { font-size: 19px; white-space: nowrap; }
+@media (max-width: 760px) { .tutorial-bottom .tutorial-text, .tutorial-compact .tutorial-text { font-size: 15px; white-space: normal; } }
+
+/* パチンコ・輪投げの指の手引き：押す（0〜15%）→ 下へ引く（〜55%）→ はなす・弾が上へ（〜85%）をくり返す */
+.pull-guide { position: absolute; z-index: 4; left: 50%; top: 56%; width: 0; height: 0; pointer-events: none; }
+.pull-guide-finger {
+  position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; border-radius: 50%; box-sizing: border-box;
+  border: 5px solid #fff7e6; background: rgb(255 247 230 / 35%);
+  box-shadow: 0 0 0 4px rgb(255 225 77 / 70%), 0 3px 8px rgb(0 0 0 / 45%);
+  animation: pull-finger 2.6s ease-in-out infinite;
+}
+.pull-guide-band {
+  position: absolute; left: -3px; top: 0; width: 6px; height: 90px; border-radius: 3px;
+  background: #ffe14d; transform-origin: top;
+  animation: pull-band 2.6s ease-in-out infinite;
+}
+.pull-guide-shot {
+  position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border-radius: 50%;
+  background: #fff7e6; box-shadow: 0 0 10px #ffd400;
+  animation: pull-shot 2.6s ease-out infinite;
+}
+.pull-guide-ring .pull-guide-shot { background: none; border: 5px solid #fff7e6; }
+@keyframes pull-finger {
+  0% { opacity: 0; transform: translateY(0) scale(1.15); }
+  12% { opacity: 1; transform: translateY(0) scale(1); }
+  55% { opacity: 1; transform: translateY(90px); }
+  62%, 100% { opacity: 0; transform: translateY(90px); }
+}
+@keyframes pull-band {
+  0%, 12% { transform: scaleY(0); opacity: 1; }
+  55% { transform: scaleY(1); opacity: 1; }
+  60%, 100% { transform: scaleY(0); opacity: 0; }
+}
+@keyframes pull-shot {
+  0%, 55% { opacity: 0; transform: translateY(0); }
+  58% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(-160px); }
+  92%, 100% { opacity: 0; transform: translateY(-180px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pull-guide-finger, .pull-guide-band, .pull-guide-shot { animation-duration: 5.2s; }
+}

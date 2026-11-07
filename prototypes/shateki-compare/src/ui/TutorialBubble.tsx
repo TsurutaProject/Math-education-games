@@ -28,3 +28,18 @@ export function TutorialBubble({ children, okLabel = 'わかった', onOk, onSki
 export function TutorialGlow({ r, cx = 0, cy = 0 }: { r: number; cx?: number; cy?: number }) {
   return <circle cx={cx} cy={cy} r={r} className="tutorial-glow" pointerEvents="none" aria-hidden="true" />;
 }
+
+/**
+ * パチンコ・輪投げの最初の1発の前に出す、指の手引き（#15）。指が押して、下に引っ張って、はなすと弾が上へ飛ぶ、をくり返す。
+ * 見せるだけで、押しても何も起きない（その下のフィールドで撃てる）
+ */
+export function PullGuide({ kind }: { kind: 'sling' | 'ring' }) {
+  return (
+    <div className={`pull-guide pull-guide-${kind}`} aria-hidden="true">
+      <span className="pull-guide-shot" />
+      <span className="pull-guide-band" />
+      {/* 絵文字は PC によって出ないので、フィールドで指の位置に出す丸と同じ形で描く */}
+      <span className="pull-guide-finger" />
+    </div>
+  );
+}
