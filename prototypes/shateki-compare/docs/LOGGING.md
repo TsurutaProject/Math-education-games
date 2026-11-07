@@ -89,8 +89,8 @@ issue #20 で見直し、#56 でステージの作り直し（#52）に合わせ
 | `clear` | クリア | `key`、`expression`、`isNew`、`foundCount`、`totalCount`、`elapsedMs` |
 | `out_of_shots` | 弾切れ | `current`、`goal`、`diff`、`expression`、`key`、`elapsedMs` |
 | `restart` | 「さいしょから」を押した | `current`、`shotsLeft`、`expression`、`elapsedMs` |
-| `tutorial` | はじめの手引き（#15）の手順が変わった | `step`（新しい手順：`map`・`goal`・`aim`・`changed`・`free`・`next`・`done`）、`from`（前の手順）、`fromMs`（前の手順にいた時間）、`skipped`（「とばす」で終えたとき `true`）。`step = map` は、クリアする前に 1-1 から出て、マップからやり直したとき。始まったことは残さない（その人の最初の `map_open` が始まり） |
-| `pull_guide` | パチンコ・輪投げの指の手引き（#15）を終えた | `shooter`（`sling`・`ring`）、`skipped`（「とばす」を押したとき `true`。`false` なら1発撃った） |
+| `tutorial` | はじめの手引き（#15）の手順が変わった | `step`（新しい手順：`map`・`goal`・`current`・`aim`・`changed`・`free`・`next`・`done`）、`from`（前の手順）、`fromMs`（前の手順にいた時間）、`skipped`（「とばす」で終えたとき `true`）。`step = map` は、クリアする前に 1-1 から出て、マップからやり直したとき。始まったことは残さない（その人の最初の `map_open` が始まり） |
+| `pull_guide` | パチンコ・輪投げの狙い方の手引き（#15）を終えた | `shooter`（`sling`・`ring`）、`skipped`（「とばす」を押したとき `true`。`false` なら手引きの的を全部当てた） |
 | `hint` | ヒントを押した（#57） | `sinceStartMs`（始めてから押すまで）、`current`、`shotsLeft`（押したときの数・残りの弾）、`key`（選んだ解き方。クリアと同じ形のキー）、`targetId`・`targetLabel`（光らせた的）、`restart`（行ける解き方がなく「さいしょから」を強調したとき `true`。そのとき `key`・`targetId` は空） |
 | `attempt_leave` | 1発以上撃ってから、終わる前に別の問題・つぎの人へ移った | `current`、`shotsLeft`、`expression`、`elapsedMs` |
 | `page_hide` / `page_show` | 画面が隠れた（タブの切り替え・閉じたなど）／戻った | `page_hide` は `current`、`shotsLeft` |
