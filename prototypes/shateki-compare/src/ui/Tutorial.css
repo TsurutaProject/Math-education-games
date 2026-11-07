@@ -1,0 +1,72 @@
+/* はじめの手引き（#15）：吹き出し・光る輪・光るボタン。ヒントの光（.hint-glow）と同じ黄色を使う */
+.tutorial-bubble {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(560px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 4px solid #ffe14d;
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 28%);
+  animation: tutorial-pop .25s ease-out both;
+}
+.tutorial-text { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.45; }
+.tutorial-text b { color: var(--accent); font-size: 1.15em; }
+.tutorial-buttons { display: flex; flex-direction: column; align-items: stretch; gap: 6px; flex: none; }
+.tutorial-ok { font-size: 18px; }
+.tutorial-skip { font-size: 13px; }
+@keyframes tutorial-pop {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (max-width: 760px) {
+  .tutorial-bubble { gap: 10px; padding: 10px 12px; }
+  .tutorial-text { font-size: 17px; }
+}
+
+.tutorial-glow {
+  fill: none;
+  stroke: #ffe14d;
+  stroke-width: 10;
+  filter: drop-shadow(0 0 8px #ffd400);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: tutorial-glow 1.4s ease-in-out infinite;
+}
+@keyframes tutorial-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .45; transform: scale(1.08); }
+}
+
+/* 押してほしいボタン（クリア後の「つぎの問題へ」） */
+.tutorial-pulse { animation: tutorial-pulse 1.4s ease-in-out infinite; }
+@keyframes tutorial-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(255 225 77 / 0%); }
+  50% { box-shadow: 0 0 0 8px rgb(255 225 77 / 90%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tutorial-bubble { animation: none; }
+  .tutorial-glow { animation: none; }
+  .tutorial-pulse { animation: none; outline: 4px solid #ffe14d; }
+}
+
+/* 置き場所：マップは上の真ん中（ステージの名前の下） */
+.tutorial-map { top: 56px; }
+/* 遊ぶ画面：説明を読む手順はフィールドの上、撃つ手順は的に重ならないよう下に出す */
+.play-area { position: relative; }
+.tutorial-top { top: 12px; }
+.tutorial-bottom { bottom: 12px; }
+/* クリア後の解き方ずかんの中の、ひとこと */
+.tutorial-next-note { margin: 0; padding: 8px 14px; border-radius: 12px; background: #fff6c2; color: var(--ink); font-size: 18px; font-weight: 800; text-align: center; }
+/* 下の吹き出しは的に重なりやすいので、1行に収めて小さくする */
+.tutorial-bottom { padding-block: 8px; }
+.tutorial-bottom .tutorial-text { font-size: 19px; white-space: nowrap; }
+@media (max-width: 760px) { .tutorial-bottom .tutorial-text { font-size: 15px; white-space: normal; } }

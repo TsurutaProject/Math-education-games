@@ -248,6 +248,11 @@ export function SettingsPanel({ current, settings, onShooter, onProblem, onSetti
         <section>
           <h3>共通</h3>
           <label className="row">
+            <span className="row-label">はじめの手引き</span>
+            <input type="checkbox" checked={settings.tutorial} onChange={(e) => update({ tutorial: e.target.checked })} />
+            <span className="row-note">マップから 1-1 までの手引きと、パチンコ・輪投げの最初の1発の指の手引き。遊ぶ人ごとに1回だけ出る</span>
+          </label>
+          <label className="row">
             <span className="row-label">いまの式を表示</span>
             <input type="checkbox" checked={settings.showExpression} onChange={(e) => update({ showExpression: e.target.checked })} />
           </label>
