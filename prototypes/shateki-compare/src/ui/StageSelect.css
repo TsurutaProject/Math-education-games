@@ -42,7 +42,9 @@
 /* 銃と発射アニメーションは、スクロールするマップから独立させる。 */
 .stage-map-viewport { position: relative; display: flex; flex: 1; min-height: 0; min-width: 0; overflow: hidden; border-radius: 20px; }
 .stage-fixed-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.stage-map-viewport.is-shooting .stage-pages { overflow: hidden; pointer-events: none; }
+/* 撃っている間はマップに触れない（横スクロールもできない）。overflow は変えない：
+   スクロールバーが見える環境で消すと、その分マップが大きくなって一瞬ずれるため */
+.stage-map-viewport.is-shooting .stage-pages { pointer-events: none; }
 
 
 /* マップの左右に移動矢印を重ねる。 */
