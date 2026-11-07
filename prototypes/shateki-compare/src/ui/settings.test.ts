@@ -92,6 +92,11 @@ describe('輪投げの名前（catapult → ring）', () => {
     expect(upgradeSaved({ catapultTime: 1.2, ringTime: 0.5 })).toEqual({ ringTime: 0.5 });
     expect(upgradeSaved({ shooter: 'bow' })).toEqual({});
   });
+
+  it('D の札の看板は、既定で出す。前に保存した設定（laneBoard がない）も既定のまま（#62）', () => {
+    expect(DEFAULT_SETTINGS.laneBoard).toBe(true);
+    expect({ ...DEFAULT_SETTINGS, ...upgradeSaved({ laneAssist: false }) }.laneBoard).toBe(true);
+  });
 });
 
 describe('refFromUrl（URL で問題を指定する）', () => {

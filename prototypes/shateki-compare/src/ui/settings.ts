@@ -32,6 +32,8 @@ export interface Settings {
   laneAssist: boolean;
   /** D の救済：役立つ札が何秒出ていなければ流すか */
   laneAssistSec: number;
+  /** D で、左の余白に札の看板（その問題の札の一覧）を出すか（#62） */
+  laneBoard: boolean;
   /** E で立っている的の数（置き場所は8つ。残りは空き） */
   riseStanding: number;
   /** E で、当てた・いれかえたあと、別の場所に新しい的が起き上がるまでの秒数 */
@@ -59,6 +61,7 @@ export const DEFAULT_SETTINGS: Settings = {
   laneVisible: 4,
   laneAssist: true,
   laneAssistSec: 8,
+  laneBoard: true,
   riseStanding: 6,
   riseDelay: 1,
   showExpression: true,
