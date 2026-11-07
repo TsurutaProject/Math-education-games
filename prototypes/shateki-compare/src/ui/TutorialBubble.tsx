@@ -157,5 +157,6 @@ export const COACH_UNLOCK_R = 80;
 export function coachPull(p: Pt, end: Pt, wasLocked: boolean, lockR = COACH_LOCK_R): { x: number; y: number; locked: boolean } {
   const d = Math.hypot(p.x - end.x, p.y - end.y);
   const locked = d <= lockR || (wasLocked && d <= COACH_UNLOCK_R);
-  return locked ? { ...end, locked } : { ...p, locked };
+  // p は DOMPoint のことがある（x・y が継承されたゲッターで、{ ...p } だと空になり NaN になる）ので、明示的に取り出す
+  return locked ? { x: end.x, y: end.y, locked } : { x: p.x, y: p.y, locked };
 }
