@@ -1,6 +1,6 @@
 import { Artwork } from './Artwork';
 import { FestivalDecor } from './FestivalDecor';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   assistMultiplier,
   FIELD_H,
@@ -44,6 +44,7 @@ import { INSTRUCTION, shooterOf, type Settings } from './settings';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
 import { HintGlow, useHintGlow, type HintMark } from './HintGlow';
 import { AmmoLayer } from './AmmoLayer';
+import { LaneBoard, boardPlace } from './LaneBoard';
 import { LaneLayer } from './LaneLayer';
 import { RiseLayer } from './RiseLayer';
 import { SlingLayer } from './SlingLayer';
@@ -223,6 +224,18 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     lane.current = createLane(laneCtx, clockRef.current);
     laneMadeFor.current = laneKey;
   }
+
+  // D の札の看板（#62）：SVG の大きさを測って、左の余白に入るときだけ出す
+  const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    const el = svgRef.current;
+    if (!laneMode || !el) return;
+    const measure = () => setSvgSize({ width: el.clientWidth, height: el.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [laneMode]);
 
   // ---- E：置き場所。札の入れ替えは rise.ts、ここでは毎フレーム進めるだけ
   const riseCtx: RiseContext = { problem, calc, usedIds, rng: Math.random };
@@ -507,6 +520,10 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
   const slingLaunch = aim && slingMode ? slingLaunchOf(aim) : null;
   const f = flight.current;
   const sf = f?.kind === 'sling' ? f : null;
+  const view = slingMode
+    ? { x: -SLING_WALL_WIDTH, width: FIELD_W + SLING_WALL_WIDTH * 2, height: FIELD_H }
+    : { x: 0, width: FIELD_W, height: FIELD_H };
+  const board = laneMode ? boardPlace(svgSize, view) : null;
   const rowYs = laneMode ? [laneY] : riseMode ? [RISE_Y] : [...new Set(placed.map((p) => p.y))];
   // E の「いれかえる」：撃てるとき・起き上がりきった的があるときだけ押せる
   const canSwap = !!rise.current && active && !f && rise.current.slots.some((s) => isHittable(s, clock));
@@ -522,7 +539,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     <div className={`field field-${variant} ${slingMode ? `field-sling ${settings.slingBounce ? '' : 'field-sling-no-bounce'}` : ''} ${shaking ? 'shake' : ''}`}>
       <svg
         ref={svgRef}
-        viewBox={slingMode ? `${-SLING_WALL_WIDTH} 0 ${FIELD_W + SLING_WALL_WIDTH * 2} ${FIELD_H}` : `0 0 ${FIELD_W} ${FIELD_H}`}
+        viewBox={`${view.x} 0 ${view.width} ${view.height}`}
         preserveAspectRatio="xMidYMid meet"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -538,6 +555,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           <line x1={FIELD_W} x2={FIELD_W} y1={0} y2={FIELD_H} className="sling-wall-edge" />
         </g>}
         <FestivalDecor instruction={INSTRUCTION[shooter]} />
+        {board && <LaneBoard problem={problem} usedIds={usedIds} place={board} />}
         {rowYs.map((y) => (
           <rect key={y} x={0} y={y + 74} width={FIELD_W} height={16} rx={4} className="shelf" />
         ))}

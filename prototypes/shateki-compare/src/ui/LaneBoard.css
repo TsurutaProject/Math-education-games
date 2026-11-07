@@ -1,0 +1,11 @@
+/* D の札の看板（#62）。屋台の木の看板に、クリーム色の板と赤い見出し */
+/* パチンコの余白は茶色なので、濃い縁で背景と分ける */
+.lane-board-leg { fill: #6b4423; stroke: #3f2614; stroke-width: 2; }
+.lane-board-frame { fill: #8a5a32; stroke: #3f2614; stroke-width: 3; }
+.lane-board-face { fill: #fff7e6; }
+.lane-board-title-bg { fill: #c0503a; }
+.lane-board-title { fill: #fff; font-size: 22px; font-weight: 800; text-anchor: middle; letter-spacing: .04em; }
+/* 当てた札は薄くする */
+.lane-board-card.used .lane-board-card-face { opacity: .35; }
+.lane-board-check circle { fill: #fff; stroke: #c0503a; stroke-width: 3; }
+.lane-board-check path { fill: none; stroke: #c0503a; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
