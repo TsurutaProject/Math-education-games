@@ -89,6 +89,8 @@ issue #20 で見直し、#56 でステージの作り直し（#52）に合わせ
 | `clear` | クリア | `key`、`expression`、`isNew`、`foundCount`、`totalCount`、`elapsedMs` |
 | `out_of_shots` | 弾切れ | `current`、`goal`、`diff`、`expression`、`key`、`elapsedMs` |
 | `restart` | 「さいしょから」を押した | `current`、`shotsLeft`、`expression`、`elapsedMs` |
+| `tutorial` | はじめの手引き（#15）の手順が変わった | `step`（新しい手順：`map`・`goal`・`aim`・`changed`・`free`・`next`・`done`）、`from`（前の手順）、`fromMs`（前の手順にいた時間）、`skipped`（「とばす」で終えたとき `true`）。`step = map` は、クリアする前に 1-1 から出て、マップからやり直したとき。始まったことは残さない（その人の最初の `map_open` が始まり） |
+| `pull_guide` | パチンコ・輪投げの指の手引き（#15）を終えた | `shooter`（`sling`・`ring`）、`skipped`（「とばす」を押したとき `true`。`false` なら1発撃った） |
 | `hint` | ヒントを押した（#57） | `sinceStartMs`（始めてから押すまで）、`current`、`shotsLeft`（押したときの数・残りの弾）、`key`（選んだ解き方。クリアと同じ形のキー）、`targetId`・`targetLabel`（光らせた的）、`restart`（行ける解き方がなく「さいしょから」を強調したとき `true`。そのとき `key`・`targetId` は空） |
 | `attempt_leave` | 1発以上撃ってから、終わる前に別の問題・つぎの人へ移った | `current`、`shotsLeft`、`expression`、`elapsedMs` |
 | `page_hide` / `page_show` | 画面が隠れた（タブの切り替え・閉じたなど）／戻った | `page_hide` は `current`、`shotsLeft` |
@@ -117,5 +119,5 @@ issue #20 で見直し、#56 でステージの作り直し（#52）に合わせ
 | 途中式の難易度・難易度別の達成度 | △ | 単元ごとの達成度は `attempts` の `unit`（版 3 から）と `result` で取れる（どの単元でつまずいたか）。問題ごと・解き方ごとの難易度はまだ決めていないが、`key`（解き方）が残っているので、難易度表ができれば後から計算できる |
 | ヒントの使用回数・押したタイミング | ○ | 回数：`attempts` の `hints`。タイミング：`hint` の `sinceStartMs`・`current`・`shotsLeft`（#57） |
 | 「ゲキムズ」の挑戦・時間・回数・クリア | × | 機能がまだない。作るときにその issue でログを足す |
-| チュートリアルをスキップしたか | △ | はじめの説明の問題（`role = intro`）がチュートリアルに近い。マップでそれを飛ばしたかは `map_select` の `skippedMapNos`、そこでの失敗・時間は `role = intro` の `attempts` で取れる（版 3 から）。スキップのボタンはないので、ボタンで飛ばしたかは取れない（チュートリアルの機能は #15） |
+| チュートリアルをスキップしたか | ○ | はじめの手引き（#15）：`tutorial` の `skipped`（どの手順で飛ばしたかは `from`）、手順ごとの時間は `fromMs`。パチンコ・輪投げの指の手引きは `pull_guide` の `skipped`。はじめの説明の問題（`role = intro`）をマップで飛ばしたかは、これまでどおり `map_select` の `skippedMapNos` |
 | アンケート | ー | ゲームの外で行う |
