@@ -216,6 +216,11 @@ export function SettingsPanel({ current, settings, onShooter, onProblem, onSetti
             step={1}
             onChange={(v) => update({ laneAssistSec: v })}
           />
+          <label className="row">
+            <span className="row-label">札の看板を出す</span>
+            <input type="checkbox" checked={settings.laneBoard} onChange={(e) => update({ laneBoard: e.target.checked })} />
+            <span className="row-note">左の余白に、この問題の札を全部出す（余白が狭い画面では出ない）</span>
+          </label>
         </section>
 
         <section>
