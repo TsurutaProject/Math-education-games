@@ -1,4 +1,5 @@
 import { Artwork } from './Artwork';
+import { TutorialGlow } from './TutorialBubble';
 import { FestivalDecor } from './FestivalDecor';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -78,6 +79,8 @@ interface Props {
   active: boolean;
   /** ヒントで光らせる的（#57） */
   hint: HintMark | null;
+  /** はじめの手引き（#15）：この的だけ光らせ、ほかの的は押しても何も起きない（弾も減らない）。A（タップ）だけ */
+  tutorialTarget?: string | null;
   onShot: (info: ShotInfo) => void;
 }
 
@@ -134,7 +137,7 @@ const BOTTOM_MISS_DELAY = 0.1;
 const MUZZLE = GUN_MUZZLE;
 const SLING_WALL_WIDTH = 12;
 
-export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, hint, onShot }: Props) {
+export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, hint, tutorialTarget = null, onShot }: Props) {
   const glowing = useHintGlow(hint);
   const svgRef = useRef<SVGSVGElement>(null);
   const riskMode = variant === 'C';
@@ -450,6 +453,8 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     if (!aimMode) {
       // A：的をタップすれば必ず当たる。何もない所は弾を使わない。
       const hit = hitTest(pt, circlesAt(clockRef.current), TAP_TOLERANCE);
+      // 手引きのあいだは、光らせた的のほかは押しても何も起きない
+      if (tutorialTarget && hit !== tutorialTarget) return;
       aimMsOfShot.current = null;
       pressedAtOfShot.current = performance.now();
       if (hit) fire(pt, hit, 1, e.pointerType);
@@ -575,6 +580,7 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
                 )}
                 <TargetMark op={t.op} value={t.value} r={p.r} className={down ? 'down' : ''} />
                 {!down && glowing(p.id) && <HintGlow seq={hint!.seq} r={p.r + 14} />}
+                {!down && tutorialTarget === p.id && <TutorialGlow r={p.r + 14} />}
               </g>
             );
           })

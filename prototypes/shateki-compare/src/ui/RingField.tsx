@@ -17,6 +17,8 @@ interface Props {
   calc: import('../logic/ops').Calc; shotsLeft: number; active: boolean; onShot: (info: ShotInfo) => void;
   /** ヒントで光らせる棒（#57） */
   hint: HintMark | null;
+  /** はじめの手引き（#15）は A（タップ）だけなので、輪投げでは使わない */
+  tutorialTarget?: string | null;
 }
 function ringPath(center: Point3, radius: number, start = 0, end = Math.PI * 2) {
   return Array.from({ length: 41 }, (_, i) => {

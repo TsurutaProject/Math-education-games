@@ -7,6 +7,7 @@ import type { Zukan } from '../logic/zukan';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
 import { playSettings, SHOOTER_LABEL, shooterOf, type Settings } from './settings';
 import { sfxMiss, sfxShot, unlockAudio } from './sound';
+import { TutorialBubble, TutorialGlow } from './TutorialBubble';
 
 /**
  * マップの問題の下に出す、射撃タイプの名前。遊び方（動く的など）は出さない
@@ -31,6 +32,11 @@ interface Props {
   onSelect: (ref: NodeRef) => void;
   /** 的のないところを撃った（ログ用） */
   onMiss: () => void;
+  /**
+   * はじめの手引き（#15）：この問題だけ光らせ、ほかの問題は撃っても選べない（外れになる）。
+   * onSkip は「とばす」
+   */
+  guide?: { ref: NodeRef; onSkip: () => void } | null;
 }
 
 /** 問題の丸の上に出す進み具合（#44）。まだ遊んでいない問題には何も出さない */
@@ -45,7 +51,7 @@ const STATUS_TEXT: Record<NodeStatus, string> = {
 const ROW_GAP = 210;
 const position = (i: number) => ({ x: 170 + (i % 3) * 330, y: 110 + Math.floor(i / 3) * ROW_GAP });
 
-function WorldMap({ world, current, zukan, played, settings, exhibit, onSelect, onMiss, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }, miss?: boolean) => boolean }) {
+function WorldMap({ world, current, zukan, played, settings, exhibit, guide, onSelect, onMiss, onShoot }: Props & { world: CourseStage; onShoot: (point: { x: number; y: number }, miss?: boolean) => boolean }) {
   const [aim, setAim] = useState<{ x: number; y: number } | null>(null);
   const [shot, setShot] = useState<number | null>(null);
   /** 外れたところに出す「スカッ」（#44）。id を変えて、続けて外しても出し直す */
@@ -57,6 +63,8 @@ function WorldMap({ world, current, zukan, played, settings, exhibit, onSelect, 
   const nodes = world.nodes;
   const rows = Math.ceil(nodes.length / 3);
   const height = Math.max(480, rows * ROW_GAP + 100);
+  /** 手引きのあいだ、選べる問題か */
+  const selectable = (i: number) => !guide || (guide.ref.stage === world.stage && guide.ref.index === i);
   const select = (i: number) => {
     if (timer.current || shot !== null) return;
     const matrix = svg.current?.getScreenCTM();
@@ -105,7 +113,7 @@ function WorldMap({ world, current, zukan, played, settings, exhibit, onSelect, 
             const p = point(event); cancel(); event.currentTarget.releasePointerCapture(event.pointerId);
             if (!p) return;
             const hit = nodes.findIndex((_, i) => Math.hypot(position(i).x - p.x, position(i).y - p.y) <= 48);
-            if (hit >= 0) select(hit);
+            if (hit >= 0 && selectable(hit)) select(hit);
             else miss(p);
           }} onPointerCancel={cancel} onLostPointerCapture={cancel}>
           <rect width="1000" height={height} fill="var(--booth)" />
@@ -119,10 +127,11 @@ function WorldMap({ world, current, zukan, played, settings, exhibit, onSelect, 
             const isCurrent = current.stage === world.stage && current.index === i;
             const shooter = shooterLabel(node, settings, exhibit);
             return <g key={node.problemId} transform={`translate(${p.x} ${p.y})`} className={`stage-node ${isCurrent ? 'current' : ''} status-${status}`} role="button" tabIndex={shot === null ? 0 : -1}
-              aria-label={`${label} ${shooter} ${STATUS_TEXT[status]}`.trim()} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(i); } }}>
+              aria-label={`${label} ${shooter} ${STATUS_TEXT[status]}`.trim()} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (selectable(i)) select(i); } }}>
               <rect x="-6" y="32" width="12" height="42" rx="3" fill="var(--stand)" />
               <circle r="48" className="stage-target" />
               <Artwork name="target-red" x={-48} y={-48} width={96} height={96} />
+              {guide && selectable(i) && shot === null && <TutorialGlow r={62} />}
               <text textAnchor="middle" y="9" className="stage-node-number">{label}</text>
               <text textAnchor="middle" y="-64" className="stage-node-state">{shot === i ? 'スタート！' : STATUS_TEXT[status]}</text>
               <text textAnchor="middle" y="114" className="stage-node-play">{shooter}</text>
@@ -178,6 +187,9 @@ export function StageSelect(props: Props) {
 
       </div>
       <div className={`stage-map-viewport ${shot ? 'is-shooting' : ''}`}>
+        {props.guide && !shot && <TutorialBubble className="tutorial-map" onSkip={props.guide.onSkip}>
+          ひかっている <b>{mapNo(props.guide.ref)}</b> を ねらって うってね
+        </TutorialBubble>}
         <button className="stage-edge-arrow stage-edge-prev" aria-label="前のステージ" disabled={shot !== null || world === 0} onClick={() => goTo(world - 1)}>‹</button>
         <button className="stage-edge-arrow stage-edge-next" aria-label="次のステージ" disabled={shot !== null || world === last} onClick={() => goTo(world + 1)}>›</button>
       <div className="stage-pages" ref={pages} tabIndex={0} aria-label="左右にスクロールしてステージを選択"
