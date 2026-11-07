@@ -2,10 +2,11 @@ import type { NodeRef } from './course';
 
 /**
  * はじめの手引き（#15）の手順。マップで 1-1 を撃つところから、1-1 をクリアして「つぎの問題へ」を押すまで。
- * map：マップで 1-1 だけ光らせる。goal：めあての数を見せる。aim：光らせた的を1つだけ撃たせる。
+ * map：マップで 1-1 だけ照らす。goal：式の「＝ 40」（めあて）を照らす。current：式の先頭の 0（いまの数）を照らす。
+ * aim：照らした的を1つだけ撃たせる。
  * changed：数が変わったことを見せる。free：残りは自分で選ぶ。next：クリア後に「つぎの問題へ」を光らせる。done：終わり
  */
-export type TutorialStep = 'map' | 'goal' | 'aim' | 'changed' | 'free' | 'next' | 'done';
+export type TutorialStep = 'map' | 'goal' | 'current' | 'aim' | 'changed' | 'free' | 'next' | 'done';
 
 /** 手引きをする問題（1-1） */
 export const TUTORIAL_REF: NodeRef = { stage: 1, index: 0 };
@@ -13,7 +14,23 @@ export const TUTORIAL_REF: NodeRef = { stage: 1, index: 0 };
 export const TUTORIAL_TARGET = 't3';
 
 /** 1-1 の中で手引きを出す手順 */
-export const IN_PROBLEM_STEPS: readonly TutorialStep[] = ['goal', 'aim', 'changed', 'free', 'next'];
+export const IN_PROBLEM_STEPS: readonly TutorialStep[] = ['goal', 'current', 'aim', 'changed', 'free', 'next'];
+
+/**
+ * パチンコ・輪投げの狙い方の手引き（#15）：その射撃タイプを初めて使う問題と、手引きで撃たせる的（順に）。
+ * パチンコ（1-5）：動かない大きい ＋10。輪投げ（2-2）：手前右の ＋5（短く引く）→ 奥左の ＋10（長く斜めに引く）で、
+ * 引く長さで奥、向きで左右が変わるのを体験させる。どちらも、残りの1発は自分で選ぶ
+ */
+export const COACH_PLANS: Record<'sling' | 'ring', { problemId: string; targets: readonly string[] }> = {
+  sling: { problemId: 'risk-1-2', targets: ['t4'] },
+  ring: { problemId: 'risk-s2-1', targets: ['t6', 't1'] },
+};
+
+/** その射撃タイプ・問題で、手引きで撃たせる的。手引きをしない組み合わせなら null */
+export function coachTargets(shooter: string, problemId: string): readonly string[] | null {
+  const plan = shooter === 'sling' || shooter === 'ring' ? COACH_PLANS[shooter] : undefined;
+  return plan && plan.problemId === problemId ? plan.targets : null;
+}
 
 /** 撃って当てた的で、手順が進むか。aim で光らせた的に当てたら changed へ */
 export function afterShot(step: TutorialStep, targetId: string | null): TutorialStep {
@@ -35,14 +52,14 @@ export function afterLeave(step: TutorialStep): TutorialStep {
 }
 
 /**
- * 手引きを終えた人と、パチンコ・輪投げの指の手引きを見た射撃タイプを、遊ぶ人ごとに覚える。
+ * 手引きを終えた人と、パチンコ・輪投げの狙い方の手引きを見た射撃タイプを、遊ぶ人ごとに覚える。
  * 遊ぶ人の id（ログと同じ。「つぎの人へ」でだけ変わる）と一緒に残すので、再読み込みや、
  * ほかのゲームから戻ってきても、同じ人にはもう出さない。人が変われば、また出す
  */
 export interface TutorialMemory {
   player: string;
   done: boolean;
-  /** 指の手引きを見た射撃タイプ（sling・ring） */
+  /** 狙い方の手引きを見た射撃タイプ（sling・ring） */
   pull: string[];
 }
 

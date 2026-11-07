@@ -42,7 +42,7 @@ export function App() {
   // はじめの手引き（#15）。遊ぶ人ごとに1回だけ
   const tutorial = useTutorial(playerId, settings.tutorial);
   const inTutorialProblem = IN_PROBLEM_STEPS.includes(tutorial.step);
-  // 指の手引きを見たことは ref に覚えるので、消すときに描き直す
+  // 狙い方の手引きを見たことは ref に覚えるので、消すときに描き直す
   const [, setPullRender] = useState(0);
   // ログに最後に残した設定（設定パネルを閉じたとき、変わっていれば残す）
   const loggedSettings = useRef(JSON.stringify(settings));

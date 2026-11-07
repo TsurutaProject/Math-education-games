@@ -1,15 +1,15 @@
-/* はじめの手引き（#15）：吹き出し・光る輪・光るボタン。ヒントの光（.hint-glow）と同じ黄色を使う */
+/* はじめの手引き（#15）：画面を暗くして照らす・吹き出し・光る輪・狙い方の手引き。黄色はヒントの光（.hint-glow）と同じ */
 .tutorial-bubble {
   position: absolute;
   z-index: 5;
   left: 50%;
   transform: translateX(-50%);
   width: max-content;
-  max-width: min(560px, calc(100% - 32px));
+  max-width: min(520px, calc(100vw - 32px));
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
+  gap: 14px;
+  padding: 12px 18px;
   border: 4px solid #ffe14d;
   border-radius: 18px;
   background: var(--panel);
@@ -19,16 +19,44 @@
 }
 .tutorial-text { margin: 0; font-size: 22px; font-weight: 800; line-height: 1.45; }
 .tutorial-text b { color: var(--accent); font-size: 1.15em; }
-.tutorial-buttons { display: flex; flex-direction: column; align-items: stretch; gap: 6px; flex: none; }
-.tutorial-ok { font-size: 18px; }
-.tutorial-skip { font-size: 13px; }
-@keyframes tutorial-pop {
-  from { opacity: 0; transform: translate(-50%, 8px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+.tutorial-ok { flex: none; font-size: 18px; }
+/* 「とばす」：吹き出しの右上の角に、小さく */
+.tutorial-skip {
+  position: absolute; top: -13px; right: 12px;
+  padding: 1px 10px; border: 2px solid #ffe14d; border-radius: 999px;
+  background: var(--panel); color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer;
 }
+.tutorial-skip:hover, .tutorial-skip:focus-visible { color: var(--ink); }
+@keyframes tutorial-pop { from { opacity: 0; } to { opacity: 1; } }
 @media (max-width: 760px) {
   .tutorial-bubble { gap: 10px; padding: 10px 12px; }
   .tutorial-text { font-size: 17px; }
+}
+
+/* 照らすところ：まわりを暗くする穴。穴のふちを黄色く光らせる */
+.spotlight-hole {
+  position: fixed; z-index: 60; pointer-events: none;
+  box-shadow: 0 0 0 200vmax rgb(24 16 10 / 60%);
+  outline: 5px solid #ffe14d;
+  outline-offset: 0;
+  transition: left .25s, top .25s, width .25s, height .25s;
+  animation: spotlight-pulse 1.1s ease-in-out infinite alternate;
+}
+.spotlight-hole.spotlight-none { outline: none; }
+@keyframes spotlight-pulse { from { outline-offset: 0; } to { outline-offset: 6px; } }
+.tutorial-coach { position: fixed; z-index: 61; }
+/* 照らした的をたたく指 */
+.spotlight-tap {
+  position: fixed; z-index: 61; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; pointer-events: none;
+  border: 5px solid #fff7e6; background: rgb(255 247 230 / 35%); box-shadow: 0 3px 8px rgb(0 0 0 / 45%);
+  animation: spotlight-tap 1.4s ease-in-out infinite;
+}
+@keyframes spotlight-tap {
+  0% { opacity: 0; transform: translate(30px, 40px) scale(1); }
+  35% { opacity: 1; transform: translate(0, 0) scale(1); }
+  50% { opacity: 1; transform: translate(0, 0) scale(.75); }
+  65% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(0, 0) scale(1); }
 }
 
 .tutorial-glow {
@@ -52,61 +80,29 @@
   50% { box-shadow: 0 0 0 8px rgb(255 225 77 / 90%); }
 }
 
+/* 狙い方の手引き（パチンコ・輪投げ）。フィールドの SVG の中 */
+.pull-coach-shade { fill: rgb(24 16 10 / 58%); }
+.pull-coach-path { stroke: #ffe14d; stroke-width: 6; stroke-dasharray: 10 8; stroke-linecap: round; }
+.pull-coach-start { fill: rgb(255 247 230 / 30%); stroke: #fff7e6; stroke-width: 5; }
+.pull-coach-end { fill: none; stroke: #ffe14d; stroke-width: 7; stroke-dasharray: 9 7; }
+.pull-coach.locked .pull-coach-end { fill: rgb(255 225 77 / 45%); stroke-dasharray: none; }
+.pull-coach-finger { fill: rgb(255 247 230 / 35%); stroke: #fff7e6; stroke-width: 5; }
+.pull-coach-label { fill: #fff7e6; font-size: 30px; font-weight: 900; paint-order: stroke; stroke: rgb(24 16 10 / 85%); stroke-width: 7px; }
+.pull-coach.locked .pull-coach-label { fill: #ffe14d; font-size: 36px; }
+
 @media (prefers-reduced-motion: reduce) {
-  .tutorial-bubble { animation: none; }
-  .tutorial-glow { animation: none; }
+  .tutorial-bubble, .spotlight-hole, .tutorial-glow { animation: none; }
+  .spotlight-tap { animation-duration: 2.8s; }
   .tutorial-pulse { animation: none; outline: 4px solid #ffe14d; }
 }
 
-/* 置き場所：マップは上の真ん中（ステージの名前の下） */
-.tutorial-map { top: 56px; }
-/* 遊ぶ画面：説明を読む手順はフィールドの上、撃つ手順は的に重ならないよう下に出す */
+/* 置き場所 */
 .play-area { position: relative; }
 .tutorial-top { top: 12px; }
 .tutorial-bottom { bottom: 12px; }
-/* クリア後の解き方ずかんの中の、ひとこと */
-.tutorial-next-note { margin: 0; padding: 8px 14px; border-radius: 12px; background: #fff6c2; color: var(--ink); font-size: 18px; font-weight: 800; text-align: center; }
 /* 撃つあいだに出す吹き出しは的に重なりやすいので、1行に収めて小さくする */
 .tutorial-bottom, .tutorial-compact { padding-block: 8px; }
 .tutorial-bottom .tutorial-text, .tutorial-compact .tutorial-text { font-size: 19px; white-space: nowrap; }
 @media (max-width: 760px) { .tutorial-bottom .tutorial-text, .tutorial-compact .tutorial-text { font-size: 15px; white-space: normal; } }
-
-/* パチンコ・輪投げの指の手引き：押す（0〜15%）→ 下へ引く（〜55%）→ はなす・弾が上へ（〜85%）をくり返す */
-.pull-guide { position: absolute; z-index: 4; left: 50%; top: 56%; width: 0; height: 0; pointer-events: none; }
-.pull-guide-finger {
-  position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; border-radius: 50%; box-sizing: border-box;
-  border: 5px solid #fff7e6; background: rgb(255 247 230 / 35%);
-  box-shadow: 0 0 0 4px rgb(255 225 77 / 70%), 0 3px 8px rgb(0 0 0 / 45%);
-  animation: pull-finger 2.6s ease-in-out infinite;
-}
-.pull-guide-band {
-  position: absolute; left: -3px; top: 0; width: 6px; height: 90px; border-radius: 3px;
-  background: #ffe14d; transform-origin: top;
-  animation: pull-band 2.6s ease-in-out infinite;
-}
-.pull-guide-shot {
-  position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border-radius: 50%;
-  background: #fff7e6; box-shadow: 0 0 10px #ffd400;
-  animation: pull-shot 2.6s ease-out infinite;
-}
-.pull-guide-ring .pull-guide-shot { background: none; border: 5px solid #fff7e6; }
-@keyframes pull-finger {
-  0% { opacity: 0; transform: translateY(0) scale(1.15); }
-  12% { opacity: 1; transform: translateY(0) scale(1); }
-  55% { opacity: 1; transform: translateY(90px); }
-  62%, 100% { opacity: 0; transform: translateY(90px); }
-}
-@keyframes pull-band {
-  0%, 12% { transform: scaleY(0); opacity: 1; }
-  55% { transform: scaleY(1); opacity: 1; }
-  60%, 100% { transform: scaleY(0); opacity: 0; }
-}
-@keyframes pull-shot {
-  0%, 55% { opacity: 0; transform: translateY(0); }
-  58% { opacity: 1; transform: translateY(0); }
-  85% { opacity: 1; transform: translateY(-160px); }
-  92%, 100% { opacity: 0; transform: translateY(-180px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .pull-guide-finger, .pull-guide-band, .pull-guide-shot { animation-duration: 5.2s; }
-}
+/* 狙い方の手引きの吹き出し：的（上）と発射台（下の真ん中）に重ならない左下の角 */
+.tutorial-corner { left: 12px; bottom: 12px; transform: none; }

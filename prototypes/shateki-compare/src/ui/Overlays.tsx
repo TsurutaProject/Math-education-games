@@ -91,7 +91,6 @@ export function ZukanScreen({
               ? 'あたらしい 解き方を 見つけた！'
               : 'この 解き方は もう 見つけているよ。ほかにもあるかな？'}
         </div>
-        {guideNext && <p className="tutorial-next-note">できたね！ 「つぎの問題へ」で つぎに すすもう</p>}
         <SolutionCards entries={entries} total={total} goal={goal} latestKey={latestKey} latestIsNew={latestIsNew} />
 
         <div className="zukan-buttons">

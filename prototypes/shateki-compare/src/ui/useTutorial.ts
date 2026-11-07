@@ -40,9 +40,9 @@ export function useTutorial(playerId: string, enabled: boolean) {
     setStep(memory.current.done ? 'done' : 'map');
   };
 
-  /** パチンコ・輪投げの指の手引きを、この人がもう見たか（#15） */
+  /** パチンコ・輪投げの狙い方の手引きを、この人がもう見たか（#15） */
   const pullSeen = (shooter: string) => !enabled || memory.current!.pull.includes(shooter);
-  /** 指の手引きを見た（1発撃った・とばした）ことを覚える */
+  /** 狙い方の手引きを見た（手引きの的を全部当てた・とばした）ことを覚える */
   const markPull = (shooter: string) => {
     if (!memory.current || memory.current.pull.includes(shooter)) return;
     memory.current = { ...memory.current, pull: [...memory.current.pull, shooter] };

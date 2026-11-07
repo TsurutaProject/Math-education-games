@@ -53,6 +53,14 @@ export function encircledPeg<T extends RingPeg>(landing: Point3, pegs: ReadonlyA
   return pegs.find((peg) => distance2(landing, peg) + POLE_RADIUS < RING_INNER);
 }
 
+/**
+ * その棒に入る引き方（押した点から離す点まで、輪投げの SVG の単位）。aimRing の逆で、何にも当たらなければ棒の真ん中に落ちる。
+ * 狙い方の手引き（#15）で使う
+ */
+export function ringPullFor(peg: { x: number; y: number }): { x: number; y: number } {
+  return { x: -peg.x / 5, y: peg.y / 8 };
+}
+
 export function aimRing(dx: number, dy: number, duration = 1): RingThrow | null {
   const pull = Math.hypot(dx, dy);
   if (pull < 12) return null;

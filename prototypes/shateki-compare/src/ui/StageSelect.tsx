@@ -7,7 +7,7 @@ import type { Zukan } from '../logic/zukan';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
 import { playSettings, SHOOTER_LABEL, shooterOf, type Settings } from './settings';
 import { sfxMiss, sfxShot, unlockAudio } from './sound';
-import { TutorialBubble, TutorialGlow } from './TutorialBubble';
+import { Spotlight, TutorialGlow } from './TutorialBubble';
 
 /**
  * マップの問題の下に出す、射撃タイプの名前。遊び方（動く的など）は出さない
@@ -126,7 +126,7 @@ function WorldMap({ world, current, zukan, played, settings, exhibit, guide, onS
             const status = nodeStatus(zukan, node, played.has(node.problemId));
             const isCurrent = current.stage === world.stage && current.index === i;
             const shooter = shooterLabel(node, settings, exhibit);
-            return <g key={node.problemId} transform={`translate(${p.x} ${p.y})`} className={`stage-node ${isCurrent ? 'current' : ''} status-${status}`} role="button" tabIndex={shot === null ? 0 : -1}
+            return <g key={node.problemId} transform={`translate(${p.x} ${p.y})`} className={`stage-node ${isCurrent ? 'current' : ''} status-${status} ${guide && selectable(i) ? 'tutorial-target' : ''}`} role="button" tabIndex={shot === null ? 0 : -1}
               aria-label={`${label} ${shooter} ${STATUS_TEXT[status]}`.trim()} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (selectable(i)) select(i); } }}>
               <rect x="-6" y="32" width="12" height="42" rx="3" fill="var(--stand)" />
               <circle r="48" className="stage-target" />
@@ -187,9 +187,9 @@ export function StageSelect(props: Props) {
 
       </div>
       <div className={`stage-map-viewport ${shot ? 'is-shooting' : ''}`}>
-        {props.guide && !shot && <TutorialBubble className="tutorial-map" onSkip={props.guide.onSkip}>
-          ひかっている <b>{mapNo(props.guide.ref)}</b> を ねらって うってね
-        </TutorialBubble>}
+        {props.guide && !shot && <Spotlight selector=".stage-node.tutorial-target .stage-target" pad={12} round onSkip={props.guide.onSkip}>
+          <b>{mapNo(props.guide.ref)}</b> を ねらって うとう
+        </Spotlight>}
         <button className="stage-edge-arrow stage-edge-prev" aria-label="前のステージ" disabled={shot !== null || world === 0} onClick={() => goTo(world - 1)}>‹</button>
         <button className="stage-edge-arrow stage-edge-next" aria-label="次のステージ" disabled={shot !== null || world === last} onClick={() => goTo(world + 1)}>›</button>
       <div className="stage-pages" ref={pages} tabIndex={0} aria-label="左右にスクロールしてステージを選択"

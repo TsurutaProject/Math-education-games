@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { nodeAt } from './course';
+import { COURSE, nodeAt } from './course';
+import { newGame, shoot } from './game';
+import { layoutTargets } from './hit';
 import { ALL_PROBLEMS } from './problems';
-import { afterLeave, afterRestart, afterShot, loadMemory, saveMemory, TUTORIAL_KEY, TUTORIAL_REF, TUTORIAL_TARGET } from './tutorial';
+import { aimRing, ringPegs, ringPullFor, traceRing } from './ring';
+import { canReach } from './solver';
+import { afterLeave, afterRestart, afterShot, COACH_PLANS, coachTargets, loadMemory, saveMemory, TUTORIAL_KEY, TUTORIAL_REF, TUTORIAL_TARGET } from './tutorial';
 
 function memoryStore() {
   const data = new Map<string, string>();
@@ -52,5 +56,44 @@ describe('手引き（#15）', () => {
     expect(loadMemory(broken, 'p1').done).toBe(false);
     expect(() => saveMemory(broken, { player: 'p1', done: true, pull: [] })).not.toThrow();
     expect(loadMemory(undefined, 'p1').done).toBe(false);
+  });
+
+  it('狙い方の手引きの問題は、その射撃タイプを初めて使う問題', () => {
+    for (const shooter of ['sling', 'ring'] as const) {
+      const first = COURSE.flatMap((st) => st.nodes).find((n) => n.shooter === shooter)!;
+      expect(first.problemId).toBe(COACH_PLANS[shooter].problemId);
+      expect(coachTargets(shooter, first.problemId)).toEqual(COACH_PLANS[shooter].targets);
+    }
+    expect(coachTargets('gun', 'risk-1-2')).toBeNull();
+    expect(coachTargets('sling', 'risk-1-1')).toBeNull();
+  });
+
+  it('手引きで撃たせる的を当てても、まだクリアできて、クリアしきってはいない（残りを自分で選べる）', () => {
+    for (const plan of Object.values(COACH_PLANS)) {
+      const problem = ALL_PROBLEMS.find((p) => p.id === plan.problemId)!;
+      let game = newGame(problem);
+      for (const id of plan.targets) game = shoot(problem, game, id);
+      expect(game.status).toBe('playing');
+      expect(canReach(problem, game.calc, game.usedIds, game.shotsLeft)).toBe(true);
+    }
+  });
+
+  it('パチンコの手引きの的は、動かない', () => {
+    const problem = ALL_PROBLEMS.find((p) => p.id === COACH_PLANS.sling.problemId)!;
+    const placed = layoutTargets(problem, { riskMode: true, sizeScale: 1, singleRow: true });
+    for (const id of COACH_PLANS.sling.targets) expect(placed.find((p) => p.id === id)!.amp).toBe(0);
+  });
+
+  it('輪投げの手引きの引き方（棒の位置から逆算）で、ねらった棒に入る', () => {
+    const problem = ALL_PROBLEMS.find((p) => p.id === COACH_PLANS.ring.problemId)!;
+    const pegs = ringPegs(problem);
+    const used: string[] = [];
+    for (const id of COACH_PLANS.ring.targets) {
+      const peg = pegs.find((p) => p.id === id)!;
+      const pull = ringPullFor(peg);
+      const shot = aimRing(pull.x, pull.y, 0.8)!;
+      expect(traceRing(shot, pegs.map((p) => ({ ...p, available: !used.includes(p.id) }))).hit).toBe(id);
+      used.push(id);
+    }
   });
 });

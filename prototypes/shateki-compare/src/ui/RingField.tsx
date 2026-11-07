@@ -5,7 +5,8 @@ import { FestivalDecor } from './FestivalDecor';
 import { HintGlow, useHintGlow, type HintMark } from './HintGlow';
 import { OP_ARTWORK, OP_INK } from './artworkAssets';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { aimRing, PEG_HEIGHT, PEG_RADIUS, POLE_RADIUS, projectRing, RING_FROM, RING_INNER, RING_OUTER, RING_TUBE, ringPegs, ringPlanPoint, traceRing, type Point3, type RingPlan, type RingThrow } from '../logic/ring';
+import { coachPull, COACH_LOCK_R, PullCoach } from './TutorialBubble';
+import { aimRing, ringPullFor, PEG_HEIGHT, PEG_RADIUS, POLE_RADIUS, projectRing, RING_FROM, RING_INNER, RING_OUTER, RING_TUBE, ringPegs, ringPlanPoint, traceRing, type Point3, type RingPlan, type RingThrow } from '../logic/ring';
 import { targetLabel } from '../logic/ops';
 import type { Problem, Variant } from '../logic/types';
 import type { ShotInfo } from './Field';
@@ -19,7 +20,15 @@ interface Props {
   hint: HintMark | null;
   /** はじめの手引き（#15）は A（タップ）だけなので、輪投げでは使わない */
   tutorialTarget?: string | null;
+  /**
+   * 狙い方の手引き（#15）：この棒に入る引き方を見せて、その通り引いてもらう。
+   * 決めた位置まで引かずに離したら投げない（輪も減らない）
+   */
+  coachTarget?: string | null;
 }
+/** 狙い方の手引きで、押すところ（輪投げの SVG の単位） */
+// 棒と重ならない右の空いているところ（引くのはそこから下向き。奥の棒でも 110 くらい）
+const COACH_START = { x: 820, y: 170 };
 function ringPath(center: Point3, radius: number, start = 0, end = Math.PI * 2) {
   return Array.from({ length: 41 }, (_, i) => {
     const a = start + (end - start) * i / 40;
@@ -30,9 +39,9 @@ function ringPath(center: Point3, radius: number, start = 0, end = Math.PI * 2) 
 function Ring({ center, dashed = false, start = 0, end = Math.PI * 2 }: { center: Point3; dashed?: boolean; start?: number; end?: number }) {
   return <path d={ringPath(center, (RING_INNER + RING_OUTER) / 2, start, end)} fill="none" stroke="var(--accent)" strokeWidth={(RING_OUTER - RING_INNER) * projectRing(center).scale} strokeDasharray={dashed ? '6 6' : undefined} />;
 }
-export function RingField({ problem, variant, settings, usedIds, shotsLeft, active, hint, onShot }: Props) {
+export function RingField({ problem, variant, settings, usedIds, shotsLeft, active, hint, coachTarget = null, onShot }: Props) {
   const glowing = useHintGlow(hint);
-  const [aim, setAim] = useState<{ sx: number; sy: number; x: number; y: number; pointer: number; downAt: number } | null>(null);
+  const [aim, setAim] = useState<{ sx: number; sy: number; x: number; y: number; pointer: number; downAt: number; locked?: boolean } | null>(null);
   const [flying, setFlying] = useState<{ plan: RingPlan; t: number } | null>(null);
   const [settled, setSettled] = useState<Record<string, Point3>>({});
   const [feedback, setFeedback] = useState<{ id: number; text: string; kind: 'hit' | 'miss' | 'note'; x: number; y: number } | null>(null);
@@ -91,6 +100,15 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     const matrix = e.currentTarget.getScreenCTM();
     return matrix ? new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse()) : null;
   };
+  // ---- 狙い方の手引き（#15）：棒の位置から逆算した引き方。短く引く手前の棒は、止める範囲も狭くする
+  const coachPeg = coachTarget && !usedIds.includes(coachTarget) ? pegs.find((p) => p.id === coachTarget) : undefined;
+  const coachPlan = coachPeg ? (() => {
+    const vec = ringPullFor(coachPeg);
+    const end = { x: COACH_START.x + vec.x, y: COACH_START.y + vec.y };
+    const top = projectRing({ ...coachPeg, z: PEG_HEIGHT + PEG_RADIUS });
+    const foot = projectRing({ ...coachPeg, z: 0 });
+    return { vec, end, lockR: Math.min(COACH_LOCK_R, Math.hypot(vec.x, vec.y) * 0.6), hole: { x: (top.x + foot.x) / 2, y: (top.y + foot.y) / 2, r: (foot.y - top.y) / 2 + 30 } };
+  })() : null;
   const preview = useMemo(() => aim ? aimRing(aim.x - aim.sx, aim.y - aim.sy, settings.ringTime) : null, [aim, settings.ringTime]);
   // 予測は的・棒のない空間で計算する。実投ではsolidsとの衝突を判定する。
   const previewPlan = useMemo(() => preview ? traceRing(preview, []) : null, [preview]);
@@ -119,9 +137,17 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     </g>;
   };
   return <div className={`field ring-field ${shaking ? 'shake' : ''}`}><svg ref={svg} viewBox="0 0 1000 480" aria-label="輪投げ・奥行きのある床と的"
-    onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(null); setFlying(null); setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
-    onPointerMove={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); if (p) setAim({ ...aim, x: p.x, y: p.y }); }}
-    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); const shot = p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.ringTime) : null; setAim(null); if (shot && active) { sfxRingThrow(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt), pressedAt: aim.downAt }; } }}
+    onPointerDown={(e) => { unlockAudio(); if (!active || !shotsLeft || flight.current || aim || e.button !== 0) return; const p = point(e); if (!p) return; e.currentTarget.setPointerCapture(e.pointerId); setFeedback(null); setFlying(null);
+      // 狙い方の手引きでは、どこを押しても、決めた「押すところ」から引いたことにする
+      if (coachPlan) { const c = coachPull(p, coachPlan.end, false, coachPlan.lockR); setAim({ sx: COACH_START.x, sy: COACH_START.y, x: c.x, y: c.y, locked: c.locked, pointer: e.pointerId, downAt: performance.now() }); }
+      else setAim({ sx: p.x, sy: p.y, x: p.x, y: p.y, pointer: e.pointerId, downAt: performance.now() }); }}
+    onPointerMove={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e); if (!p) return;
+      if (coachPlan) { const c = coachPull(p, coachPlan.end, !!aim.locked, coachPlan.lockR); setAim({ ...aim, x: c.x, y: c.y, locked: c.locked }); }
+      else setAim({ ...aim, x: p.x, y: p.y }); }}
+    onPointerUp={(e) => { if (aim?.pointer !== e.pointerId) return; const p = point(e);
+      // 狙い方の手引き：決めた位置まで引いて止めたときだけ、その引き方で投げる。届かずに離したら投げない
+      const shot = coachPlan ? (aim.locked ? aimRing(coachPlan.vec.x, coachPlan.vec.y, settings.ringTime) : null) : p ? aimRing(p.x - aim.sx, p.y - aim.sy, settings.ringTime) : null;
+      setAim(null); if (shot && active) { sfxRingThrow(); flight.current = { shot, plan: traceRing(shot, solids), start: performance.now(), pointerType: e.pointerType, aimMs: Math.round(performance.now() - aim.downAt), pressedAt: aim.downAt }; } }}
     onPointerCancel={() => setAim(null)} onLostPointerCapture={() => setAim(null)}>
     <rect width="1000" height="480" fill="var(--booth)" />
     <FestivalDecor instruction={INSTRUCTION.ring} instructionX={215} />
@@ -140,6 +166,9 @@ export function RingField({ problem, variant, settings, usedIds, shotsLeft, acti
     {!flight.current && (!flying || flying.t >= flying.plan.endTime) && shotsLeft > 0 && active && <Ring center={RING_FROM} />}
     <line x1={from.x + 22} y1="478" x2={from.x} y2={from.y + 8} stroke="var(--stand)" strokeWidth="12" strokeLinecap="round" />
     <AmmoLayer x={770} y={437} shots={problem.shots} shotsLeft={shotsLeft} kind="ring" />
+    {coachPlan && !flight.current && (!flying || flying.t >= flying.plan.endTime) && (
+      <PullCoach start={COACH_START} end={coachPlan.end} locked={!!aim?.locked} aiming={!!aim} holes={[coachPlan.hole]} view={{ x: 0, y: 0, width: 1000, height: 480 }} />
+    )}
     {feedback && <text key={feedback.id} x={feedback.x} y={feedback.y} className={`pop pop-${feedback.kind} ${feedback.kind === 'note' ? '' : 'pop-big'}`}>{feedback.text}</text>}
   </svg></div>;
 }
