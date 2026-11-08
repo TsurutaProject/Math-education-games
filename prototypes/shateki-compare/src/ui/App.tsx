@@ -10,6 +10,8 @@ import { PLATFORM_URL } from './platform';
 import { StageSelect } from './StageSelect';
 import { currentPlayerId, getLogLevel, logSessionEvent, nextPlayer, subscribeLog } from './logStore';
 import { SettingsPanel } from './SettingsPanel';
+import { useTutorial } from './useTutorial';
+import { afterLeave, IN_PROBLEM_STEPS, TUTORIAL_REF } from '../logic/tutorial';
 import {
   exhibitFromUrl,
   isStaffKey,
@@ -37,6 +39,11 @@ export function App() {
   const logLevel = useSyncExternalStore(subscribeLog, getLogLevel);
   // 遊んでいる人の id（ログ用）。「つぎの人へ」でだけ変わる
   const [playerId, setPlayerId] = useState(currentPlayerId);
+  // はじめの手引き（#15）。遊ぶ人ごとに1回だけ
+  const tutorial = useTutorial(playerId, settings.tutorial);
+  const inTutorialProblem = IN_PROBLEM_STEPS.includes(tutorial.step);
+  // 狙い方の手引きを見たことは ref に覚えるので、消すときに描き直す
+  const [, setPullRender] = useState(0);
   // ログに最後に残した設定（設定パネルを閉じたとき、変わっていれば残す）
   const loggedSettings = useRef(JSON.stringify(settings));
   // はじめはマップから。展示モードでもマップを出す（いまどこまで進んでいるかがわかるように。#52）
@@ -48,6 +55,8 @@ export function App() {
   const mapOpenedAt = useRef(performance.now());
   const mapMisses = useRef(0);
   const openMap = (reason: MapOpenReason) => {
+    // 1-1 の手引きの途中で出たら、マップからやり直す（クリアしたあとなら終わり）
+    if (inTutorialProblem) tutorial.go(afterLeave(tutorial.step));
     mapReason.current = reason;
     setMapOpenSeq((n) => n + 1);
     setSelectingStage(true);
@@ -119,7 +128,9 @@ export function App() {
   /** つぎの人へ：新しい人の id にして、図鑑を空にし、マップ（ステージ 1）にもどる */
   const startNextPlayer = () => {
     closeSettings();
-    setPlayerId(nextPlayer());
+    const player = nextPlayer();
+    setPlayerId(player);
+    tutorial.reset(player);
     zukan.current = new Map();
     played.current = new Set();
     setRef(FIRST_REF);
@@ -129,6 +140,8 @@ export function App() {
 
   /** つぎの問題へ。コースの最後の問題のあとはマップにもどる */
   const next = () => {
+    // 手引きの 1-1 から「つぎの問題へ」で進んだら、手引きは終わり
+    if (inTutorialProblem) tutorial.go('done');
     const to = nextRef(ref);
     if (!to) {
       openMap('course_end');
@@ -160,7 +173,8 @@ export function App() {
           ⚙️
         </button>}
       </header>
-      {selectingStage ? <StageSelect current={ref} zukan={zukan.current} played={played.current} settings={settings} exhibit={exhibit} onMiss={() => { mapMisses.current += 1; }} onSelect={(to) => {
+      {selectingStage ? <StageSelect current={tutorial.step === 'map' ? TUTORIAL_REF : ref}
+        guide={tutorial.step === 'map' ? { ref: TUTORIAL_REF, onSkip: () => tutorial.go('done', true) } : null} zukan={zukan.current} played={played.current} settings={settings} exhibit={exhibit} onMiss={() => { mapMisses.current += 1; }} onSelect={(to) => {
         const picked = nodeAt(to)!;
         logSessionEvent({
           type: 'map_select',
@@ -172,6 +186,7 @@ export function App() {
           mapMs: Math.round(performance.now() - mapOpenedAt.current),
           misses: mapMisses.current,
         });
+        if (tutorial.step === 'map') tutorial.go('goal');
         setRef(to); restartWith('select'); setSelectingStage(false);
       }} /> : <GameScreen
         key={`${session.n}-${mapNo(ref)}-${shooterOf(variant, play)}`}
@@ -186,6 +201,16 @@ export function App() {
         startReason={session.reason}
         onPlayed={() => played.current.add(problem.id)}
         onNext={next}
+        tutorial={inTutorialProblem && ref.stage === TUTORIAL_REF.stage && ref.index === TUTORIAL_REF.index ? tutorial.step : undefined}
+        onTutorial={tutorial.go}
+        pullGuide={!tutorial.pullSeen(shooterOf(variant, play))}
+        onPullGuideDone={(skipped) => {
+          const shooter = shooterOf(variant, play);
+          if (tutorial.pullSeen(shooter)) return;
+          logSessionEvent({ type: 'pull_guide', shooter, skipped });
+          tutorial.markPull(shooter);
+          setPullRender((n) => n + 1);
+        }}
       />}
       {showSettings && (
         <SettingsPanel

@@ -19,6 +19,8 @@ import { logEvent, nextAttemptNo } from './logStore';
 import { CelebrateOverlay, OutOverlay, SolutionCards, ZukanScreen } from './Overlays';
 import { shooterOf, type Settings } from './settings';
 import { sfxClear, sfxOut } from './sound';
+import { Spotlight, TutorialBubble } from './TutorialBubble';
+import { afterRestart, afterShot, coachTargets, TUTORIAL_TARGET, type TutorialStep } from '../logic/tutorial';
 import { FIELD_H, FIELD_W } from '../logic/hit';
 
 type Phase = 'playing' | 'celebrate' | 'zukan' | 'out';
@@ -40,6 +42,15 @@ interface Props {
   /** 1発撃ったとき（マップの「挑戦済み」用） */
   onPlayed: () => void;
   onNext: () => void;
+  /** はじめの手引き（#15）の手順。1-1 で手引きをしているときだけ渡す */
+  tutorial?: TutorialStep;
+  onTutorial?: (step: TutorialStep, skipped?: boolean) => void;
+  /**
+   * パチンコ・輪投げの狙い方の手引きを出すか（その人がまだ見ていない射撃タイプのとき）。
+   * 手引きをする問題（COACH_PLANS）でだけ出る。onPullGuideDone で、見たことを覚える
+   */
+  pullGuide?: boolean;
+  onPullGuideDone?: (skipped: boolean) => void;
 }
 
 /** バリエーションごとの「手応え」の違い（C を厚くする） */
@@ -51,7 +62,7 @@ const FEEL: Record<Variant, { celebrateMs: number; outDelayMs: number }> = {
   E: { celebrateMs: 900, outDelayMs: 600 },
 };
 
-export function GameScreen({ problem, variant, mapNo, unit, role, settings, zukan, playerId, startReason, onPlayed, onNext }: Props) {
+export function GameScreen({ problem, variant, mapNo, unit, role, settings, zukan, playerId, startReason, onPlayed, onNext, tutorial = 'done', onTutorial = () => {}, pullGuide = false, onPullGuideDone = () => {} }: Props) {
   const [game, setGame] = useState<GameState>(() => newGame(problem));
   const [phase, setPhase] = useState<Phase>('playing');
   const [round, setRound] = useState(0);
@@ -81,6 +92,13 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
   const allFound = entries.length >= total;
   const prize = variant === 'C' ? prizeFor(problem.id) : undefined;
   const PlayField = shooter === 'ring' ? RingField : Field;
+  // 手引きで、説明を読んでもらう手順（このあいだは撃てない）。ヒントは自分で選ぶ手順から
+  const tutorialReading = tutorial === 'goal' || tutorial === 'current' || tutorial === 'changed';
+  const tutorialGuiding = tutorialReading || tutorial === 'aim';
+  // 狙い方の手引き：決めた的を順に撃たせる。coachDone はこの挑戦で手引きどおりに当てた数
+  const coachList = pullGuide ? coachTargets(shooter, problem.id) : null;
+  const [coachDone, setCoachDone] = useState(0);
+  const coachTarget = coachList && coachDone < coachList.length && phase === 'playing' ? coachList[coachDone] : null;
 
   const ctx = (): LogContext => ({
     playerId,
@@ -158,13 +176,17 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
       setHint(null);
       setRestartPulse(0);
       setRound((r) => r + 1);
+      setCoachDone(0);
+      // 手引き：当てたあとの説明なら、もう一度撃たせる。クリア後に「べつの解き方」を選んだら、手引きは終わり
+      if (reason === 'another_way' && tutorial === 'next') onTutorial('done');
+      else onTutorial(afterRestart(tutorial));
       logEvent(
         { playerId, variant, shooter, stage: problem.stage, problemId: problem.id, attemptId: attemptId.current },
         startPayload(reason),
       );
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [problem, variant, shooter, playerId],
+    [problem, variant, shooter, playerId, tutorial],
   );
 
   const onRestartButton = () => {
@@ -184,7 +206,7 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
    * マイナスを通らない道だけから選ぶ
    */
   const onHint = () => {
-    if (phase !== 'playing' || allFound) return;
+    if (phase !== 'playing' || allFound || tutorialGuiding || coachTarget) return;
     const h = chooseHint(problem, game, new Set(entries.map((e) => e.key)), {
       previousKey: hintKey.current,
       nonNegativeOnly: variant === 'D' || variant === 'E',
@@ -252,8 +274,14 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
       });
     }
     setGame(next);
+    if (coachList && coachTarget && info.targetId === coachTarget) {
+      if (coachDone + 1 >= coachList.length) onPullGuideDone(false);
+      setCoachDone((n) => n + 1);
+    }
+    if (tutorial === 'aim') onTutorial(afterShot(tutorial, info.targetId));
 
     if (next.status === 'cleared') {
+      if (tutorial === 'free') onTutorial('next');
       const key = solutionKey(next.steps);
       const expression = formatExpression(next.steps);
       const isNew = recordSolution(zukan, zid, { key, expression });
@@ -303,10 +331,31 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
             usedIds={game.usedIds}
             calc={game.calc}
             shotsLeft={game.shotsLeft}
-            active={phase === 'playing'}
+            active={phase === 'playing' && !tutorialReading}
             hint={hint}
+            tutorialTarget={tutorial === 'aim' ? TUTORIAL_TARGET : null}
+            coachTarget={coachTarget}
             onShot={onShot}
           />
+          {coachTarget && coachList && <TutorialBubble className="tutorial-corner tutorial-compact" onSkip={() => onPullGuideDone(true)}>
+            {coachDone === 0 ? 'ひかっている まとを ねらおう' : 'こんどは とおくの まとを ねらおう'}
+          </TutorialBubble>}
+          {/* 1-1 の手引き：画面を暗くして、見てほしいところだけ照らす */}
+          {tutorial === 'goal' && <Spotlight selector=".equation-goal" onOk={() => onTutorial('current')} onSkip={() => onTutorial('done', true)}>
+            <b>めあて</b>　この かずに しよう
+          </Spotlight>}
+          {tutorial === 'current' && <Spotlight selector=".equation-zero" onOk={() => onTutorial('aim')} onSkip={() => onTutorial('done', true)}>
+            <b>いまの かず</b>　0 から スタート
+          </Spotlight>}
+          {tutorial === 'aim' && <Spotlight selector={`[data-target-id="${TUTORIAL_TARGET}"]`} pad={14} round tap onSkip={() => onTutorial('done', true)}>
+            ここを タップ！
+          </Spotlight>}
+          {tutorial === 'changed' && <Spotlight selector=".festival-equation-area" pad={6} onOk={() => onTutorial('free')} onSkip={() => onTutorial('done', true)}>
+            <b>{game.current}</b> に なった！　あと <b>{problem.goal - game.current}</b>
+          </Spotlight>}
+          {tutorial === 'free' && phase === 'playing' && <TutorialBubble className="tutorial-bottom" onSkip={() => onTutorial('done', true)}>
+            あとは じぶんで えらんで <b>{problem.goal}</b> に しよう
+          </TutorialBubble>}
         </div>
         <div className="play-bottom">
           <section className="play-zukan" aria-labelledby="play-zukan-title">
@@ -325,7 +374,7 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
             <button
               className="btn hint-btn"
               onClick={onHint}
-              disabled={allFound || phase !== 'playing'}
+              disabled={allFound || phase !== 'playing' || tutorialGuiding}
               aria-label={allFound ? 'ヒント（ぜんぶ 見つけた）' : 'ヒント'}
               title={allFound ? 'ぜんぶ 見つけた！' : 'ヒント'}
             >
@@ -357,10 +406,14 @@ export function GameScreen({ problem, variant, mapNo, unit, role, settings, zuka
           latestKey={latest.key}
           latestIsNew={latest.isNew}
           prize={prize}
+          guideNext={tutorial === 'next'}
           onAnother={() => startAgain('another_way')}
           onNext={onNext}
         />
       )}
+      {phase === 'zukan' && tutorial === 'next' && <Spotlight selector=".tutorial-pulse" onSkip={() => onTutorial('done', true)}>
+        できたね！　つぎの もんだいへ
+      </Spotlight>}
     </div>
   );
 }

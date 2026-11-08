@@ -136,4 +136,9 @@ describe('playSettings（展示モードで射撃タイプを問題ごとに固�
     const custom = { ...s, slingSpeed: 1234 };
     expect(playSettings({ shooter: 'gun' }, custom, true)).toEqual({ ...custom, shooter: 'gun' });
   });
+
+  it('はじめの手引きは、既定で出す。前に保存した設定（tutorial がない）も既定のまま（#15）', () => {
+    expect(DEFAULT_SETTINGS.tutorial).toBe(true);
+    expect({ ...DEFAULT_SETTINGS, ...upgradeSaved({ laneAssist: false }) }.tutorial).toBe(true);
+  });
 });

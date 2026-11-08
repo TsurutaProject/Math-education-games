@@ -1,4 +1,5 @@
 import type { NodeRole, Unit } from './course';
+import type { TutorialStep } from './tutorial';
 import type { Op, Shooter, Variant } from './types';
 
 /**
@@ -122,7 +123,15 @@ export type SessionPayload =
       skippedMapNos: string[];
       mapMs: number;
       misses: number;
-    };
+    }
+  /**
+   * はじめの手引き（#15）の手順が変わった。step = 新しい手順、from = 前の手順、fromMs = 前の手順にいた時間。
+   * skipped = 「とばす」を押して終えた。step が map なのは、クリアする前に 1-1 から出て、マップからやり直したとき。
+   * 手引きが始まったことは残さない（その人の最初の map_open が始まり）
+   */
+  | { type: 'tutorial'; step: TutorialStep; from: TutorialStep; fromMs: number; skipped: boolean }
+  /** パチンコ・輪投げの狙い方の手引き（#15）を終えた。skipped = 「とばす」を押した（false なら手引きの的を全部当てた） */
+  | { type: 'pull_guide'; shooter: string; skipped: boolean };
 
 /** イベントの中身（遊びのイベントか、遊びの外のイベント） */
 export type LogBody = (LogContext & LogPayload) | ({ playerId: string } & SessionPayload);

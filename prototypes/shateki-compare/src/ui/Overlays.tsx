@@ -56,6 +56,7 @@ export function ZukanScreen({
   latestKey,
   latestIsNew,
   prize,
+  guideNext = false,
   onAnother,
   onNext,
 }: {
@@ -65,6 +66,8 @@ export function ZukanScreen({
   latestKey: string;
   latestIsNew: boolean;
   prize?: string;
+  /** はじめの手引き（#15）：「つぎの問題へ」を光らせて、押してもらう */
+  guideNext?: boolean;
   onAnother: () => void;
   onNext: () => void;
 }) {
@@ -92,11 +95,11 @@ export function ZukanScreen({
 
         <div className="zukan-buttons">
           {!all && (
-            <button className="btn primary" onClick={onAnother} autoFocus>
+            <button className={`btn ${guideNext ? 'ghost' : 'primary'}`} onClick={onAnother} autoFocus={!guideNext}>
               べつの解き方をさがす
             </button>
           )}
-          <button className={`btn ${all ? 'primary' : 'ghost'}`} onClick={onNext}>
+          <button className={`btn ${all || guideNext ? 'primary' : 'ghost'} ${guideNext ? 'tutorial-pulse' : ''}`} onClick={onNext} autoFocus={guideNext}>
             つぎの問題へ
           </button>
           {all && (

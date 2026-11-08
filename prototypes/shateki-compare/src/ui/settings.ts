@@ -38,6 +38,8 @@ export interface Settings {
   riseStanding: number;
   /** E で、当てた・いれかえたあと、別の場所に新しい的が起き上がるまでの秒数 */
   riseDelay: number;
+  /** はじめの手引き（マップから 1-1 まで）と、パチンコ・輪投げの最初の狙い方の手引きを出すか（#15） */
+  tutorial: boolean;
   /** 今の式を画面に出すか */
   showExpression: boolean;
   sound: boolean;
@@ -64,6 +66,7 @@ export const DEFAULT_SETTINGS: Settings = {
   laneBoard: true,
   riseStanding: 6,
   riseDelay: 1,
+  tutorial: true,
   showExpression: true,
   sound: true,
   bgm: false,

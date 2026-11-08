@@ -1,4 +1,5 @@
 import { Artwork } from './Artwork';
+import { coachPull, PullCoach, TutorialGlow } from './TutorialBubble';
 import { FestivalDecor } from './FestivalDecor';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -38,7 +39,7 @@ import {
   type RiseContext,
   type RiseState,
 } from '../logic/rise';
-import { normalizeAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
+import { LAUNCHER, normalizeAngle, launchBall, launchFromPull, stepBall, type Ball, type Launch } from '../logic/sling';
 import type { Problem, Variant } from '../logic/types';
 import { INSTRUCTION, shooterOf, type Settings } from './settings';
 import { GunLayer, GUN_MUZZLE } from './GunLayer';
@@ -78,6 +79,13 @@ interface Props {
   active: boolean;
   /** ヒントで光らせる的（#57） */
   hint: HintMark | null;
+  /** はじめの手引き（#15）：この的だけ光らせ、ほかの的は押しても何も起きない（弾も減らない）。A（タップ）だけ */
+  tutorialTarget?: string | null;
+  /**
+   * 狙い方の手引き（#15）：パチンコで、この的に当たる引き方を見せて、その通り引いてもらう。
+   * 手引きのあいだは的の動きを止める。決めた位置まで引かずに離したら撃たない（弾も減らない）
+   */
+  coachTarget?: string | null;
   onShot: (info: ShotInfo) => void;
 }
 
@@ -105,6 +113,8 @@ interface Aim {
   sy: number;
   /** 押しはじめた時刻（performance.now）。狙っていた時間をログに残すため */
   downAt: number;
+  /** 狙い方の手引きで、決めた位置まで引いて止めているか */
+  locked?: boolean;
 }
 
 interface SlingFlight {
@@ -133,8 +143,11 @@ const BOTTOM_MISS_DELAY = 0.1;
 /** コルクが飛び出す位置（画面の下の真ん中） */
 const MUZZLE = GUN_MUZZLE;
 const SLING_WALL_WIDTH = 12;
+/** 狙い方の手引き（#15）で、押すところ（フィールドの単位）と、引く長さ */
+const COACH_START = { x: FIELD_W / 2, y: 330 };
+const COACH_PULL = 110;
 
-export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, hint, onShot }: Props) {
+export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, active, hint, tutorialTarget = null, coachTarget = null, onShot }: Props) {
   const glowing = useHintGlow(hint);
   const svgRef = useRef<SVGSVGElement>(null);
   const riskMode = variant === 'C';
@@ -442,6 +455,24 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     return { x: a.x + dx, y: a.y - offset + dy };
   };
 
+  // ---- 狙い方の手引き（#15）：押すところ（いつも同じ場所）と、そこから引く向き・長さ。的は止めておく
+  const coach = coachTarget && slingMode && !usedIds.includes(coachTarget) ? coachTarget : null;
+  const coachPlan = (() => {
+    if (!coach) return null;
+    const t = positionOf(coach, clockRef.current);
+    const len = Math.hypot(t.x - LAUNCHER.x, t.y - LAUNCHER.y) || 1;
+    // 弾は発射台から、引いた向きの反対へ飛ぶ。的に向けて飛ぶよう、的と反対向きに引く
+    const vec = { x: (-(t.x - LAUNCHER.x) / len) * COACH_PULL, y: (-(t.y - LAUNCHER.y) / len) * COACH_PULL };
+    return { target: t, r: radiusOf(coach), vec, start: COACH_START, end: { x: COACH_START.x + vec.x, y: COACH_START.y + vec.y } };
+  })();
+  useEffect(() => {
+    if (!coach) return;
+    freezeUntil.current = Infinity;
+    return () => {
+      if (freezeUntil.current === Infinity) freezeUntil.current = 0;
+    };
+  }, [coach]);
+
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     unlockAudio();
     if (!canShoot()) return;
@@ -450,6 +481,8 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     if (!aimMode) {
       // A：的をタップすれば必ず当たる。何もない所は弾を使わない。
       const hit = hitTest(pt, circlesAt(clockRef.current), TAP_TOLERANCE);
+      // 手引きのあいだは、光らせた的のほかは押しても何も起きない
+      if (tutorialTarget && hit !== tutorialTarget) return;
       aimMsOfShot.current = null;
       pressedAtOfShot.current = performance.now();
       if (hit) fire(pt, hit, 1, e.pointerType);
@@ -461,7 +494,10 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     } catch {
       // 合成イベントなどでキャプチャできなくても狙えるようにする
     }
-    setAim({ pointerId: e.pointerId, pointerType: e.pointerType, ...pt, sx: pt.x, sy: pt.y, downAt: performance.now() });
+    // 狙い方の手引きでは、どこを押しても、決めた「押すところ」から引いたことにする
+    const anchor = coachPlan ? coachPlan.start : pt;
+    const c = coachPlan ? coachPull(pt, coachPlan.end, false) : { ...pt, locked: false };
+    setAim({ pointerId: e.pointerId, pointerType: e.pointerType, x: c.x, y: c.y, sx: anchor.x, sy: anchor.y, downAt: performance.now(), locked: c.locked });
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -472,7 +508,11 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
       return;
     }
     const pt = toField(e);
-    if (pt) setAim({ ...aim, ...pt });
+    if (!pt) return;
+    if (coachPlan) {
+      const c = coachPull(pt, coachPlan.end, !!aim.locked);
+      setAim({ ...aim, x: c.x, y: c.y, locked: c.locked });
+    } else setAim({ ...aim, ...pt });
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
@@ -482,9 +522,12 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
     aimMsOfShot.current = Math.round(performance.now() - aim.downAt);
     pressedAtOfShot.current = aim.downAt;
     if (slingMode) {
+      // 狙い方の手引き：決めた位置まで引いて止めたときだけ、その引き方（揺れなし）で撃つ。届かずに離したら撃たない
+      if (coachPlan && !aim.locked) return;
       // 短く引いただけなら撃たない（弾も減らない）
-      const launch = slingLaunchOf(aim);
+      const launch = coachPlan ? launchFromPull(coachPlan.vec.x, coachPlan.vec.y, true) : slingLaunchOf(aim);
       if (!launch) return;
+      if (coachPlan) freezeUntil.current = 0;
       sfxSling();
       flight.current = {
         kind: 'sling',
@@ -574,7 +617,10 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
                   <line x1={-p.amp - x + p.x} x2={p.amp - x + p.x} y1={78} y2={78} className="rail" />
                 )}
                 <TargetMark op={t.op} value={t.value} r={p.r} className={down ? 'down' : ''} />
+                {/* 手引き（#15）で、画面の上の的の位置を探すための目印（見えない） */}
+                {!down && <circle r={p.r} fill="none" pointerEvents="none" data-target-id={p.id} />}
                 {!down && glowing(p.id) && <HintGlow seq={hint!.seq} r={p.r + 14} />}
+                {!down && tutorialTarget === p.id && <TutorialGlow r={p.r + 14} />}
               </g>
             );
           })
@@ -634,6 +680,16 @@ export function Field({ problem, variant, settings, usedIds, calc, shotsLeft, ac
           </>
         )}
         {aim && (pullMode || aim.pointerType === 'touch') && <circle cx={aim.x} cy={aim.y} r={14} className="finger" />}
+        {coachPlan && !f && (
+          <PullCoach
+            start={coachPlan.start}
+            end={coachPlan.end}
+            locked={!!aim?.locked}
+            aiming={!!aim}
+            holes={[{ ...coachPlan.target, r: coachPlan.r + 30 }]}
+            view={{ x: view.x, y: 0, width: view.width, height: view.height }}
+          />
+        )}
       </svg>
     </div>
   );
