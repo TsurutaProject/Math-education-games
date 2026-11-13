@@ -10,6 +10,26 @@ export function LogExport({ open, onChange }: { open: boolean; onChange: (open: 
     if (open) dialog.current?.showModal()
     else dialog.current?.close()
   }, [open])
+  useEffect(() => {
+    const openSettings = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || !event.shiftKey || event.altKey || event.metaKey
+        || event.code !== 'KeyS' || event.repeat || event.isComposing) return
+      event.preventDefault()
+      setView('settings')
+      setError('')
+      onChange(true)
+    }
+    // The game runs in a same-origin design iframe. Listen on its parent too
+    // so the shortcut works after clicking the surrounding page margin.
+    const targets = [window]
+    try {
+      if (window.parent !== window && window.parent.location.origin === window.location.origin) {
+        targets.push(window.parent)
+      }
+    } catch { /* A cross-origin embed cannot expose its parent window. */ }
+    targets.forEach(target => target.addEventListener('keydown', openSettings))
+    return () => targets.forEach(target => target.removeEventListener('keydown', openSettings))
+  }, [onChange])
   const download = () => {
     const recorder = getResearch()
     recorder.event('export', { format: 'json' })
@@ -36,7 +56,6 @@ export function LogExport({ open, onChange }: { open: boolean; onChange: (open: 
     }
   }
   return <>
-    <button type="button" className="sound-toggle research-export" aria-label="設定" aria-haspopup="dialog" onClick={() => { setView('settings'); setError(''); onChange(true) }}>⚙️</button>
     <dialog className="research-dialog" ref={dialog} onCancel={() => onChange(false)} aria-labelledby="research-title">
       <h2 id="research-title"><FuriganaText text={view === 'settings' ? '設定' : view === 'export' ? 'ログを取得しますか？' : 'キャッシュをクリアしますか？'} /></h2>
       {view === 'settings' ? <>

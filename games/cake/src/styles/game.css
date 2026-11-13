@@ -3730,7 +3730,6 @@ rt {
 }
 
 /* Research export is deliberately separate from the silent recording process. */
-.sound-toggle.research-export { right: 190px; }
 .research-dialog { width: min(820px, 85vw); padding: 40px; border: 3px solid #d88c3d; border-radius: 20px; color: #573c29; font-size: 24px; background: #fffdf5; }
 .research-dialog::backdrop { background: rgb(42 28 15 / 55%); }
 .research-actions { display: flex; gap: 20px; justify-content: flex-end; margin-top: 32px; }

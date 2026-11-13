@@ -417,6 +417,38 @@ body, #root {
   text-align: center;
   line-height: 1.15;
   font-size: 26px !important;
-  padding-top: 10px;
+  padding-top: 0;
 }
-.order-bubble__message .order-label { font-size: 20px !important; padding-top: 7px; }
+.order-bubble__message .order-label { font-size: 20px !important; padding-top: 0; }
+
+/* Explicit badge readings avoid native ruby ascent differences between engines. */
+.board-label, .order-bubble__message .order-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.badge-text { display: inline-block; padding-top: 0.45em; }
+.badge-ruby { position: relative; }
+.badge-reading {
+  position: absolute;
+  top: -0.65em;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.5em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.badge-text.badge-ruby .badge-reading { top: 0; }
+.trophy-browser .help-dialog__close { padding: 0; }
+.trophy-browser .help-dialog__close svg { display: block; width: 16px; height: 16px; }
+.board-label .badge-text, .board-label .badge-ruby,
+.order-bubble__message .order-label .badge-text {
+  color: #fff;
+  font-size: inherit;
+}
+.board-label .badge-reading,
+.order-bubble__message .order-label .badge-reading {
+  color: #fff;
+  font-size: 0.5em;
+}

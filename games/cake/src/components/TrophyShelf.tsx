@@ -76,7 +76,9 @@ export function TrophyShelf({ trophies, unlockedTrophyIds, progress }: TrophyShe
               aria-label="閉じる"
               onClick={() => setIsTrophyListOpen(false)}
             >
-              ×
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                <path d="M5 5L15 15M15 5L5 15" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+              </svg>
             </button>
             <div className="trophy-browser__header">
               <h2 id="trophy-list-title">トロフィー</h2>
