@@ -21,7 +21,7 @@ export function LogExport({ open, onChange }: { open: boolean; onChange: (open: 
     }
     // The game runs in a same-origin design iframe. Listen on its parent too
     // so the shortcut works after clicking the surrounding page margin.
-    const targets = [window]
+    const targets: Window[] = [window]
     try {
       if (window.parent !== window && window.parent.location.origin === window.location.origin) {
         targets.push(window.parent)
