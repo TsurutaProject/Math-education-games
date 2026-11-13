@@ -42,7 +42,15 @@ test('画面・データ・保存エラーの日本語文字列に読みの抜�
     const value=node.head.text+node.templateSpans.map(span=>'1'+span.literal.text).join('')
     assert.deepEqual(missingRuby(render(value)),[],`${file}: ${value}`)
    }
-   if(ts.isJsxText(node))assert.ok(!/[一-龯]/.test(node.text),`${file}: raw JSX ${node.text}`)
+   if(ts.isJsxText(node)&&/[一-龯]/.test(node.text)){
+    const reading={ '板':'いた', '注文':'ちゅうもん' }[node.text.trim()]
+    const parent=node.parent
+    const hasClass=(el,name)=>ts.isJsxElement(el)&&el.openingElement.attributes.properties.some(a=>ts.isJsxAttribute(a)&&a.name.text==='className'&&a.initializer?.text?.split(' ').includes(name))
+    assert.ok(hasClass(parent,'badge-ruby')&&reading,`${file}: raw JSX ${node.text}`)
+    const annotation=parent.children.find(child=>hasClass(child,'badge-reading'))
+    assert.ok(annotation,`${file}: badge reading missing`)
+    assert.equal(annotation.children.map(child=>ts.isJsxText(child)?child.text:'').join(''),reading)
+   }
    ts.forEachChild(node,visit)
   }
   visit(ast)

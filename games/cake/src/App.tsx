@@ -1365,7 +1365,7 @@ function App() {
           <OrderBubble order={activeOrder} cake={getCakeById(activeOrder.cakeKind)} onHintToggle={open => getResearch().action(open ? 'hint_open' : 'hint_close')} />
         </section>
         <section className="play-area" aria-label="まな板">
-          <div className="workbench-heading"><h2 className="asset-label board-label"><FuriganaText text="まな板" /></h2>
+          <div className="workbench-heading"><h2 className="asset-label board-label"><span className="badge-text" aria-label="まな板">まな<span className="badge-ruby">板<span className="badge-reading" aria-hidden="true">いた</span></span></span></h2>
             <button type="button" data-se="none" className="button reset-cake" onClick={clearTray} title="トレーと切り方をリセットします">↻ <FuriganaText text="切り直す" /></button>
           </div>
           {showCakeSelector ? <CakeSelector
