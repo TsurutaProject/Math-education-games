@@ -47,7 +47,7 @@ export function LogExport({ open, onChange }: { open: boolean; onChange: (open: 
   const resetProgress = () => {
     try {
       // Reset only this game's progress and research data.
-      const keys = ['fraction-cake-guided-tutorial-seen-v3', 'cake-game:completed-stages', 'cake-game:stage-serves', 'cake-game:max-unlocked-stage', 'cake-game:unlocked-cakes']
+      const keys = ['fraction-cake-guided-tutorial-seen-v3', 'cake-game:completed-stages', 'cake-game:stage-serves', 'cake-game:max-unlocked-stage', 'cake-game:stage-order-version', 'cake-game:unlocked-cakes']
       for (const key of keys) window.localStorage.removeItem(key)
       getResearch().resetAll()
       window.location.reload()

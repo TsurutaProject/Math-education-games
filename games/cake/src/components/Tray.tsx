@@ -1,3 +1,4 @@
+import { getCakeById } from '../data/cakes'
 import type { DragEvent } from 'react'
 import type { CakePieceModel, Topping } from '../types/game'
 import { CakePiecePreview } from './CakePiecePreview'
@@ -50,7 +51,7 @@ export function Tray({ selectedPieces, maxPieces, cakeImageUrl, toppings, onRemo
               onClick={() => onRemovePiece(piece)}
               style={{ borderColor: piece.color }}
             >
-              <CakePiecePreview piece={piece} imageUrl={cakeImageUrl} toppings={toppings} />
+              <CakePiecePreview piece={piece} imageUrl={piece.cakeKind ? getCakeById(piece.cakeKind).imageUrl : cakeImageUrl} toppings={piece.toppings ?? toppings} />
             </button>
           ))
         )}

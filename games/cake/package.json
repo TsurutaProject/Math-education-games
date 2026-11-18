@@ -10,7 +10,8 @@
     "test:research": "node --test tests/research.test.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test:stages": "node --test tests/new-stages.test.mjs tests/stage-flow.test.mjs"
   },
   "dependencies": {
     "react": "^19.2.6",

@@ -1,3 +1,4 @@
+import { isAdminMode } from '../admin'
 import type { Order, Stage, TrophyDefinition, TrophyProgress } from '../types/game'
 
 export const LOG_KEY = 'cake-game:research-v1'
@@ -35,6 +36,7 @@ export class ResearchRecorder {
   log: Log
   sessionId = uid()
   storageError = ''
+  private disabled: boolean
   private storage: StorageLike
   private now: () => number
   private last: number
@@ -45,11 +47,13 @@ export class ResearchRecorder {
   private progressSignature = ''
   private snapshots = new Map<string, string>()
 
-  constructor(storage: StorageLike, now = () => performance.now()) {
+  constructor(storage: StorageLike, now = () => performance.now(), disabled = false) {
+    this.disabled = disabled
     this.storage = storage
     this.now = now
     this.last = now()
     this.log = { schemaVersion: 1, appVersion: 'cake-research-1', playerId: uid(), createdAt: iso(), events: [], stages: [], orders: [] }
+    if (disabled) return
     try {
       const saved = storage.getItem(LOG_KEY)
       if (saved) {
@@ -70,6 +74,7 @@ export class ResearchRecorder {
   }
 
   checkpoint() {
+    if (this.disabled) return
     const time = this.now()
     const delta = Math.max(0, time - this.last)
     if (this.running && this.stage?.ready) {
@@ -79,22 +84,26 @@ export class ResearchRecorder {
     this.last = time
   }
   save() {
+    if (this.disabled) return
     this.checkpoint()
     try { this.storage.setItem(LOG_KEY, JSON.stringify(this.log)); this.storageError = '' }
     catch { this.storageError = 'ブラウザーへの保存に失敗しています。画面を閉じる前にログを書き出してください。' }
   }
   event(type: string, data: Data = {}) {
+    if (this.disabled) return
     this.checkpoint()
     this.log.events.push({ id: this.log.events.length + 1, at: iso(), sessionId: this.sessionId, stageRunId: this.stage?.id, orderRunId: this.order?.id, type, data: { ...data, tutorial: this.tutorial } })
     this.save()
   }
   snapshot(type: string, data: Data) {
+    if (this.disabled) return
     const signature = JSON.stringify(data)
     if (this.snapshots.get(type) === signature) return
     this.snapshots.set(type, signature)
     this.event(type, data)
   }
   enter(stage: Stage, baseline: number, replay: boolean, initialTutorial: boolean) {
+    if (this.disabled) return
     this.leave('stage_change')
     this.stage = !replay ? this.log.stages.findLast(s => s.stageId === stage.id && !s.cleared && !s.replay && !s.reset) : undefined
     if (!this.stage) {
@@ -107,6 +116,7 @@ export class ResearchRecorder {
     if (initialTutorial) this.event('tutorial_start', { initial: true })
   }
   leave(reason: string) {
+    if (this.disabled) return
     if (!this.stage) return
     this.interruptOrder(reason)
     this.event('stage_leave', { reason })
@@ -115,6 +125,7 @@ export class ResearchRecorder {
     this.tutorial = false
   }
   resetAll() {
+    if (this.disabled) return
     // Clear memory too: pagehide/interval saves must never restore the old log.
     this.running = false
     this.stage = undefined
@@ -128,13 +139,20 @@ export class ResearchRecorder {
     this.save()
     if (this.storageError) throw Error(this.storageError)
   }
-  tutorialStart() { this.setRunning(false, 'tutorial'); this.tutorial = true; this.event('tutorial_start', { initial: false }) }
+  tutorialStart() {
+    if (this.disabled) return
+    this.setRunning(false, 'tutorial')
+    this.tutorial = true
+    this.event('tutorial_start', { initial: false })
+  }
   tutorialEnd(reason: string, initial: boolean) {
+    if (this.disabled) return
     this.event('tutorial_end', { reason, initial })
     this.tutorial = false
     if (initial && this.stage) { this.stage.ready = true; this.event('measurement_start', { reason }) }
   }
   setRunning(value: boolean, reason: string) {
+    if (this.disabled) return
     const next = value && !!this.stage?.ready && !this.tutorial
     if (this.running === next) return
     this.checkpoint()
@@ -142,18 +160,21 @@ export class ResearchRecorder {
     this.event(next ? 'timer_resume' : 'timer_pause', { reason })
   }
   ensureOrder(order: Order) {
+    if (this.disabled) return
     if (!this.stage || this.tutorial || !this.stage.ready || this.order) return
     this.order = { id: uid(), stageRunId: this.stage.id, sessionId: this.sessionId, order: structuredClone(order), startedAt: iso(), activeMs: 0, hints: 0, resets: 0, attempts: 0, status: 'unfinished' }
     this.log.orders.push(this.order)
     this.event('order_start', { order })
   }
   interruptOrder(reason: string) {
+    if (this.disabled) return
     if (!this.order) return
     this.event('order_interrupted', { reason })
     this.order.status = 'interrupted'; this.order.endedAt = iso(); this.order = undefined
     this.save()
   }
   action(type: string, data: Data = {}) {
+    if (this.disabled) return
     if (!this.tutorial) {
       if (type === 'hint_open') { if (this.stage) this.stage.hints++; if (this.order) this.order.hints++ }
       if (type === 'reset') { if (this.stage) this.stage.resets++; if (this.order) this.order.resets++ }
@@ -162,12 +183,14 @@ export class ResearchRecorder {
     this.event(type, data)
   }
   sold(data: Data & { combo: number; recipeMatched: boolean; pieceCountMatched: boolean }) {
+    if (this.disabled) return
     this.event('sale', data)
     if (this.order) { Object.assign(this.order, { status: 'sold', endedAt: iso(), recipeMatched: data.recipeMatched, pieceCountMatched: data.pieceCountMatched }); this.order = undefined }
     if (this.stage) { this.stage.sales++; this.stage.maxCombo = Math.max(this.stage.maxCombo, data.combo) }
     this.save()
   }
   clear() {
+    if (this.disabled) return
     this.checkpoint()
     if (this.stage && !this.stage.cleared) {
       this.stage.cleared = true; this.stage.clearMs = this.stage.activeMs; this.stage.endedAt = iso()
@@ -176,6 +199,7 @@ export class ResearchRecorder {
     this.setRunning(false, 'stage_clear')
   }
   trophies(progress: TrophyProgress, definitions: TrophyDefinition[]) {
+    if (this.disabled) return
     const signature = JSON.stringify(progress)
     if (signature === this.progressSignature) return
     this.progressSignature = signature
@@ -214,8 +238,8 @@ let recorder: ResearchRecorder | undefined
 export function getResearch() {
   if (!recorder) {
     let storage: StorageLike
-    try { storage = window.localStorage } catch { storage = { getItem: () => null, setItem: () => { throw Error('Storage disabled') } } }
-    recorder = new ResearchRecorder(storage)
+    try { storage = isAdminMode ? { getItem: () => null, setItem: () => {} } : window.localStorage } catch { storage = { getItem: () => null, setItem: () => { throw Error('Storage disabled') } } }
+    recorder = new ResearchRecorder(storage, undefined, isAdminMode)
   }
   return recorder
 }

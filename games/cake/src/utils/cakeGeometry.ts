@@ -142,7 +142,8 @@ const createPieceFromAngles = (
 })
 
 export const createWholeCakePiece = (cake?: CakeDefinition): CakePieceModel => ({
-  id: 'whole-cake',
+  id: `whole-cake-${cake?.id ?? 'shortcake'}`,
+  cakeKind: cake?.id,
   fraction: { numerator: 1, denominator: 1 },
   cutDenominator: 1,
   startAngle: 0,

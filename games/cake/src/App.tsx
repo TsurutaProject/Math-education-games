@@ -1,3 +1,9 @@
+import { drawMasterOrder } from './data/masterOrders'
+import { getUnlockedStageIndex, stageOrderVersion } from './utils/stageProgress'
+import { getToppingFeedback } from './data/toppingFeedback'
+import { gameStorage, isAdminMode } from './admin'
+import { evaluateOrder } from './utils/orderEvaluation'
+import { createToppingLayout, drawToppingOrder } from './data/toppingChallenge'
 import { getResearch } from './research/recorder'
 import { LogExport } from './components/LogExport'
 import { useSoundEffects } from './hooks/useSoundEffects'
@@ -83,7 +89,7 @@ const unlockedCakeIdsStorageKey = 'cake-game:unlocked-cakes'
 
 const shouldShowTutorial = (): boolean => {
   try {
-    return window.localStorage.getItem(tutorialStorageKey) !== 'true'
+    return gameStorage.getItem(tutorialStorageKey) !== 'true'
   } catch {
     return true
   }
@@ -91,7 +97,7 @@ const shouldShowTutorial = (): boolean => {
 
 const readCompletedStageIds = (): string[] => {
   try {
-    const storedValue = window.localStorage.getItem(completedStagesStorageKey)
+    const storedValue = gameStorage.getItem(completedStagesStorageKey)
     const parsedValue: unknown = storedValue === null ? [] : JSON.parse(storedValue)
 
     return Array.isArray(parsedValue)
@@ -104,7 +110,7 @@ const readCompletedStageIds = (): string[] => {
 
 const readStageServes = (): Record<string, number> => {
   try {
-    const parsed: unknown = JSON.parse(window.localStorage.getItem(stageServesStorageKey) ?? '{}')
+    const parsed: unknown = JSON.parse(gameStorage.getItem(stageServesStorageKey) ?? '{}')
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
     return Object.fromEntries(stages.map((stage) => {
       const count = (parsed as Record<string, unknown>)[stage.id]
@@ -118,11 +124,9 @@ const readStageServes = (): Record<string, number> => {
 
 const readMaxUnlockedStage = (): number => {
   try {
-    const storedValue = Number(window.localStorage.getItem(maxUnlockedStageStorageKey))
+    const storedValue = Number(gameStorage.getItem(maxUnlockedStageStorageKey))
 
-    return Number.isInteger(storedValue) && storedValue >= 0
-      ? Math.min(storedValue, stages.length - 1)
-      : 0
+    return getUnlockedStageIndex(stages, storedValue, readCompletedStageIds(), gameStorage.getItem('cake-game:stage-order-version'))
   } catch {
     return 0
   }
@@ -130,7 +134,7 @@ const readMaxUnlockedStage = (): number => {
 
 const readUnlockedCakeIds = (): CakeKind[] => {
   try {
-    const storedValue = window.localStorage.getItem(unlockedCakeIdsStorageKey)
+    const storedValue = gameStorage.getItem(unlockedCakeIdsStorageKey)
     const parsedValue: unknown = storedValue === null ? ['shortcake'] : JSON.parse(storedValue)
 
     if (!Array.isArray(parsedValue)) {
@@ -165,7 +169,10 @@ interface TrophyToast {
   trophy: TrophyDefinition
 }
 
+type SavedBoards = Partial<Record<CakeKind, { pieces: CakePieceModel[]; marks: number[] }>>
+
 interface TutorialSnapshot {
+  otherBoards: SavedBoards
   activeStageIndex: number
   stageServedCount: number
   activeOrderId: string
@@ -318,14 +325,14 @@ const getUnlockedTrophyIds = (progress: TrophyProgress): string[] =>
     .map((trophy) => trophy.id)
 
 const getStageCakeIds = (stageIndex: number, purchasedCakeIds: CakeKind[]): CakeKind[] =>
-  stageIndex < 2 ? ['shortcake'] : purchasedCakeIds
+  stageIndex < 3 ? ['shortcake'] : purchasedCakeIds
 
 const getStageCakes = (stageIndex: number): typeof cakes =>
-  stageIndex < 2 ? cakes.filter((cake) => cake.id === 'shortcake') : cakes
+  stageIndex < 3 ? cakes.filter((cake) => cake.id === 'shortcake') : cakes
 
 function App() {
   const [logExportOpen, setLogExportOpen] = useState(false)
-  const [screen, setScreen] = useState<GameScreen>('title')
+  const [screen, setScreen] = useState<GameScreen>(isAdminMode ? 'stageSelect' : 'title')
   const [guidedTutorialStep, setGuidedTutorialStep] = useState<GuidedTutorialStep | null>(null)
   const [activeStageIndex, setActiveStageIndex] = useState(0)
   const [stageServedCount, setStageServedCount] = useState(0)
@@ -333,7 +340,7 @@ function App() {
   const [servedCount, setServedCount] = useState(0)
   const [activeOrderId, setActiveOrderId] = useState(initialStageOrders[0].id)
   const [activeCakeId, setActiveCakeId] = useState<CakeKind>('shortcake')
-  const [unlockedCakeIds, setUnlockedCakeIds] = useState<CakeKind[]>(readUnlockedCakeIds)
+  const [unlockedCakeIds, setUnlockedCakeIds] = useState<CakeKind[]>(() => isAdminMode ? ['shortcake', 'chocolate'] : readUnlockedCakeIds())
   const [currentCuts, setCurrentCuts] = useState(defaultCuts)
   const [interactionMode, setInteractionMode] = useState<InteractionMode>('cut')
   const [toppingLayoutIndex, setToppingLayoutIndex] = useState(0)
@@ -364,26 +371,28 @@ function App() {
   const [currentCutDenominators, setCurrentCutDenominators] = useState<number[]>([])
   const [trophyToasts, setTrophyToasts] = useState<TrophyToast[]>([])
   const [completedStageIds, setCompletedStageIds] = useState<string[]>(readCompletedStageIds)
-  const [maxUnlockedStage, setMaxUnlockedStage] = useState(readMaxUnlockedStage)
+  const [maxUnlockedStage, setMaxUnlockedStage] = useState(() => isAdminMode ? stages.length - 1 : readMaxUnlockedStage())
   const [stageResultSummary, setStageResultSummary] = useState<StageResultSummary | null>(null)
   const [isSoundEnabled, setIsSoundEnabled] = useState(false)
   const playSound = useSoundEffects(isSoundEnabled)
   const stageCompletionRef = useRef(false)
   const tutorialSnapshotRef = useRef<TutorialSnapshot | null>(null)
   const bgmAudioRef = useRef<HTMLAudioElement | null>(null)
+  const seenStageOrders = useRef<string[]>([])
+  const otherBoards = useRef<SavedBoards>({})
   const [hasExplainedTrophies, setHasExplainedTrophies] = useState(false)
 
   const activeStage = stages[activeStageIndex] ?? stages[0]
   const stageOrders = useMemo(() => getStageOrders(activeStage.id), [activeStage.id])
   const activeCake = getCakeById(activeCakeId)
-  const activeToppings = useMemo(
-    () => getCakeToppings(activeCake, toppingLayoutIndex),
-    [activeCake, toppingLayoutIndex],
-  )
   const tutorialExampleOrder = guidedTutorialStep === null
     ? undefined
     : orders.find((order) => order.id === 'half')
   const activeOrder = tutorialExampleOrder ?? stageOrders.find((order) => order.id === activeOrderId) ?? stageOrders[0]
+  const activeToppings = useMemo(
+    () => activeOrder.toppingRequest ? createToppingLayout(activeOrder, toppingLayoutIndex) : getCakeToppings(activeCake, toppingLayoutIndex),
+    [activeOrder, activeCake, toppingLayoutIndex],
+  )
   const stageAvailableCakeIds = useMemo(() => {
     const stageCakeIds = getStageCakeIds(activeStageIndex, unlockedCakeIds)
 
@@ -447,7 +456,7 @@ function App() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(stageServesStorageKey, JSON.stringify(stageServes))
+      gameStorage.setItem(stageServesStorageKey, JSON.stringify(stageServes))
     } catch {
       // Keep session progress even when browser storage is unavailable.
     }
@@ -455,7 +464,7 @@ function App() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(completedStagesStorageKey, JSON.stringify(completedStageIds))
+      gameStorage.setItem(completedStagesStorageKey, JSON.stringify(completedStageIds))
     } catch {
       // Progress remains available for this session when browser storage is unavailable.
     }
@@ -463,7 +472,8 @@ function App() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(maxUnlockedStageStorageKey, String(maxUnlockedStage))
+      gameStorage.setItem(maxUnlockedStageStorageKey, String(maxUnlockedStage))
+      gameStorage.setItem('cake-game:stage-order-version', stageOrderVersion)
     } catch {
       // Progress remains available for this session when browser storage is unavailable.
     }
@@ -471,7 +481,7 @@ function App() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(unlockedCakeIdsStorageKey, JSON.stringify(unlockedCakeIds))
+      gameStorage.setItem(unlockedCakeIdsStorageKey, JSON.stringify(unlockedCakeIds))
     } catch {
       // Cake unlocks remain available for this session when browser storage is unavailable.
     }
@@ -551,7 +561,7 @@ function App() {
 
   const rememberTutorialCompletion = (): void => {
     try {
-      window.localStorage.setItem(tutorialStorageKey, 'true')
+      gameStorage.setItem(tutorialStorageKey, 'true')
     } catch {
       // The tutorial still closes when browser storage is unavailable.
     }
@@ -577,6 +587,7 @@ function App() {
 
     getResearch().tutorialStart()
     tutorialSnapshotRef.current = {
+      otherBoards: { ...otherBoards.current },
       activeStageIndex,
       stageServedCount,
       activeOrderId,
@@ -616,10 +627,8 @@ function App() {
     [boardPieces, selectedPieces],
   )
   const total = addFractions(selectedPieces.map((piece) => piece.fraction))
-  const canServeCurrentTray =
-    activeOrder.cakeKind === activeCake.id &&
-    selectedPieces.length > 0 &&
-    areFractionsEqual(total, activeOrder.target)
+  const evaluation = evaluateOrder(activeOrder, selectedPieces, activeCake.id)
+  const canServeCurrentTray = evaluation.correct
   const isFinalStage = activeStageIndex === stages.length - 1
   const stageProgressValue = completedStageIds.includes(activeStage.id)
     ? activeStage.targetServes : stageServedCount
@@ -629,11 +638,12 @@ function App() {
   const needsCakeUnlock = goalCakeId !== undefined && !stageAvailableCakeIds.includes(goalCakeId)
   const isStageGoalComplete = stageProgressValue >= stageProgressTarget && !needsCakeUnlock
   const showCakeSelector = tutorialExampleOrder === undefined && (
-    new Set(stageOrders.map((order) => order.cakeKind)).size > 1 ||
+    activeOrder.items !== undefined || new Set(stageOrders.map((order) => order.cakeKind)).size > 1 ||
     (goalCakeId !== undefined && activeStage.requiredUnlockedCakeId === undefined)
   )
 
   const resetBoardState = (cakeId: CakeKind): void => {
+    otherBoards.current = {}
     const cake = getCakeById(cakeId)
 
     setSelectedPieces([])
@@ -644,15 +654,28 @@ function App() {
     setInteractionMode('cut')
   }
 
+  const chooseNextOrderId = (...args: Parameters<typeof selectNextOrderId>): string => {
+    const [candidates] = args
+    if (candidates.some(order => order.items) && candidates.some(order => order.toppingRequest) && guidedTutorialStep === null) {
+      return drawMasterOrder(candidates, seenStageOrders.current, args[4])
+    }
+    if (candidates.every(order => order.toppingRequest) && guidedTutorialStep === null) {
+      return drawToppingOrder(candidates.map(order => order.id), seenStageOrders.current)
+    }
+    return selectNextOrderId(...args)
+  }
+
   const startStage = (stageIndex: number): void => {
+    seenStageOrders.current = []
+    otherBoards.current = {}
     const stage = stages[stageIndex] ?? stages[0]
     const stageUnlockedCakeIds = stage.requiredUnlockedCakeId === undefined
       ? getStageCakeIds(stageIndex, unlockedCakeIds)
       : addUniqueValue(getStageCakeIds(stageIndex, unlockedCakeIds), stage.requiredUnlockedCakeId)
-    const showTutorial = stageIndex === 0 && shouldShowTutorial()
+    const showTutorial = stageIndex === 0 && !isAdminMode && shouldShowTutorial()
     const firstOrderId = showTutorial
       ? 'half'
-      : selectNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, combo)
+      : chooseNextOrderId(getStageOrders(stage.id), stageUnlockedCakeIds, servedCount, combo)
 
     getResearch().enter(stage, stageServes[stage.id] ?? 0, completedStageIds.includes(stage.id), showTutorial)
     stageCompletionRef.current = completedStageIds.includes(stage.id)
@@ -671,7 +694,7 @@ function App() {
     }
     setCurrentCuts(showTutorial ? 2 : defaultCuts)
     setInteractionMode('cut')
-    setToppingLayoutIndex(0)
+    setToppingLayoutIndex(getStageOrders(stage.id).some(order => order.toppingRequest) ? Math.floor(Math.random() * 0xffffffff) : 0)
     setCutBatch(0)
     setBoardPieces([createWholeCakePiece(initialCake)])
     setSelectedPieces([])
@@ -735,6 +758,7 @@ function App() {
   }
 
   const restoreTutorialSnapshot = (tutorialSnapshot: TutorialSnapshot): void => {
+    otherBoards.current = tutorialSnapshot.otherBoards
     setActiveStageIndex(tutorialSnapshot.activeStageIndex)
     setStageServedCount(tutorialSnapshot.stageServedCount)
     setActiveOrderId(tutorialSnapshot.activeOrderId)
@@ -857,10 +881,20 @@ function App() {
       return
     }
 
-    if (!visibleCakes.some((cake) => cake.id === cakeId)) {
+    if (cakeId === activeCakeId || !stageAvailableCakeIds.includes(cakeId) || !visibleCakes.some((cake) => cake.id === cakeId)) {
       return
     }
 
+    if (activeOrder.items !== undefined) {
+      otherBoards.current[activeCakeId] = { pieces: boardPieces, marks: cutMarkAngles }
+      const saved = otherBoards.current[cakeId]
+      setBoardPieces(saved?.pieces ?? [createWholeCakePiece(getCakeById(cakeId))])
+      setCutMarkAngles(saved?.marks ?? [])
+      setCarriedPiece(null)
+      setActiveCakeId(cakeId)
+      setResult(idleResult)
+      return
+    }
     setActiveCakeId(cakeId)
     resetCakeBoard(cakeId)
   }
@@ -948,7 +982,11 @@ function App() {
         return currentPieces
       }
 
-      return [...currentPieces, piece]
+      return [...currentPieces, { ...piece, cakeKind: activeCakeId, toppings: activeToppings.filter(t => {
+        const angle = normalizeAngle(t.angle)
+        const comparable = piece.endAngle > 360 && angle < piece.startAngle ? angle + 360 : angle
+        return comparable >= piece.startAngle && comparable <= piece.endAngle
+      }) }]
     })
     if (guidedTutorialStep === 'move-piece') {
       setGuidedTutorialStep('serve')
@@ -965,10 +1003,21 @@ function App() {
       currentPieces.filter((currentPiece) => currentPiece.id !== piece.id),
     )
 
+    const kind = piece.cakeKind ?? activeCakeId
+    const returnedPiece = piece
+    if (activeOrder.items !== undefined && kind !== activeCakeId) {
+      const saved = otherBoards.current[kind]
+      const pieces = saved?.pieces ?? []
+      otherBoards.current[kind] = {
+        pieces: pieces.some(p => p.id === piece.id) ? pieces : [...pieces, returnedPiece],
+        marks: saved?.marks ?? [],
+      }
+      return
+    }
     setBoardPieces((currentPieces) =>
       currentPieces.some((currentPiece) => currentPiece.id === piece.id)
         ? currentPieces
-        : [...currentPieces, piece].sort((left, right) => left.startAngle - right.startAngle),
+        : [...currentPieces, returnedPiece].sort((left, right) => left.startAngle - right.startAngle),
     )
   }
 
@@ -985,21 +1034,21 @@ function App() {
       return
     }
 
-    const quantityCorrect = areFractionsEqual(total, activeOrder.target)
+    const { quantityCorrect, cakeCorrect, toppingCorrect } = evaluation
     getResearch().action(allowRecipeMismatch ? 'recipe_mismatch_confirm' : 'submit', {
       cakeKind: activeCake.id, target: activeOrder.target, total,
-      pieces: selectedPieces.map(p => ({ fraction: p.fraction, cutToppingIds: p.cutToppingIds })),
-      quantityCorrect, cakeCorrect: activeOrder.cakeKind === activeCake.id,
+      pieces: selectedPieces.map(p => ({ cakeKind: p.cakeKind ?? activeCakeId, fraction: p.fraction, cutToppingIds: p.cutToppingIds, toppings: p.toppings })),
+      quantityCorrect, cakeCorrect, toppingCorrect, items: activeOrder.items, toppingRequest: activeOrder.toppingRequest,
       recipeRequired: activeOrder.recipePieces !== undefined,
       recipeMatched: activeOrder.recipePieces === undefined ? null : matchesRecipe(selectedPieces, activeOrder.recipePieces),
       pieceCountMatched: activeOrder.perfectPieceCount === undefined ? null : selectedPieces.length === activeOrder.perfectPieceCount,
       comboBefore: combo,
     })
-    if (guidedTutorialStep === null && combo > 0 && (activeOrder.cakeKind !== activeCake.id || (selectedPieces.length > 0 && !quantityCorrect))) {
-      getResearch().event('combo_broken', { comboBefore: combo, reason: activeOrder.cakeKind !== activeCake.id ? 'wrong_cake' : 'wrong_quantity' })
+    if (guidedTutorialStep === null && combo > 0 && (!cakeCorrect || (selectedPieces.length > 0 && (!quantityCorrect || !toppingCorrect)))) {
+      getResearch().event('combo_broken', { comboBefore: combo, reason: !cakeCorrect ? 'wrong_cake' : !toppingCorrect ? 'wrong_toppings' : 'wrong_quantity' })
     }
 
-    if (activeOrder.cakeKind !== activeCake.id) {
+    if (!cakeCorrect) {
       playSound('failure')
       setResult({
         kind: 'try-again',
@@ -1022,7 +1071,19 @@ function App() {
       return
     }
 
-    if (areFractionsEqual(total, activeOrder.target)) {
+    if (!toppingCorrect) {
+      playSound('failure')
+      setCombo(0)
+      setResult({ kind: 'try-again', ...getToppingFeedback(activeOrder, selectedPieces, activeCakeId, activeToppings) })
+      return
+    }
+    if (activeOrder.items !== undefined && !quantityCorrect) {
+      playSound('failure')
+      setCombo(0)
+      setResult({ kind: 'try-again', title: 'ケーキを確認してね', detail: 'ケーキごとに、注文と同じ量にしよう。' })
+      return
+    }
+    if (quantityCorrect) {
       const recipeMatched = matchesRecipe(selectedPieces, activeOrder.recipePieces)
       const pieceCountMatched =
         activeOrder.perfectPieceCount !== undefined &&
@@ -1047,7 +1108,7 @@ function App() {
       playSound('button')
 
       if (guidedTutorialStep === 'serve') {
-        const nextOrderId = selectNextOrderId(
+        const nextOrderId = chooseNextOrderId(
           stageOrders,
           stageAvailableCakeIds,
           servedCount,
@@ -1058,7 +1119,7 @@ function App() {
 
         setActiveOrderId(nextOrderId)
         setToppingLayoutIndex((currentIndex) =>
-          getNextToppingLayoutIndex(activeCake.id, currentIndex),
+          orders.find(order => order.id === nextOrderId)?.toppingRequest ? Math.floor(Math.random() * 0xffffffff) : getNextToppingLayoutIndex(activeCake.id, currentIndex),
         )
         resetBoardState(activeCake.id)
         setGuidedTutorialStep('combo')
@@ -1067,10 +1128,13 @@ function App() {
       }
 
       const cutToppingIds = new Set(selectedPieces.flatMap((piece) => piece.cutToppingIds))
-      const cutToppingLabels = activeToppings
+      const orderToppings = activeOrder.items
+        ? activeOrder.items.flatMap(item => getCakeToppings(getCakeById(item.cakeKind), toppingLayoutIndex))
+        : activeToppings
+      const cutToppingLabels = orderToppings
         .filter((topping) => cutToppingIds.has(topping.id))
         .map((topping) => topping.label)
-      const allToppingsCut = activeToppings.every((topping) => cutToppingIds.has(topping.id))
+      const allToppingsCut = orderToppings.length > 0 && orderToppings.every((topping) => cutToppingIds.has(topping.id))
       const nextCombo = combo + 1
       const comboReward = Math.max(0, nextCombo - 1) * 50
       const compactPieceReward = selectedPieces.length <= 2 ? compactPieceBonusReward : 0
@@ -1116,7 +1180,7 @@ function App() {
         (denominators, denominator) => addUniqueValue(denominators, denominator),
         usedCutDenominators,
       )
-      const nextOrderId = selectNextOrderId(
+      const nextOrderId = chooseNextOrderId(
         stageOrders,
         stageAvailableCakeIds,
         nextServedCount,
@@ -1169,7 +1233,7 @@ function App() {
         showTrophyToasts(newlyUnlockedTrophies)
       }
 
-      getResearch().sold({ combo: nextCombo, recipeMatched, pieceCountMatched, earnedMoney, recipeRequired: activeOrder.recipePieces !== undefined, pieces: selectedPieces.map(p => p.fraction), stageServes: nextStageServedCount })
+      getResearch().sold({ combo: nextCombo, recipeMatched, pieceCountMatched, earnedMoney, recipeRequired: activeOrder.recipePieces !== undefined, pieces: selectedPieces.map(p => p.fraction), toppingCorrect, cakeItems: selectedPieces.map(p => ({ cakeKind: p.cakeKind, fraction: p.fraction, toppings: p.toppings })), stageServes: nextStageServedCount })
       setCombo(nextCombo)
       setBestCombo((currentBestCombo) => Math.max(currentBestCombo, nextCombo))
       setMoney((currentMoney) => currentMoney + earnedMoney)
@@ -1193,7 +1257,7 @@ function App() {
       }))
       setActiveOrderId(nextOrderId)
       setToppingLayoutIndex((currentIndex) =>
-        getNextToppingLayoutIndex(activeCake.id, currentIndex),
+        orders.find(order => order.id === nextOrderId)?.toppingRequest ? Math.floor(Math.random() * 0xffffffff) : getNextToppingLayoutIndex(activeCake.id, currentIndex),
       )
       resetBoardState(activeCake.id)
 
@@ -1287,7 +1351,7 @@ function App() {
 
   const soundControl = (
     <>
-      <LogExport open={logExportOpen} onChange={setLogExportOpen} />
+      {isAdminMode ? <div className="admin-indicator">ADMIN · ログ OFF</div> : <LogExport open={logExportOpen} onChange={setLogExportOpen} />}
       <audio ref={bgmAudioRef} src={audioAssets.cakeBgm} loop preload="auto" />
       <button
         type="button"

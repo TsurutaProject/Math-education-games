@@ -1,10 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import ts from 'typescript'
-const source = readFileSync(new URL('../src/research/recorder.ts', import.meta.url), 'utf8')
-const { outputText } = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.ESNext } })
-const { ResearchRecorder, LOG_KEY, toCsv } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`)
+import { importTs } from './import-ts.mjs'
+const { ResearchRecorder, LOG_KEY, toCsv } = await importTs(new URL('../src/research/recorder.ts', import.meta.url))
 const stage = { id: 'stage-1', title: '基本', targetServes: 3 }
 const order = { id: 'half', target: { numerator: 1, denominator: 2 }, cakeKind: 'shortcake' }
 const setup = () => {
@@ -109,4 +106,22 @@ test('以前の注文ログの年齢・性別も読み込み時に除外する',
   assert.ok(!exported.includes('"age"')); assert.ok(!exported.includes('"gender"'))
   assert.equal(reloaded.log.orders[0].order.id,order.id)
   assert.ok(!storage.getItem(LOG_KEY).includes('"age"'))
+})
+
+test('adminでは通常の保存領域に触れず、イベント・ステージ・注文も記録しない', () => {
+  const storage = { getItem() { assert.fail('must not read normal logs') }, setItem() { assert.fail('must not overwrite normal logs') } }
+  const r = new ResearchRecorder(storage, () => 5000, true)
+  r.enter(stage, 0, false, false)
+  r.setRunning(true, 'playing')
+  r.ensureOrder(order)
+  r.action('hint_open')
+  r.action('submit')
+  r.sold({ combo: 1, recipeMatched: false, pieceCountMatched: false })
+  r.tutorialStart(); r.tutorialEnd('complete', true)
+  r.snapshot('combo_state', { current: 1 })
+  r.trophies({}, [])
+  r.clear(); r.leave('stage_select'); r.event('pagehide'); r.save(); r.resetAll()
+  assert.deepEqual(r.log.events, [])
+  assert.deepEqual(r.log.stages, [])
+  assert.deepEqual(r.log.orders, [])
 })
