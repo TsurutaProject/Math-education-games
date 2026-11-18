@@ -5,6 +5,7 @@ import { CakePiecePreview } from './CakePiecePreview'
 import { FuriganaText } from './FuriganaText'
 
 interface TrayProps {
+  isDropReady?: boolean
   selectedPieces: CakePieceModel[]
   maxPieces: number
   cakeImageUrl: string
@@ -13,7 +14,7 @@ interface TrayProps {
   onDropPiece: (pieceId: string) => void
 }
 
-export function Tray({ selectedPieces, maxPieces, cakeImageUrl, toppings, onRemovePiece, onDropPiece }: TrayProps) {
+export function Tray({ isDropReady = false, selectedPieces, maxPieces, cakeImageUrl, toppings, onRemovePiece, onDropPiece }: TrayProps) {
   const handleDragOver = (event: DragEvent<HTMLElement>): void => {
     event.preventDefault()
     event.dataTransfer.dropEffect = selectedPieces.length >= maxPieces ? 'none' : 'move'
@@ -30,7 +31,7 @@ export function Tray({ selectedPieces, maxPieces, cakeImageUrl, toppings, onRemo
 
   return (
     <section
-      className="tray"
+      className={isDropReady ? 'tray tray--drop-ready' : 'tray'}
       aria-label="販売トレイ"
       onDragOver={handleDragOver}
       onDrop={handleDrop}

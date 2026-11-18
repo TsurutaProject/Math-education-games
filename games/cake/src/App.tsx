@@ -1,3 +1,4 @@
+import { canDropOnTray } from './utils/trayDrop'
 import { drawMasterOrder } from './data/masterOrders'
 import { getUnlockedStageIndex, stageOrderVersion } from './utils/stageProgress'
 import { getToppingFeedback } from './data/toppingFeedback'
@@ -159,6 +160,7 @@ interface DifficultyRange {
 }
 
 interface CarriedPieceState {
+  overTray: boolean
   piece: CakePieceModel
   x: number
   y: number
@@ -869,6 +871,7 @@ function App() {
       position === null
         ? null
         : {
+            overTray: canDropOnTray(position.x, position.y),
             x: position.x,
             y: position.y,
             piece,
@@ -1467,6 +1470,7 @@ function App() {
             />
           ) : null}
           <Tray
+            isDropReady={carriedPiece?.overTray === true && selectedPieces.length < maxTrayPieces}
             selectedPieces={selectedPieces}
             maxPieces={maxTrayPieces}
             cakeImageUrl={activeCake.imageUrl}

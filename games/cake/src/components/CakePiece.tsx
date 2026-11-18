@@ -1,3 +1,4 @@
+import { canDropOnTray } from '../utils/trayDrop'
 import { useEffect, useRef, type PointerEvent } from 'react'
 import type { CakePieceModel } from '../types/game'
 import { describeCakeSlice } from '../utils/cakeGeometry'
@@ -67,18 +68,7 @@ export function CakePiece({
     const handleDocumentPointerUp = (event: globalThis.PointerEvent): void => {
       if (event.pointerId !== pointerId) return
       cleanup()
-      const droppedElement = document.elementFromPoint(event.clientX, event.clientY)
-      // A missing element means the pointer is outside the game viewport.
-      if (droppedElement === null) return
-      const tray = document.querySelector('.tray')
-      const bounds = tray?.getBoundingClientRect()
-      const margin = 64 // Design pixels; scales with the game viewport.
-      const nearTray = bounds !== undefined &&
-        event.clientX >= bounds.left - margin && event.clientX <= bounds.right + margin &&
-        event.clientY >= bounds.top - margin && event.clientY <= bounds.bottom + margin
-      const overTray = droppedElement.closest('.tray') !== null
-      // Do not treat adjacent controls (e.g. Serve) as drop targets.
-      if (overTray || (nearTray && droppedElement.closest('button') === null)) {
+      if (canDropOnTray(event.clientX, event.clientY)) {
         onMoveToTray(piece)
       }
     }
