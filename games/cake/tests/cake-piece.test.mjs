@@ -2,8 +2,10 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import ts from 'typescript'
+import { moduleUrl } from './import-ts.mjs'
 // Exercise the real pointer handlers with a minimal hook/DOM harness.
 let source=readFileSync(new URL('../src/components/CakePiece.tsx',import.meta.url),'utf8')
+source=source.replace("'../utils/trayDrop'", JSON.stringify(moduleUrl(new URL('../src/utils/trayDrop.ts', import.meta.url))))
 source=source.replace(/import .* from 'react'/, 'const useRef = value => ({ current: value }); const useEffect = callback => { callback() };')
 source=source.replace(/import .* from '..\/utils\/cakeGeometry'/, 'const describeCakeSlice = () => ""')
 source='const React = { createElement: (type, props, ...children) => ({type,props:{...props,children}}) };\n'+source

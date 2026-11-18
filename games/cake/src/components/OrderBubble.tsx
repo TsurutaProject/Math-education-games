@@ -1,3 +1,4 @@
+import { getCakeById } from '../data/cakes'
 import type { CakeDefinition, Fraction, Order } from '../types/game'
 import { formatFraction, gcd } from '../utils/fraction'
 import { FuriganaText } from './FuriganaText'
@@ -20,8 +21,10 @@ export function OrderBubble({ order, cake, onHintToggle }: OrderBubbleProps) {
   const amount = order.target.denominator === 1
     ? `${order.target.numerator}`
     : `${order.target.denominator}分の${order.target.numerator}`
-  const request = `${cake.name}を${amount}個分ください。`
-  const bonusRequest = order.perfectPieceCount !== undefined
+  const request = order.items
+    ? order.items.map(item => `${getCakeById(item.cakeKind).name}を${formatFraction(item.target)}個分`).join('、') + 'ください。'
+    : `${cake.name}を${amount}個分ください。`
+  const bonusRequest = order.toppingRequest ? order.message : order.perfectPieceCount !== undefined
     ? `${order.perfectPieceCount}ピースで作ると最高評価です。`
     : order.recipePieces !== undefined
       ? `${order.recipePieces.map(formatFraction).join('と')}の組み合わせだと、もっと嬉しいです。`
@@ -31,7 +34,10 @@ export function OrderBubble({ order, cake, onHintToggle }: OrderBubbleProps) {
   const denominator = piecePlan.reduce((common, piece) =>
     common * piece.denominator / gcd(common, piece.denominator), 1)
   const numerators = piecePlan.map((piece) => piece.numerator * (denominator / piece.denominator))
-  const hint = isPieceCountChallenge
+  const hint = order.items
+    ? 'ケーキを切り替えて、同じトレーにのせよう。ケーキごとの量を確認してね。'
+    : order.toppingRequest ? 'トッピングのないところを切ろう。トレーのトッピングが注文と同じ種類と数になるように分けてね。'
+    : isPieceCountChallenge
     ? `合計を${formatFraction(order.target)}にそろえよう。大きいピースをさらに切ると、量を変えずにピースの数を増やせるよ。最高評価は${order.perfectPieceCount}ピースです。`
     : piecePlan.length > 1
       ? `ケーキを${denominator}等分した大きさで考えよう。${piecePlan.map((piece, index) => `${formatFraction(piece)}は${numerators[index]}個分`).join('、')}。合わせると${numerators.join('＋')}＝${numerators.reduce((sum, n) => sum + n, 0)}個分で、${formatFraction(order.target)}になるよ。`
@@ -62,7 +68,7 @@ export function OrderBubble({ order, cake, onHintToggle }: OrderBubbleProps) {
                   : `必要な量は${formatFraction(order.target)}個分`
             }
           >
-            {isPieceCountChallenge ? (
+            {order.items ? order.items.map(item => <span key={item.cakeKind} className="order-piece-chip"><FuriganaText text={`${getCakeById(item.cakeKind).name} ${formatFraction(item.target)}`} /></span>) : isPieceCountChallenge ? (
               <span className="order-piece-chip">{order.perfectPieceCount}ピース</span>
             ) : (
               piecePlan.map((fraction, index) => (

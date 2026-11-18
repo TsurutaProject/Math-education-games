@@ -454,3 +454,22 @@ body, #root {
   color: #fff;
   font-size: 0.5em;
 }
+
+/* Eight stages must fit without scaling the menu outside the design viewport. */
+.flow-panel--stage-select { transform: none; max-height: calc(100vh - 80px); overflow-y: auto; }
+.admin-indicator { left: 144px; }
+
+/* Animate the frame, not its geometry: the drop boundary stays stable. */
+.tray.tray--drop-ready {
+  border-color: #98600c;
+  outline: 4px solid #ffc65a;
+  animation: tray-drop-ready 700ms ease-in-out infinite alternate;
+}
+@keyframes tray-drop-ready {
+  from { outline-offset: 2px; box-shadow: 0 4px 12px #98600c40; }
+  to { outline-offset: 7px; box-shadow: 0 8px 24px #98600c70; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tray.tray--drop-ready { animation: none; outline-offset: 4px; }
+}

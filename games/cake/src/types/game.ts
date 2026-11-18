@@ -8,6 +8,8 @@ export type CakeKind = 'shortcake' | 'chocolate'
 export type CustomerKind = 'おれんじ' | 'きゅーぶ' | 'ペンギン'
 
 export interface CakePieceModel {
+  cakeKind?: CakeKind
+  toppings?: Topping[]
   id: string
   fraction: Fraction
   cutDenominator: number
@@ -43,6 +45,8 @@ export interface CakeDefinition {
 }
 
 export interface Order {
+  items?: { cakeKind: CakeKind; target: Fraction }[]
+  toppingRequest?: { counts?: Partial<Record<ToppingKind, number>>; total?: number }
   id: string
   customerName: CustomerKind
   cakeKind: CakeKind
